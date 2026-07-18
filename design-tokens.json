@@ -1,10 +1,10 @@
 {
   "$schema": "https://www.designtokens.org/schemas/2025.10/format.json",
-  "$description": "Betinhos Design System 1.2.0. Identidade operacional premium extraída do Módulo Qualidade.",
+  "$description": "Betinhos Design System 1.3.0. Identidade operacional premium extraída do Módulo Qualidade.",
   "$extensions": {
     "com.betinhos.design-system": {
-      "version": "1.2.0",
-      "updated": "2026-07-16",
+      "version": "1.3.0",
+      "updated": "2026-07-18",
       "source": "Módulo Qualidade",
       "theme": "light-only",
       "cssPrefix": "bt",
@@ -57,6 +57,7 @@
       "$type": "color",
       "navy-900": { "$value": { "colorSpace": "srgb", "components": [0, 0.101961, 0.239216], "alpha": 1, "hex": "#001a3d" } },
       "navy-800": { "$value": { "colorSpace": "srgb", "components": [0.043137, 0.176471, 0.352941], "alpha": 1, "hex": "#0b2d5a" } },
+      "navy-100": { "$value": { "colorSpace": "srgb", "components": [0.909804, 0.929412, 0.960784], "alpha": 1, "hex": "#e8edf5" } },
       "blue-600": { "$value": { "colorSpace": "srgb", "components": [0.129412, 0.34902, 0.823529], "alpha": 1, "hex": "#2159d2" } },
       "blue-100": { "$value": { "colorSpace": "srgb", "components": [0.929412, 0.952941, 1], "alpha": 1, "hex": "#edf3ff" } },
       "ink-950": { "$value": { "colorSpace": "srgb", "components": [0.058824, 0.090196, 0.164706], "alpha": 1, "hex": "#0f172a" } },
@@ -84,8 +85,8 @@
       "$type": "color",
       "brand": { "$value": "{color.primitive.navy-900}" },
       "brand-hover": { "$value": "{color.primitive.navy-800}" },
-      "action": { "$value": "{color.primitive.blue-600}" },
-      "action-soft": { "$value": "{color.primitive.blue-100}" },
+      "action": { "$value": "{color.primitive.navy-900}" },
+      "action-soft": { "$value": "{color.primitive.navy-100}" },
       "canvas": { "$value": "{color.primitive.gray-100}" },
       "surface": { "$value": "{color.primitive.white}" },
       "surface-soft": { "$value": "{color.primitive.gray-050}" },

@@ -1,10 +1,10 @@
 # Betinhos Design System
 
-**Versão:** 1.2.0
+**Versão:** 1.3.0
 
 **Status:** fonte oficial inicial
 
-**Atualizado em:** 16 de julho de 2026
+**Atualizado em:** 18 de julho de 2026
 
 **Idioma-base:** pt-BR
 
@@ -137,8 +137,8 @@ Regras:
 
 ### 1.3 Assinatura visual reconhecível
 
-1. Navy `#001A3D` como âncora institucional.
-2. Azul `#2159D2` para ação, seleção e informação.
+1. Navy `#001A3D` como âncora institucional e cor principal de ação.
+2. Azul suave `#E8EDF5` apenas para superfícies de apoio, seleção discreta e informação.
 3. Manrope com títulos compactos, fortes e levemente fechados.
 4. Fundo cinza neutro + superfícies brancas com borda fria e sombra baixa.
 5. Cantos entre 8 e 12 px; pílulas apenas para status e metadados curtos.
@@ -530,6 +530,24 @@ Overlay sobre foto: camada sólida/translúcida navy entre 60% e 84% quando houv
 - Nunca entrar a partir de `scale(0)`; mínimo `.95` + opacidade.
 - Backdrop de tela inteira não usa blur pesado. Drawer mantém overlay e sombra.
 
+### 9.3.1 Ferramenta por comportamento
+
+O sistema autoriza motion mais rico quando ele melhora a orientação, a resposta tátil ou a continuidade espacial. A ferramenta segue o comportamento — não cria uma nova linguagem visual.
+
+| Cenário | Ferramenta autorizada | Regra de uso |
+| --- | --- | --- |
+| Hover, press, foco, abrir/fechar previsível | CSS `transition` | Padrão para UI operacional; transicione apenas propriedades explícitas. |
+| Entrada após montagem | CSS `@starting-style` | Use quando houver suporte; mantenha fallback de estado para ambientes legados. |
+| Sequência programática, cancelável ou sincronizada | Web Animations API (WAAPI) | Cancele/reverta a animação anterior; use os tokens de duração e curva. |
+| Drag, swipe e gesto interrompível | Spring/Motion | Aplique somente ao elemento em gesto; bounce sutil (`0.1–0.2`) e sem salto ao soltar. |
+| Loading, progresso e confirmação rara | `@keyframes` | Permitido somente quando a animação é autônoma e não compete com tarefas recorrentes. |
+
+- CSS continua sendo a primeira escolha para movimento predeterminado; WAAPI e springs resolvem somente interações que realmente ganham com controle programático ou continuidade de velocidade.
+- Em React, uma biblioteca de motion é opcional. Não a adicione para substituir uma transição CSS simples.
+- Para gesto, prefira `transform` direto no elemento ativo; não propague uma CSS variable por toda a árvore a cada frame.
+- Não use scroll-jacking, parallax contínuo, 3D decorativo, loops ociosos ou animação em lista/tabela de uso frequente.
+- Em `prefers-reduced-motion`, remova deslocamento, spring, drag animado e keyframes não essenciais; preserve mudança de cor/opacidade que ajude a compreender o estado.
+
 ### 9.4 Redução de movimento
 
 ```css
@@ -878,7 +896,7 @@ Em fundo azul/navy, use anel branco de 2 px + azul claro externo.
 - Capa navy; conteúdo branco/cinza-claro.
 - Título 36–56 px, corpo 20–28 px.
 - Uma conclusão por slide; dados com fonte e período.
-- Transições discretas, 180–300 ms; sem animação ornamental em toda página.
+- Transições discretas, 180–300 ms; use CSS, `@starting-style`, WAAPI ou spring conforme a seção 9.3.1, sem animação ornamental em toda página.
 
 ### 14.5 E-mail
 
@@ -1044,6 +1062,7 @@ Este bloco permite implementação mesmo quando os arquivos auxiliares não acom
   --bt-color-navy-800: #0b2d5a;
   --bt-color-blue-600: #2159d2;
   --bt-color-blue-100: #edf3ff;
+  --bt-color-navy-100: #e8edf5;
   --bt-color-ink-950: #0f172a;
   --bt-color-ink-900: #172033;
   --bt-color-slate-700: #475569;
@@ -1066,8 +1085,8 @@ Este bloco permite implementação mesmo quando os arquivos auxiliares não acom
   --bt-color-orange-100: #fff0e5;
   --bt-color-brand: var(--bt-color-navy-900);
   --bt-color-brand-hover: var(--bt-color-navy-800);
-  --bt-color-action: var(--bt-color-blue-600);
-  --bt-color-action-soft: var(--bt-color-blue-100);
+  --bt-color-action: var(--bt-color-brand);
+  --bt-color-action-soft: var(--bt-color-navy-100);
   --bt-color-canvas: var(--bt-color-gray-100);
   --bt-color-surface: var(--bt-color-white);
   --bt-color-surface-soft: var(--bt-color-gray-050);
