@@ -1,0 +1,1344 @@
+# Betinhos Design System
+
+**Versão:** 1.2.0
+
+**Status:** fonte oficial inicial
+
+**Atualizado em:** 16 de julho de 2026
+
+**Idioma-base:** pt-BR
+
+**Nome descritivo:** Operacional Premium
+**Origem visual:** interface do app Gestão de Erros Operacionais / Módulo Qualidade
+
+> Este é o arquivo mestre. Se uma IA puder receber apenas um arquivo, forneça este documento inteiro. Ele contém identidade, fundamentos, tokens, componentes, padrões, acessibilidade, conteúdo, governança e contrato de execução.
+
+## Protocolo obrigatório de resposta da IA
+
+Regra absoluta: toda resposta cujo assunto seja design, UI, UX, componente visual, revisão visual, acessibilidade visual, motion ou design system deve começar exatamente, no primeiro caractere, com:
+
+```text
+DESIGN CONTEXTO
+```
+
+Não coloque saudação, título Markdown, resumo, justificativa, lista, emoji ou qualquer outro texto antes desse prefixo. A regra vale para análise, plano, pergunta, implementação, revisão e resposta final. Depois do prefixo, a IA responde normalmente e segue todo o restante deste documento.
+
+## Descoberta a partir de um repo filho
+
+Quando uma IA estiver em qualquer pasta dentro do diretório pai `vscode`, a instrução curta é:
+
+```text
+Leia integralmente o DESIGN_SYSTEM.md do diretório pai antes de alterar qualquer UI.
+Depois preserve os contratos do repo atual e aplique somente os tokens, componentes e regras autorizados pelo design system.
+```
+
+Procedimento obrigatório da IA:
+
+1. Resolva o repo atual e procure `DESIGN_SYSTEM.md` subindo diretórios.
+2. Leia primeiro o arquivo encontrado no pai comum dos repos.
+3. Leia `AGENTS.md`, `CLAUDE.md` e instruções locais do repo atual.
+4. Trate o design system do pai como autoridade visual; instruções locais podem restringir, mas não liberar gradiente, dark mode ou novos valores visuais.
+5. Inspecione a implementação real antes de editar. Preserve DOM, IDs, `data-*`, handlers, payloads e comportamento.
+6. Mapeie cada decisão para token semântico ou de componente.
+7. Faça mudança cirúrgica. Se pedido for somente cor, não altere estrutura, spacing, tipografia ou motion.
+8. Inicie a resposta com `DESIGN CONTEXTO` quando o pedido tratar de design, UI ou UX.
+9. Execute o gate local disponível, preferencialmente `npm run design:check` e `npm run check`.
+
+O tema oficial é **light-only**. Dark mode não está autorizado.
+
+---
+
+## 0. Contrato obrigatório para IA
+
+Ao criar ou alterar qualquer interface Betinhos, siga esta ordem:
+
+1. Preserve contratos funcionais, DOM, IDs, `data-*`, handlers, payloads e regras de negócio existentes.
+2. Use os tokens deste documento. Não invente cores, fontes, sombras, raios ou animações.
+3. Reutilize componentes e padrões existentes antes de criar novos.
+4. Mantenha a personalidade **operacional premium**: precisa, sóbria, clara, compacta e humana.
+5. Garanta responsividade, teclado, foco visível, contraste e redução de movimento.
+6. Não redesenhe a marca ou o logo sem um arquivo oficial e autorização explícita.
+7. Se faltar um padrão, componha com os tokens existentes e documente a nova decisão; não crie uma estética paralela.
+8. Entregue estados `default`, `hover`, `active`, `focus-visible`, `disabled`, `loading`, `error` e `empty` quando aplicáveis.
+9. Valide visualmente desktop e mobile. Execute testes/build disponíveis antes de declarar conclusão.
+10. Ao divergir deste sistema, explique a necessidade e peça aprovação.
+11. Nunca use gradiente, em nenhum canal ou componente.
+12. Use `#FCFCFB` como fundo padrão de listas, campos, buscas e cabeçalhos neutros. Preserve bordas, layout, tipografia, motion e comportamento. Azul permanece apenas em foco, seleção, status, ícones e ações.
+13. Não crie dark mode, nova paleta, nova fonte, novo radius, nova shadow ou novo breakpoint sem aprovação explícita.
+14. Todo app deve implementar o contrato de versionamento automático descrito abaixo.
+
+### Versionamento obrigatório dos apps
+
+- Todo app deve exibir permanentemente sua versão no formato exato `v0.0.0 dd/mm/yyyy`.
+- A versão deve permanecer visível em todas as telas e estados, inclusive erro de conexão, sem depender de menu, modal, tooltip ou ação do usuário.
+- A apresentação deve ser extremamente sutil, sem competir com conteúdo, navegação ou ações. Não pode capturar clique, foco ou toque.
+- Cada execução de `npm run dev` e `npm run push` deve incrementar automaticamente o PATCH da versão e atualizar a data.
+- A data deve usar `America/Sao_Paulo`.
+- O artefato publicado deve incorporar a mesma versão mostrada na interface.
+- A automação deve manter `package.json` e `package-lock.json` sincronizados quando existirem.
+
+### Prompt copiável para outra IA
+
+```text
+DESIGN CONTEXTO
+
+Use o arquivo DESIGN_SYSTEM.md como fonte de verdade visual e de conteúdo.
+Objetivo: [descreva a tela ou artefato].
+Tecnologia/formato: [React, HTML, Power Apps, Power BI, apresentação, e-mail etc.].
+
+Regras:
+- Preserve toda funcionalidade e contratos existentes.
+- Aplique os tokens e componentes do design system; não invente nova linguagem visual.
+- Mantenha a estética operacional premium: navy profundo, azul funcional, superfícies claras, Manrope, alta legibilidade, densidade compacta e motion curto.
+- Nunca use gradiente. Em listas, campos, buscas e cabeçalhos neutros, use off-white #FCFCFB e altere somente a cor.
+- Implemente todos os estados relevantes, responsividade e WCAG 2.2 AA.
+- Use ícones Lucide, sem emoji como ícone de interface.
+- Mostre no final quais tokens/componentes foram usados, o que foi validado e qualquer exceção.
+```
+
+### Critérios de aceite para saída de IA
+
+- [ ] Parece parte da mesma família do Módulo Qualidade.
+- [ ] Usa Manrope e a paleta autorizada.
+- [ ] Hierarquia é clara sem excesso de decoração.
+- [ ] Fundo, superfícies, bordas e sombras respeitam os níveis definidos.
+- [ ] Todos os controles têm estados completos.
+- [ ] Não depende somente de cor para comunicar status.
+- [ ] Funciona a partir de 320 px e não cria rolagem horizontal acidental.
+- [ ] Foco por teclado permanece visível e não fica coberto.
+- [ ] Motion usa apenas propriedades baratas e respeita `prefers-reduced-motion`.
+- [ ] Textos soam humanos, precisos e operacionais.
+- [ ] A resposta começa exatamente com `DESIGN CONTEXTO` quando tratar de design, UI ou UX.
+- [ ] Versão `v0.0.0 dd/mm/yyyy` sempre visível e atualizada por `npm run dev` e `npm run push`.
+
+---
+
+## 1. Essência da identidade
+
+### 1.1 Posicionamento visual
+
+**Operacional premium** não significa luxo ornamental. Significa controle, confiança e precisão percebidos em cada detalhe.
+
+| Princípio | Expressão visual | Evitar |
+| --- | --- | --- |
+| Confiança | navy profundo, alinhamento rigoroso, dados claros | azul genérico dominante, efeitos chamativos |
+| Pontualidade | hierarquia rápida, datas e estados fáceis de localizar | interfaces que exigem procura |
+| Discrição | superfícies claras, sombras suaves, pouco ruído | gradientes decorativos, brilho, glassmorphism pesado |
+| Cuidado humano | texto direto, feedback imediato, estados vazios úteis | linguagem fria, erro culpabilizador |
+| Controle operacional | densidade compacta, tabelas e filtros previsíveis | cards gigantes, espaço desperdiçado |
+
+### 1.2 Personalidade
+
+- **Precisa:** cada elemento tem função clara.
+- **Segura:** contraste alto e navegação estável.
+- **Sóbria:** cor de marca concentrada em ações e orientação.
+- **Ágil:** respostas visuais curtas; sem animação decorativa recorrente.
+- **Humana:** mensagens explicam o próximo passo.
+
+### 1.3 Assinatura visual reconhecível
+
+1. Navy `#001A3D` como âncora institucional.
+2. Azul `#2159D2` para ação, seleção e informação.
+3. Manrope com títulos compactos, fortes e levemente fechados.
+4. Fundo cinza neutro + superfícies brancas com borda fria e sombra baixa.
+5. Cantos entre 8 e 12 px; pílulas apenas para status e metadados curtos.
+6. Ícones Lucide lineares.
+7. Densidade alta, porém legível: módulos de 8–16 px e texto funcional de 11–13 px.
+8. Feedback tátil sutil: `scale(.97)` no pressionar; entradas rápidas em `ease-out`.
+
+### 1.4 O que esta identidade não é
+
+- Não é interface de app de táxi.
+- Não é fintech neon.
+- Não é dashboard futurista escuro.
+- Não é material genérico com cards inflados.
+- Não é luxo dourado/preto.
+- Não usa ilustração infantil, emojis ou gradientes. Gradiente é proibido.
+
+---
+
+## 2. Arquitetura do sistema
+
+O mercado maduro separa decisões em três camadas:
+
+```text
+Primitivos → Semânticos → Componente
+valor bruto    propósito    aplicação local
+navy-900       bg-brand     nav.background
+```
+
+### 2.1 Regras de token
+
+- **Primitivo:** valor bruto; nunca descreve contexto (`navy.900`, `space.3`).
+- **Semântico:** descreve intenção (`color.text.primary`, `color.action.primary`).
+- **Componente:** descreve uso específico (`button.primary.background`).
+- Componentes não devem consumir primitivos diretamente quando existe token semântico.
+- Tema novo altera aliases semânticos; não duplica componentes.
+- Token removido deve ser marcado como obsoleto por uma versão antes da exclusão.
+- Nomes usam minúsculas, pontos no JSON e hífens no CSS.
+
+### 2.2 Fontes de verdade
+
+| Artefato | Função | Prioridade |
+| --- | --- | --- |
+| `design-tokens.json` | única fonte de valores e aliases | 1 |
+| `DESIGN_SYSTEM.md` | intenção, proibições, componentes e uso por IA | 1 |
+| `design-tokens.css` | saída web gerada; nunca editar manualmente | derivado |
+| `src/styles.css` | evidência histórica do app de origem | referência |
+
+Em conflito de intenção, este documento vence. Em conflito de valor, `design-tokens.json` vence e o CSS deve ser regenerado com `npm run design:generate`.
+
+### 2.3 Tema e arquivos derivados
+
+- Tema suportado: `light`.
+- Tema não suportado: `dark`.
+- `design-tokens.css` é gerado por `scripts/generate-design-tokens.mjs`.
+- `npm run design:check` valida aliases, light-only, ausência de gradientes, uso do off-white e sincronismo do CSS.
+- `npm run design:publish-parent` publica e verifica os três artefatos no diretório pai.
+- Nunca corrija divergência editando o CSS gerado.
+
+---
+
+## 3. Cor
+
+### 3.1 Paleta principal
+
+| Token | Hex | Uso autorizado |
+| --- | --- | --- |
+| `navy.900` | `#001A3D` | marca, sidebar, CTA principal, datas |
+| `navy.800` | `#0B2D5A` | hover de CTA, superfícies institucionais secundárias |
+| `blue.600` | `#2159D2` | ação, link, seleção, dado em destaque |
+| `blue.100` | `#EDF3FF` | seleção suave, ícone informativo, fundo de badge |
+| `ink.950` | `#0F172A` | texto mais forte |
+| `ink.900` | `#172033` | texto de controle e linha |
+| `slate.700` | `#475569` | texto secundário forte |
+| `slate.500` | `#64748B` | texto secundário padrão |
+| `slate.400` | `#94A3B8` | texto auxiliar não crítico |
+| `gray.100` | `#F0F0F0` | canvas global |
+| `gray.050` | `#F7F9FC` | hover, disabled e skeleton; não usar como fundo-base de campo/lista |
+| `neutral.050` | `#FCFCFB` | listas, campos, buscas e cabeçalhos neutros |
+| `white` | `#FFFFFF` | superfícies elevadas |
+| `line.200` | `#E2E8F0` | borda padrão |
+
+### 3.2 Cores semânticas
+
+| Papel | Forte | Fundo suave | Uso |
+| --- | --- | --- | --- |
+| Sucesso | `#168F57` | `#EAF8F1` | concluído, conexão, confirmação |
+| Atenção | `#B17A00` | `#FFF7DF` | prazo, cautela, pendência |
+| Erro/perigo | `#C12F45` | `#FFF0F3` | falha, atraso crítico, exclusão |
+| Informação | `#2159D2` | `#EDF3FF` | ajuda, seleção, atualização |
+| Roxo de processo | `#6B4B9B` | `#F4EFFF` | estado intermediário específico |
+| Laranja operacional | `#9A4E12` | `#FFF0E5` | prioridade/ação em andamento |
+
+### 3.3 Proporção de uso
+
+- 70–80%: branco e cinzas claros.
+- 15–25%: navy, texto e bordas.
+- 5–10%: azul e cores semânticas.
+- Navy pode ocupar 100% da sidebar, cabeçalho institucional ou capa.
+- Cores de status aparecem em pontos, badges, bordas ou fundos suaves; não em grandes planos.
+
+### 3.4 Regra determinística de superfícies
+
+| Papel | Token | Valor | Aplicação |
+| --- | --- | --- | --- |
+| Canvas | `color.canvas` | `#F0F0F0` | fundo global externo |
+| Surface | `color.surface` | `#FFFFFF` | cards, painéis e drawers |
+| Neutral | `color.surface.neutral` | `#FCFCFB` | listas, campos, buscas e cabeçalhos |
+| Interactive | `color.surface.soft` | `#F7F9FC` | hover, disabled e skeleton |
+
+Regras:
+
+- azul somente em foco, seleção, status, ícones e ações;
+- `#FAFBFD` e `#FBFCFD` são legados; proibidos em trabalho novo;
+- mudança de superfície altera somente `background-color`;
+- não alterar bordas, layout, spacing, tipografia, radius, shadow, motion ou comportamento;
+- não “compensar” a neutralização com novos efeitos ou cores.
+
+### 3.5 Combinações aprovadas
+
+| Texto | Fundo | Contraste medido | Uso |
+| --- | --- | --- | --- |
+| `#001A3D` | `#FFFFFF` | 17.28:1 | títulos e texto institucional |
+| `#0B2D5A` | `#FFFFFF` | 13.66:1 | CTA/hover e títulos |
+| `#2159D2` | `#FFFFFF` | 6.13:1 | links e texto azul |
+| `#64748B` | `#FFFFFF` | 4.76:1 | texto secundário normal |
+| `#285DB5` | `#EDF3FF` | 5.68:1 | badge informativo |
+| `#147A4B` | `#E9F8F0` | 4.89:1 | badge de sucesso |
+| `#9F2940` | `#FFF0F3` | 6.63:1 | badge de erro |
+
+Não use `slate.400` para texto pequeno essencial. Não aplique opacidade ao texto para “suavizar”; escolha token de cor apropriado.
+
+### 3.6 Status nunca depende só de cor
+
+Combine pelo menos dois sinais:
+
+- cor + texto;
+- cor + ícone;
+- cor + posição/forma;
+- borda crítica + rótulo “Atrasado”.
+
+---
+
+## 4. Tipografia
+
+### 4.1 Família
+
+```css
+font-family: "Manrope", "Segoe UI", sans-serif;
+```
+
+- Manrope é obrigatória em produtos digitais e materiais de marca quando tecnicamente possível.
+- Pesos autorizados: 400, 500, 600, 700, 800.
+- `Segoe UI` é fallback de sistema.
+- `Consolas, monospace` é restrita a IDs, nomes lógicos, código e valores técnicos.
+- Não misture serifas ou fontes display decorativas.
+
+### 4.2 Escala tipográfica
+
+| Token | Tamanho / linha | Peso padrão | Uso |
+| --- | --- | --- | --- |
+| `label.micro` | 11 / 14 px | 700–800 | metadata, badge, cabeçalho de tabela |
+| `body.small` | 12 / 17 px | 500–700 | auxílio, lista densa |
+| `body.default` | 13 / 20 px | 400–600 | controles e corpo compacto |
+| `body.comfortable` | 14 / 22 px | 400–600 | texto corrido e materiais externos |
+| `heading.3` | 17 / 22 px | 700–800 | título de card/painel |
+| `heading.2` | 20 / 25 px | 700–800 | detalhe, drawer, seção forte |
+| `heading.1` | 25–34 / 1.08 | 800 | título de página responsivo |
+| `metric` | 26–38 / 1 | 800 | KPI isolado |
+| `display` | 40–56 / 1.02 | 700–800 | capa/apresentação, nunca em UI densa |
+
+### 4.3 Regras de composição
+
+- Títulos de página: `letter-spacing: -0.035em`.
+- Eyebrows/rótulos: caixa alta, 800, `letter-spacing: .08em–.10em`.
+- Corpo: caixa normal; nunca parágrafos em caixa alta.
+- Largura ideal de texto corrido: 55–75 caracteres.
+- Números tabulares em relatórios podem usar `font-variant-numeric: tabular-nums`.
+- Não reduza texto funcional abaixo de 11 px.
+- Em material externo e mobile, prefira corpo de 14–16 px quando a densidade operacional não for necessária.
+
+---
+
+## 5. Espaçamento, tamanho e densidade
+
+### 5.1 Escala base de 4 px
+
+| Token | Valor | Uso típico |
+| --- | --- | --- |
+| `space.0` | 0 | reset |
+| `space.0_5` | 2 px | microalinhamento |
+| `space.1` | 4 px | gap interno mínimo |
+| `space.1_5` | 6 px | listas densas |
+| `space.2` | 8 px | controles e badges |
+| `space.2_5` | 10 px | cards compactos |
+| `space.3` | 12 px | módulos padrão |
+| `space.3_5` | 14 px | cards |
+| `space.4` | 16 px | seção e superfície |
+| `space.5` | 20 px | separação forte |
+| `space.6` | 24 px | layout |
+| `space.8` | 32 px | bloco editorial |
+| `space.10` | 40 px | capa/marketing |
+| `space.12` | 48 px | seção externa |
+
+Use valores intermediários existentes de 7, 9, 11, 13, 15 e 17 px apenas em componentes herdados; componentes novos devem preferir a escala de 4 px.
+
+### 5.2 Alturas de controle
+
+| Contexto | Compacto | Padrão | Confortável/mobile |
+| --- | --- | --- | --- |
+| Botão | 32 px | 40 px | 44 px |
+| Input/select | 32 px | 40 px | 44 px |
+| Icon button | 32 px | 40 px | 44 px |
+| Linha de tabela | 54–62 px | 64 px | card responsivo 78–88 px |
+
+Valores normativos: `compact=32px`, `default=40px`, `touch=44px`, `prominent=48px`. Não use intervalo ao implementar um controle; selecione uma variante.
+
+Alvo de ponteiro deve ter no mínimo 24 × 24 px com espaçamento conforme WCAG 2.2 AA; a meta interna Betinhos é 44 × 44 px em touch.
+
+### 5.3 Densidade
+
+- **Compacta:** backoffice, tabelas, filtros, settings.
+- **Padrão:** formulários, drawers, detalhes.
+- **Confortável:** landing pages, apresentações, conteúdo institucional.
+- Densidade não pode reduzir legibilidade nem área de toque.
+
+---
+
+## 6. Forma, borda e elevação
+
+### 6.1 Raios
+
+| Token | Valor | Uso |
+| --- | --- | --- |
+| `radius.xs` | 6 px | código, microcontrole |
+| `radius.sm` | 8 px | botão pequeno, opção |
+| `radius.md` | 10 px | input, botão, card interno |
+| `radius.lg` | 12 px | card e superfície principal |
+| `radius.xl` | 17 px | navegação móvel flutuante |
+| `radius.full` | 999 px | badge, pill, avatar circular |
+
+- Não use raio acima de 12 px em cards desktop comuns.
+- Não use `radius.full` em botões retangulares comuns; exceção: FAB/CTA flutuante.
+
+### 6.2 Bordas
+
+- Padrão: `1px solid #E2E8F0`.
+- Hover: escurecer para `#C7D2E2` sem aumentar espessura.
+- Foco: borda `#6C91E8` + anel azul de 3 px com alpha 11%.
+- Erro: borda `#F2C2CC` + mensagem `#A32840`.
+- Atraso: borda `#F2C6CF` + fundo `#FFFAFB`.
+
+### 6.3 Sombras
+
+| Token | Valor | Uso |
+| --- | --- | --- |
+| `shadow.surface` | `0 8px 24px rgba(0,26,61,.045)` | card comum |
+| `shadow.panel` | `0 10px 28px rgba(0,26,61,.045)` | painel maior |
+| `shadow.popover` | `0 18px 42px rgba(15,23,42,.18), 0 2px 7px rgba(15,23,42,.08)` | select/popover |
+| `shadow.drawer` | `-24px 0 70px rgba(0,18,45,.22)` | drawer lateral |
+| `shadow.toast` | `0 12px 35px rgba(0,18,45,.18)` | toast |
+| `shadow.action` | `0 12px 30px rgba(33,89,210,.30)` | ação flutuante |
+
+Sombras são frias, azuis e discretas. Não use sombra preta pesada.
+
+---
+
+## 7. Ícones, marca e imagem
+
+### 7.1 Ícones
+
+- Biblioteca padrão: **Lucide**.
+- Estilo: outline, `stroke-width` padrão da biblioteca.
+- Tamanhos: 14 px metadata; 16 px ação pequena; 18 px controle; 20 px navegação; 24 px destaque; 32–36 px empty/error.
+- Ícone acompanha rótulo em ações não óbvias.
+- Não misture filled icons, emojis e Lucide na mesma interface.
+- Cor herda do texto ou token semântico.
+
+### 7.2 Marca de produto
+
+O app de origem usa um bloco de marca, não um logotipo institucional definitivo:
+
+- contêiner 40 × 40 px;
+- raio 11 px;
+- fundo azul `#2159D2`;
+- ícone branco central;
+- sombra de ação azul.
+
+Esse padrão pode identificar módulos internos. Não deve substituir o logotipo oficial da Betinhos em materiais externos.
+
+### 7.3 Logotipo institucional
+
+- Use somente arquivo oficial fornecido.
+- Mantenha área de respiro mínima equivalente à altura da letra dominante ou ao módulo do símbolo.
+- Não distorça, incline, aplique sombra, contorno ou cor não aprovada.
+- Sobre navy, prefira versão branca oficial; sobre branco, versão navy oficial.
+- Sem arquivo oficial, escreva “Betinhos Executive Service” em Manrope 800; não invente símbolo.
+
+### 7.4 Fotografia
+
+Direção recomendada para materiais externos:
+
+- cenas reais de transporte executivo e cuidado operacional;
+- pessoas naturais, ambiente limpo, enquadramento seguro e discreto;
+- luz neutra ou levemente fria;
+- preferência por detalhe de atendimento, porta aberta, recepção e contexto corporativo;
+- evite banco de imagem com pose artificial, luxo ostentatório, cidade neon e estética de corrida por aplicativo.
+
+Overlay sobre foto: camada sólida/translúcida navy entre 60% e 84% quando houver texto. Nunca use gradiente. Texto sempre branco com contraste validado.
+
+### 7.5 Ilustração
+
+- Geométrica, linear, técnica e simples.
+- Navy/azul + um semântico contextual.
+- Sem cartoon, 3D inflado ou mascotes sem projeto específico.
+
+---
+
+## 8. Layout e responsividade
+
+### 8.1 Grade de produto
+
+- Desktop: sidebar fixa/sticky de 238 px + conteúdo fluido.
+- Conteúdo: largura máxima 1500 px; margem automática.
+- Padding desktop: 22 px vertical / 26 px horizontal.
+- Gap estrutural: 12–16 px.
+- Cards de KPI: quatro colunas; duas abaixo de 1120 px; duas/uma em mobile conforme conteúdo.
+- Relatórios: duas colunas; uma abaixo de 820 px.
+
+### 8.2 Breakpoints oficiais
+
+| Nome | Largura | Comportamento |
+| --- | --- | --- |
+| `wide` | acima de 1120 px | grade completa |
+| `desktop-compact` | até 1120 px | métricas em duas colunas, tabela simplificada |
+| `mobile` | até 820 px | sidebar sai, header e bottom nav entram |
+| `small` | até 560 px | formulários e filtros em uma coluna |
+| `narrow` | até 380 px | navegação e textos mais compactos |
+
+### 8.3 Navegação mobile
+
+- Barra flutuante inferior, largura `calc(100% - 16px)`, máximo 520 px.
+- Fundo branco 96%, borda navy 9%, sombra fria, raio 17 px.
+- Respeitar `env(safe-area-inset-bottom)`.
+- Botão mínimo 44–46 px de altura.
+- Estado ativo usa azul; sem grande preenchimento azul no tap.
+- Máximo recomendado: cinco destinos primários.
+
+### 8.4 Regras responsivas
+
+- Comece pelo conteúdo, não por uma redução proporcional do desktop.
+- Tabela vira lista/card; não force seis colunas em tela estreita.
+- Drawer vira largura total abaixo de 560 px.
+- Ação primária continua visível, mas não cobre conteúdo.
+- Truncar somente identificadores/títulos de linha; texto crítico deve quebrar.
+- Nunca ocultar informação necessária para completar tarefa.
+
+---
+
+## 9. Motion e feedback
+
+### 9.1 Curvas
+
+```css
+--ease-out: cubic-bezier(.23, 1, .32, 1);
+--ease-in-out: cubic-bezier(.77, 0, .175, 1);
+--ease-drawer: cubic-bezier(.32, .72, 0, 1);
+```
+
+### 9.2 Durações
+
+| Token | Duração | Uso |
+| --- | --- | --- |
+| `instant` | 90 ms | popover/select pequeno |
+| `fast` | 140–160 ms | press, hover, cor, foco |
+| `normal` | 180–220 ms | toast, dropdown, drawer |
+| `slow` | 260–300 ms | transição espacial rara |
+
+### 9.3 Regras
+
+- Animação precisa comunicar feedback, estado ou relação espacial.
+- Pressionáveis: `transform: scale(.97)`; select compacto pode usar `.99`.
+- Entrada: rápida e `ease-out`.
+- Saída: aproximadamente 75% da duração de entrada.
+- Anime `transform` e `opacity`; evite `height`, `width`, `margin`, `padding`.
+- Hover visual somente em `@media (hover: hover) and (pointer: fine)`.
+- Não use `transition: all`.
+- Não anime ações recorrentes de teclado.
+- Popover nasce perto do gatilho; modal permanece centrado.
+- Nunca entrar a partir de `scale(0)`; mínimo `.95` + opacidade.
+- Backdrop de tela inteira não usa blur pesado. Drawer mantém overlay e sombra.
+
+### 9.4 Redução de movimento
+
+```css
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    scroll-behavior: auto !important;
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+  }
+}
+```
+
+---
+
+## 10. Componentes
+
+Cada componente deve documentar anatomia, variantes, estados, conteúdo, acessibilidade e comportamento responsivo.
+
+### 10.1 App shell
+
+**Anatomia:** sidebar/brand/nav/conexão + área principal + ações de contexto.
+
+- Sidebar navy, 238 px, texto branco/cinza azulado.
+- Item de navegação: 44 px, raio 10 px, ícone 20 px, peso 700.
+- Ativo: branco + fundo branco 12%.
+- Rodapé: status de conexão com ponto e texto; nunca só ponto.
+- No desktop, pode recolher para trilho de 72 px por ação explícita do usuário. Nesse estado, preserve ícones, `title` e `aria-label`; textos não somem em mobile, onde a sidebar já não existe.
+- Mobile troca sidebar por header sticky e bottom nav.
+
+### 10.2 Cabeçalho de página
+
+**Anatomia:** eyebrow opcional, H1, descrição curta, ação primária/secundária.
+
+- Altura mínima 72 px desktop / 68 px mobile.
+- H1 25–34 px, 800, navy.
+- Descrição 13–14 px, slate.
+- Uma ação primária por cabeçalho.
+- Quando houver duas ações, use um grupo flex explícito no cabeçalho, com ações secundária e primária lado a lado (40–42 px). Não deixe uma regra genérica de bloco converter o grupo em coluna.
+- Em mobile, ação pode ir para nova linha; alinhamento à esquerda.
+
+### 10.2.1 Barra utilitária do ambiente
+
+**Anatomia:** contexto do ambiente à esquerda do grupo e ações operacionais à direita, todos no mesmo eixo.
+
+- Altura mínima 40 px; gap de 6–8 px; margem inferior de 12 px antes do conteúdo.
+- Contexto usa `environment-pill`; atualização e manutenção usam botão secundário ou de ícone com rótulo.
+- Ordem: contexto, ações secundárias, ação de atualização. A ação principal da página fica no cabeçalho, não nesta barra.
+- Em mobile a barra some junto da sidebar; o header mobile mantém somente atualização com `aria-label`.
+
+### 10.3 Botões
+
+| Variante | Fundo | Texto | Altura | Uso |
+| --- | --- | --- | --- | --- |
+| Primário | navy | branco | 40 px desktop / 44 px touch | concluir tarefa principal |
+| Ação compacta | azul | branco | 32 px | ação contextual densa |
+| Secundário | branco + borda | navy médio | 40 px desktop / 44 px touch | alternativa |
+| Texto | transparente | azul | conteúdo | ação terciária |
+| Perigo | danger | branco | 40 px desktop / 44 px touch | ação destrutiva confirmada |
+| Ícone | branco + borda | slate | 40 × 40 px / 44 × 44 px touch | ação compacta com `aria-label` |
+
+Estados:
+
+- Hover: mudança de fundo/cor, 160 ms.
+- Active: `scale(.97)`.
+- Focus: anel azul visível; nunca remover sem substituição.
+- Disabled: opacidade `.55`, cursor bloqueado; manter rótulo legível.
+- Loading: manter largura, ícone spin 800 ms, `aria-busy="true"`.
+- Perigo pede confirmação quando irreversível.
+
+Rótulos começam com verbo: “Registrar erro”, “Salvar alterações”, “Adicionar nota”. Evite “OK”, “Sim” e “Clique aqui”.
+
+### 10.4 Inputs, textarea e select
+
+- Fundo `surface.neutral` (`#FCFCFB`), borda 1 px, raio 10 px.
+- Altura 40 px desktop e 44 px touch; padding horizontal 12 px.
+- Label acima, 12–13 px, 800, slate.
+- Placeholder é exemplo, nunca substitui label.
+- Foco: borda azul clara + ring de 3 px.
+- Erro: `aria-invalid`, mensagem logo abaixo, ícone + texto.
+- Ajuda e erro têm IDs ligados por `aria-describedby`.
+- Campo obrigatório usa “*” e explicação do formulário.
+- Textarea permite resize vertical.
+
+### 10.5 Select pesquisável
+
+- Mantém `<select>` nativo como contrato/fallback quando aplicável.
+- Trigger com valor truncado, limpar opcional e caret.
+- Painel é `listbox`; opção usa `aria-selected`.
+- Busca recebe foco somente quando não prejudicar mobile.
+- Teclado: setas, Enter, Escape e retorno de foco ao trigger.
+- Painel: raio 9 px, sombra popover, altura máxima 260 px / 42 vh.
+- Abertura: 90 ms, `translateY(-2px)` → 0 + opacidade.
+
+### 10.6 Surface/card
+
+- Fundo branco, borda navy 7–8%, raio 12 px, sombra baixa.
+- Padding de 14–16 px.
+- Cabeçalho: eyebrow + H2 17 px.
+- Cards não devem conter cards equivalentes em profundidade indefinida.
+- No máximo três níveis: canvas → surface → bloco suave.
+- Blocos de lista/campo/busca/cabeçalho dentro do card usam `#FCFCFB`; hover usa `#F7F9FC`.
+
+### 10.7 Metric card
+
+- Ícone 42 px em fundo semântico suave.
+- Rótulo 12 px/700, valor 26 px/800, apoio 11 px.
+- Altura mínima 96 px desktop; 88 px mobile.
+- Cor semântica fica no ícone, não no número inteiro.
+- Valor usa tabular nums quando comparável.
+
+### 10.8 Badge/status
+
+- Altura mínima 23–25 px; padding horizontal 8 px; raio full.
+- Texto 11 px/800; frase curta; sem ponto final.
+- Sempre usar par forte/suave aprovado.
+- Não permitir badge com texto longo; trocar por texto de apoio.
+
+### 10.9 Tabela e lista operacional
+
+- Cabeçalho 36 px, fundo suave, 11 px/800, uppercase.
+- Linha 54–62 px, borda superior, texto 12–13 px.
+- Primeira coluna recebe maior espaço e hierarquia.
+- Indicador vertical/ponto semântico pode mostrar gravidade, acompanhado de rótulo acessível.
+- Hover apenas em pointer fino.
+- Linha inteira clicável usa elemento interativo real.
+- Em mobile, converter para duas colunas/card e manter título + status + dado essencial.
+
+### 10.10 Date tile
+
+- 40–48 px de largura, 43–55 px de altura.
+- Navy com dia branco e mês azul-claro.
+- Atrasado: danger + rótulo textual no card.
+- Usar para agenda, não como calendário completo.
+
+### 10.11 Segmented control
+
+- Contêiner branco, borda, raio 11 px, padding 4 px.
+- Item 30–36 px, raio 8 px, peso 800.
+- Ativo navy/branco.
+- Em mobile, pode rolar horizontalmente; todos os itens continuam alcançáveis.
+- Use apenas para opções mutuamente exclusivas e até cinco itens.
+
+### 10.12 Drawer
+
+- Abre pela direita; 520 px padrão, 720 px wide.
+- Mobile: 100 vw.
+- Overlay navy 48%; painel cinza-claro; header branco 64 px.
+- Entrada 220 ms `ease-drawer` por `translateX` + opacidade.
+- Fecha por X, backdrop e Escape.
+- `role="dialog"`, `aria-modal="true"`, título acessível, foco contido e restaurado.
+- Conteúdo rola; cabeçalho fica estável.
+
+### 10.13 Toast/alerta
+
+- Topo central, máximo 460 px / 90 vw.
+- Altura mínima 40 px, raio 10 px, sombra toast.
+- Entrada 180 ms `ease-out`, deslocamento vertical 10 px.
+- Sucesso, erro, atenção e informação usam ícone + texto.
+- Erros persistem até leitura/fechamento quando exigem ação.
+- Sucesso transitório: 3–5 s.
+- Use `role="status"` para informação/sucesso e `role="alert"` para erro urgente.
+
+### 10.14 Empty, loading e skeleton
+
+- Empty: ícone 32–36 px, título 13–16 px, explicação curta, CTA quando houver próximo passo.
+- Loading local: skeleton no formato final; evite spinner de página inteira para conteúdo parcial.
+- Spinner: 800 ms linear; rótulo acessível.
+- Não mostrar “Nenhum resultado” antes da primeira carga terminar.
+
+### 10.15 Upload/evidência
+
+- Dropzone com borda dashed, raio 10 px e fundo quase branco.
+- Estado dragging: deslocamento -1 px, borda azul, sombra azul baixa.
+- Mostrar limite, pasta/destino, quantidade e erro.
+- Ação de remover tem `aria-label` com nome do arquivo.
+- Mobile empilha cópia e botão.
+
+### 10.16 Gráficos e data visualization
+
+- Série principal azul; comparação navy; sucesso/atenção/perigo somente com significado.
+- Gridlines `#E2E8F0`; texto `#64748B`; fundo transparente/branco.
+- Barras com raio sutil 3–6 px.
+- Não usar 3D, pizza com muitas categorias ou arco-íris categórico.
+- Todo gráfico tem título, período, unidade, tooltip e alternativa tabular/exportável.
+- Cores repetem semântica usada no restante da interface.
+
+---
+
+## 11. Padrões de composição
+
+### 11.1 Dashboard operacional
+
+```text
+Cabeçalho + ação
+KPI × 4
+Painel prioritário (2/3) + distribuição (1/3)
+Próximas ações (largura total)
+```
+
+Priorize anomalia e ação. Nunca transforme toda informação em KPI.
+
+### 11.2 Página de gestão
+
+```text
+Cabeçalho
+Busca
+Filtros em grade
+Tabela/lista
+Paginação
+```
+
+Busca fica acima dos filtros. Filtros devem poder ser limpos e refletir estado atual.
+
+### 11.3 Detalhe operacional
+
+```text
+Hero: código + status + título + descrição
+Metadata em blocos suaves
+Contexto / causa / solução
+Plano de ações
+Histórico e evidências
+```
+
+### 11.4 Formulário em drawer
+
+```text
+Header fixo
+Alerta inline
+Campos básicos
+Divisor com rótulo
+Vínculos
+Divisor
+Análise/encerramento
+CTA principal
+```
+
+Agrupe por decisão do usuário, não pela ordem do schema.
+
+### 11.5 Material institucional
+
+- Capa navy, título branco, uma mensagem e logo oficial.
+- Conteúdo em fundo branco; blocos suaves; azul apenas para orientar.
+- Fotografia ocupa espaço relevante, mas nunca compete com dados.
+- Máximo de uma ideia principal por slide/seção.
+
+---
+
+## 12. Voz e conteúdo
+
+### 12.1 Tom Betinhos
+
+Humano, preciso e seguro. A escrita demonstra confiança, pontualidade e discrição.
+
+**Permitido:** “cuidamos de vidas”, “parceiro executivo”.
+
+**Evitar:** “excelência em”, “solução completa”, superlativos vazios e linguagem de app de táxi.
+
+### 12.2 Regras de microcopy
+
+- Botões: verbo + objeto.
+- Títulos: descrevem tarefa ou resultado, não o sistema.
+- Erro: o que ocorreu + como resolver.
+- Sucesso: ação concluída + resultado.
+- Empty: contexto + próximo passo.
+- Datas: `dd/MM/yyyy`; hora `HH:mm`; timezone America/Sao_Paulo.
+- Moeda: `R$ 1.234,56`.
+- Evite jargão Dataverse para usuário final; nomes lógicos apenas em contexto técnico.
+
+### 12.3 Exemplos
+
+| Ruim | Betinhos |
+| --- | --- |
+| “Erro!” | “Não foi possível salvar. Revise os campos destacados.” |
+| “Sucesso” | “Ocorrência registrada.” |
+| “Clique aqui” | “Ver ocorrência” |
+| “Nenhum dado” | “Nenhuma ocorrência encontrada para estes filtros.” |
+| “Tem certeza?” | “Excluir esta opção? Registros vinculados podem ser afetados.” |
+
+---
+
+## 13. Acessibilidade
+
+Meta: **WCAG 2.2 nível AA** em todos os artefatos digitais.
+
+### 13.1 Checklist obrigatório
+
+- Texto normal: contraste mínimo 4.5:1.
+- Texto grande e componentes visuais: mínimo 3:1.
+- Foco visível, não coberto, com contraste adequado.
+- Navegação completa por teclado.
+- Ordem DOM acompanha ordem visual.
+- `label` explícito em campos; placeholder não é label.
+- Ícone sozinho recebe nome acessível.
+- Mensagem dinâmica usa `aria-live`, `role=status` ou `role=alert` conforme urgência.
+- Alvo mínimo WCAG: 24 × 24 px com espaçamento; meta touch: 44 × 44 px.
+- Zoom de 200% sem perda de conteúdo ou rolagem horizontal indevida.
+- Não transmitir informação somente por cor, posição ou movimento.
+- `prefers-reduced-motion` implementado.
+- Drawer/modal contém foco e devolve foco ao fechar.
+- Estados de loading usam `aria-busy` e texto acessível.
+
+### 13.2 Foco padrão
+
+```css
+:focus-visible {
+  outline: 0;
+  border-color: #6c91e8;
+  box-shadow: 0 0 0 3px rgba(33, 89, 210, .11);
+}
+```
+
+Em fundo azul/navy, use anel branco de 2 px + azul claro externo.
+
+---
+
+## 14. Implementação por canal
+
+### 14.1 Web/React/HTML
+
+- Importe `design-tokens.css` antes dos estilos de componente.
+- Use CSS variables semânticas.
+- Componentes compartilhados devem expor variantes, não cores livres.
+- Lucide React para ícones.
+- Storybook recomendado quando existir biblioteca reutilizável.
+
+### 14.2 Power Apps Canvas
+
+- Crie fórmulas/named formulas ou componente de tema com os mesmos tokens.
+- Use `App.Theme`/component library quando compatível.
+- Mantenha controles de toque em 44 px ou mais.
+- Power Fx pt-BR: parâmetros `;`, encadeamento `;;`.
+- Não dependa de valores de Choice inventados; metadata real continua obrigatória.
+
+### 14.3 Power BI
+
+- Tema JSON deriva dos mesmos tokens.
+- Canvas `#F0F0F0` ou branco; texto navy/slate.
+- Série principal azul, comparação navy, status semântico.
+- Fonte Manrope se disponível; fallback Segoe UI.
+- Títulos 16–20 px, labels 11–13 px, números KPI 28–40 px.
+
+### 14.4 Apresentações
+
+- Formato 16:9, margens mínimas 48 px.
+- Capa navy; conteúdo branco/cinza-claro.
+- Título 36–56 px, corpo 20–28 px.
+- Uma conclusão por slide; dados com fonte e período.
+- Transições discretas, 180–300 ms; sem animação ornamental em toda página.
+
+### 14.5 E-mail
+
+- Largura máxima 640 px.
+- Fundo externo `#F0F0F0`, conteúdo branco.
+- CTA navy, texto branco, altura 44 px.
+- CSS inline e fallback Segoe/Arial.
+- Nunca depender de imagem para texto essencial.
+
+### 14.6 Impresso
+
+- Converter cores para CMYK com prova visual; hex é referência digital, não conversão final automática.
+- Manter contraste e hierarquia; evitar cinza muito claro em corpo pequeno.
+- Sangria e área segura definidas pela gráfica.
+
+---
+
+## 15. Uso posterior: fluxo de mercado
+
+```mermaid
+flowchart LR
+  A["Decisão de marca"] --> B["Tokens primitivos"]
+  B --> C["Tokens semânticos"]
+  C --> D["Componentes"]
+  D --> E["Padrões e telas"]
+  D --> F["Stories e documentação"]
+  F --> G["Testes visual, a11y e interação"]
+  G --> H["Pacote/versionamento"]
+  H --> I["Apps, BI, Canvas, e-mail e apresentações"]
+  I --> J["Feedback e governança"]
+  J --> A
+```
+
+### 15.1 Processo recomendado
+
+1. **Propor:** problema, evidência, canal e componente afetado.
+2. **Projetar:** usar tokens; mapear estados e responsividade.
+3. **Implementar:** componente isolado e tipado quando aplicável.
+4. **Documentar:** anatomia, variantes, conteúdo, acessibilidade e exemplos.
+5. **Testar:** interação, teclado, contraste, viewport e regressão visual.
+6. **Revisar:** design + desenvolvimento + operação.
+7. **Publicar:** versão semântica e changelog.
+8. **Adotar:** migração guiada; sem quebra silenciosa.
+9. **Medir:** uso, duplicação, inconsistências e tickets.
+
+### 15.2 Storybook quando houver biblioteca
+
+Cada componente deve ter stories de:
+
+- default;
+- variantes;
+- tamanhos;
+- conteúdo curto/longo;
+- loading/disabled/error/empty;
+- mobile;
+- alto contraste/reduced motion quando relevante.
+
+Stories viram documentação executável, casos de teste e revisão visual.
+
+### 15.3 Comandos oficiais do repo mantenedor
+
+```powershell
+npm run design:generate       # design-tokens.json -> design-tokens.css
+npm run design:check          # integridade, aliases, tema, gradiente e adoção
+npm run design:publish-parent # gera, valida e publica no diretório pai
+npm run check                 # gate completo do app
+```
+
+---
+
+## 16. Governança
+
+### 16.1 Papéis
+
+| Papel | Responsabilidade |
+| --- | --- |
+| Owner | aprova direção e breaking changes |
+| Design | mantém fundamentos, especificações e Figma |
+| Engenharia | mantém tokens, componentes, testes e distribuição |
+| Operação | valida clareza e uso real |
+| Conteúdo/marketing | mantém voz, fotografia e uso institucional |
+
+Em equipe pequena, uma pessoa pode acumular papéis, mas a revisão continua explícita.
+
+### 16.2 Versionamento semântico
+
+- **PATCH:** correção sem mudança visual relevante.
+- **MINOR:** novo token, variante ou componente compatível.
+- **MAJOR:** remoção, renomeação ou mudança que exige migração.
+- Toda versão atualiza changelog e data.
+
+### 16.3 Ciclo de componente
+
+`proposto → experimental → estável → obsoleto → removido`
+
+- Experimental não entra em fluxos críticos sem avaliação.
+- Obsoleto recebe alternativa e prazo.
+- Estável exige especificação, acessibilidade, testes e uso real.
+
+### 16.4 Definition of done
+
+- [ ] Necessidade comprovada; não duplica padrão existente.
+- [ ] Tokens semânticos usados.
+- [ ] Todos os estados definidos.
+- [ ] Responsividade documentada.
+- [ ] Teclado e leitor de tela considerados.
+- [ ] Contraste validado.
+- [ ] Story/exemplo e documentação atualizados.
+- [ ] Testes de interação e visual aplicáveis.
+- [ ] Changelog e versão atualizados.
+- [ ] Migração descrita se houver mudança incompatível.
+
+### 16.5 Métricas de saúde
+
+- adoção de componentes oficiais;
+- número de cores/valores hardcoded fora dos tokens;
+- componentes duplicados;
+- regressões visuais por release;
+- violações de acessibilidade;
+- tempo para construir tela nova;
+- satisfação de usuários operacionais.
+
+---
+
+## 17. Regras de decisão rápida
+
+### Faça
+
+- Use navy como estrutura e azul como ação.
+- Use branco e cinza-claro para respirar.
+- Prefira borda + sombra baixa.
+- Mantenha informação densa, escaneável e alinhada.
+- Use status suave com texto explícito.
+- Dê feedback no primeiro toque/click.
+- Use motion curto e funcional.
+
+### Não faça
+
+- Não crie nova cor porque “combina”.
+- Não use gradiente em nenhuma hipótese: fundos, botões, cards, gráficos, overlays, textos ou imagens.
+- Não use glassmorphism como linguagem principal.
+- Não use mais de uma ação primária por bloco.
+- Não esconda label em placeholder.
+- Não use texto abaixo de 11 px em produto.
+- Não use animação lenta em ação recorrente.
+- Não arredonde tudo como cápsula.
+- Não transforme todos os dados em cards.
+
+---
+
+## 18. Snapshot completo de tokens embutido
+
+Este bloco permite implementação mesmo quando os arquivos auxiliares não acompanham o documento. Ele é gerado de `design-tokens.json`; não edite manualmente o conteúdo entre os marcadores.
+
+<!-- GENERATED:TOKENS_CSS:START -->
+```css
+/* Betinhos Design System 1.2.0.
+ * GENERATED from design-tokens.json. Do not edit this file manually.
+ */
+:root {
+  /* color */
+  --bt-color-navy-900: #001a3d;
+  --bt-color-navy-800: #0b2d5a;
+  --bt-color-blue-600: #2159d2;
+  --bt-color-blue-100: #edf3ff;
+  --bt-color-ink-950: #0f172a;
+  --bt-color-ink-900: #172033;
+  --bt-color-slate-700: #475569;
+  --bt-color-slate-500: #64748b;
+  --bt-color-slate-400: #94a3b8;
+  --bt-color-gray-100: #f0f0f0;
+  --bt-color-gray-050: #f7f9fc;
+  --bt-color-neutral-050: #fcfcfb;
+  --bt-color-white: #ffffff;
+  --bt-color-line-200: #e2e8f0;
+  --bt-color-green-600: #168f57;
+  --bt-color-green-100: #eaf8f1;
+  --bt-color-amber-700: #b17a00;
+  --bt-color-amber-100: #fff7df;
+  --bt-color-red-700: #c12f45;
+  --bt-color-red-100: #fff0f3;
+  --bt-color-purple-700: #6b4b9b;
+  --bt-color-purple-100: #f4efff;
+  --bt-color-orange-700: #9a4e12;
+  --bt-color-orange-100: #fff0e5;
+  --bt-color-brand: var(--bt-color-navy-900);
+  --bt-color-brand-hover: var(--bt-color-navy-800);
+  --bt-color-action: var(--bt-color-blue-600);
+  --bt-color-action-soft: var(--bt-color-blue-100);
+  --bt-color-canvas: var(--bt-color-gray-100);
+  --bt-color-surface: var(--bt-color-white);
+  --bt-color-surface-soft: var(--bt-color-gray-050);
+  --bt-color-surface-neutral: var(--bt-color-neutral-050);
+  --bt-color-text-primary: var(--bt-color-ink-950);
+  --bt-color-text-control: var(--bt-color-ink-900);
+  --bt-color-text-secondary: var(--bt-color-slate-500);
+  --bt-color-text-tertiary: var(--bt-color-slate-400);
+  --bt-color-border: var(--bt-color-line-200);
+  --bt-color-success: var(--bt-color-green-600);
+  --bt-color-success-soft: var(--bt-color-green-100);
+  --bt-color-warning: var(--bt-color-amber-700);
+  --bt-color-warning-soft: var(--bt-color-amber-100);
+  --bt-color-danger: var(--bt-color-red-700);
+  --bt-color-danger-soft: var(--bt-color-red-100);
+
+  /* font */
+  --bt-font-family-sans: "Manrope", "Segoe UI", sans-serif;
+  --bt-font-family-mono: "Consolas", "SFMono-Regular", monospace;
+  --bt-font-weight-regular: 400;
+  --bt-font-weight-medium: 500;
+  --bt-font-weight-semibold: 600;
+  --bt-font-weight-bold: 700;
+  --bt-font-weight-extrabold: 800;
+
+  /* size */
+  --bt-font-size-11: 11px;
+  --bt-font-size-12: 12px;
+  --bt-font-size-13: 13px;
+  --bt-font-size-14: 14px;
+  --bt-font-size-17: 17px;
+  --bt-font-size-20: 20px;
+  --bt-font-size-26: 26px;
+  --bt-font-size-34: 34px;
+
+  /* space */
+  --bt-space-1: 4px;
+  --bt-space-2: 8px;
+  --bt-space-3: 12px;
+  --bt-space-4: 16px;
+  --bt-space-5: 20px;
+  --bt-space-6: 24px;
+  --bt-space-8: 32px;
+  --bt-space-10: 40px;
+  --bt-space-12: 48px;
+  --bt-space-0-5: 2px;
+  --bt-space-1-5: 6px;
+  --bt-space-2-5: 10px;
+  --bt-space-3-5: 14px;
+
+  /* radius */
+  --bt-radius-xs: 6px;
+  --bt-radius-sm: 8px;
+  --bt-radius-md: 10px;
+  --bt-radius-lg: 12px;
+  --bt-radius-xl: 17px;
+  --bt-radius-full: 999px;
+
+  /* motion */
+  --bt-duration-instant: 90ms;
+  --bt-duration-fast: 150ms;
+  --bt-duration-normal: 200ms;
+  --bt-duration-slow: 300ms;
+  --bt-ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --bt-ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --bt-ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+
+  /* typography */
+  --bt-typography-label-micro-font-family: var(--bt-font-family-sans);
+  --bt-typography-label-micro-font-size: var(--bt-font-size-11);
+  --bt-typography-label-micro-font-weight: var(--bt-font-weight-extrabold);
+  --bt-typography-label-micro-letter-spacing: 0.8px;
+  --bt-typography-label-micro-line-height: 1.27;
+  --bt-typography-body-small-font-family: var(--bt-font-family-sans);
+  --bt-typography-body-small-font-size: var(--bt-font-size-12);
+  --bt-typography-body-small-font-weight: var(--bt-font-weight-medium);
+  --bt-typography-body-small-letter-spacing: 0px;
+  --bt-typography-body-small-line-height: 1.42;
+  --bt-typography-body-default-font-family: var(--bt-font-family-sans);
+  --bt-typography-body-default-font-size: var(--bt-font-size-13);
+  --bt-typography-body-default-font-weight: var(--bt-font-weight-regular);
+  --bt-typography-body-default-letter-spacing: 0px;
+  --bt-typography-body-default-line-height: 1.54;
+  --bt-typography-heading-card-font-family: var(--bt-font-family-sans);
+  --bt-typography-heading-card-font-size: var(--bt-font-size-17);
+  --bt-typography-heading-card-font-weight: var(--bt-font-weight-extrabold);
+  --bt-typography-heading-card-letter-spacing: 0px;
+  --bt-typography-heading-card-line-height: 1.29;
+  --bt-typography-heading-detail-font-family: var(--bt-font-family-sans);
+  --bt-typography-heading-detail-font-size: var(--bt-font-size-20);
+  --bt-typography-heading-detail-font-weight: var(--bt-font-weight-extrabold);
+  --bt-typography-heading-detail-letter-spacing: -0.3px;
+  --bt-typography-heading-detail-line-height: 1.25;
+
+  /* border */
+  --bt-border-width-default: 1px;
+  --bt-border-width-emphasis: 2px;
+  --bt-border-width-severity: 3px;
+
+  /* opacity */
+  --bt-opacity-disabled: 0.55;
+  --bt-opacity-backdrop: 0.48;
+  --bt-opacity-subtle: 0.08;
+  --bt-opacity-focus-ring: 0.11;
+
+  /* icon */
+  --bt-icon-size-metadata: 14px;
+  --bt-icon-size-small: 16px;
+  --bt-icon-size-control: 18px;
+  --bt-icon-size-navigation: 20px;
+  --bt-icon-size-feature: 24px;
+  --bt-icon-size-empty: 36px;
+
+  /* control */
+  --bt-control-height-compact: 32px;
+  --bt-control-height-default: 40px;
+  --bt-control-height-touch: 44px;
+  --bt-control-height-prominent: 48px;
+
+  /* layout */
+  --bt-breakpoint-narrow: 380px;
+  --bt-breakpoint-small: 560px;
+  --bt-breakpoint-mobile: 820px;
+  --bt-breakpoint-desktop-compact: 1120px;
+  --bt-layout-content-max: 1500px;
+  --bt-layout-sidebar-width: 238px;
+  --bt-layout-drawer-width: 520px;
+  --bt-layout-drawer-width-wide: 720px;
+
+  /* z-index */
+  --bt-z-index-content: 1;
+  --bt-z-index-floating-action: 30;
+  --bt-z-index-sticky-header: 40;
+  --bt-z-index-mobile-navigation: 50;
+  --bt-z-index-drawer: 80;
+  --bt-z-index-toast: 120;
+  --bt-z-index-popover: 2147483647;
+
+  /* shadow */
+  --bt-shadow-surface: 0px 8px 24px 0px rgba(0, 26, 61, 0.045);
+  --bt-shadow-panel: 0px 10px 28px 0px rgba(0, 26, 61, 0.045);
+  --bt-shadow-drawer: -24px 0px 70px 0px rgba(0, 18, 45, 0.22);
+  --bt-shadow-toast: 0px 12px 35px 0px rgba(0, 18, 45, 0.18);
+
+  /* component */
+  --bt-button-primary-background: var(--bt-color-brand);
+  --bt-button-primary-background-hover: var(--bt-color-brand-hover);
+  --bt-button-primary-foreground: var(--bt-color-white);
+  --bt-button-radius: var(--bt-radius-md);
+  --bt-button-height-compact: var(--bt-control-height-compact);
+  --bt-button-height-default: var(--bt-control-height-default);
+  --bt-button-height-touch: var(--bt-control-height-touch);
+  --bt-input-background: var(--bt-color-surface-neutral);
+  --bt-input-foreground: var(--bt-color-text-control);
+  --bt-input-border: var(--bt-color-border);
+  --bt-input-radius: var(--bt-radius-md);
+  --bt-input-height-default: var(--bt-control-height-default);
+  --bt-input-height-touch: var(--bt-control-height-touch);
+  --bt-surface-background: var(--bt-color-surface);
+  --bt-surface-background-neutral: var(--bt-color-surface-neutral);
+  --bt-surface-background-interactive: var(--bt-color-surface-soft);
+  --bt-surface-border: var(--bt-color-border);
+  --bt-surface-radius: var(--bt-radius-lg);
+  --bt-surface-shadow: var(--bt-shadow-panel);
+  --bt-badge-radius: var(--bt-radius-full);
+  --bt-badge-height: 24px;
+  --bt-focus-border: #6c91e8;
+  --bt-focus-ring-color: rgba(33, 89, 210, 0.11);
+  --bt-focus-ring: 0px 0px 0px 3px rgba(33, 89, 210, 0.11);
+  --bt-navigation-desktop-width: var(--bt-layout-sidebar-width);
+  --bt-navigation-mobile-height: 58px;
+  --bt-drawer-width: var(--bt-layout-drawer-width);
+  --bt-drawer-width-wide: var(--bt-layout-drawer-width-wide);
+  --bt-drawer-duration-enter: 220ms;
+  --bt-drawer-shadow: var(--bt-shadow-drawer);
+
+  /* theme */
+  --bt-theme-mode: light;
+  --bt-theme-supports-dark: false;
+
+  /* Compatibility aliases */
+  --bt-font-sans: var(--bt-font-family-sans);
+  --bt-font-mono: var(--bt-font-family-mono);
+  --bt-button-primary-bg: var(--bt-button-primary-background);
+  --bt-button-primary-bg-hover: var(--bt-button-primary-background-hover);
+  --bt-button-primary-fg: var(--bt-button-primary-foreground);
+  --bt-input-bg: var(--bt-input-background);
+  --bt-input-fg: var(--bt-input-foreground);
+  --bt-surface-bg: var(--bt-surface-background);
+  --bt-surface-neutral-bg: var(--bt-surface-background-neutral);
+
+  /* Source-app legacy aliases */
+  --navy: var(--bt-color-brand);
+  --navy-2: var(--bt-color-brand-hover);
+  --blue: var(--bt-color-action);
+  --blue-soft: var(--bt-color-action-soft);
+  --surface: var(--bt-color-surface);
+  --surface-soft: var(--bt-color-surface-soft);
+  --line: var(--bt-color-border);
+  --muted: var(--bt-color-text-secondary);
+  --danger: var(--bt-color-danger);
+  --warning: var(--bt-color-warning);
+  --success: var(--bt-color-success);
+  --text-xs: var(--bt-font-size-11);
+  --text-sm: var(--bt-font-size-12);
+  --text-md: var(--bt-font-size-13);
+  --ease-out: var(--bt-ease-out);
+  --ease-drawer: var(--bt-ease-drawer);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    scroll-behavior: auto !important;
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+  }
+}
+```
+<!-- GENERATED:TOKENS_CSS:END -->
+
+---
+
+## 19. Pesquisa e referências de mercado
+
+Pesquisa realizada em 15 de julho de 2026. Decisões adotadas:
+
+- **Tokens interoperáveis:** o [Design Tokens Format Module 2025.10](https://www.designtokens.org/tr/2025.10/format/) formaliza JSON, tipos, grupos, aliases e descrições para manter uma fonte de verdade entre design e desenvolvimento.
+- **Arquitetura em camadas:** [Material Design 3 — Design tokens](https://m3.material.io/foundations/design-tokens/overview) usa a separação entre tokens de referência, sistema e componente; neste sistema: primitivo, semântico e componente.
+- **Documentação executável:** a [documentação oficial do Storybook](https://storybook.js.org/docs/writing-docs/index) recomenda stories e Autodocs/MDX para documentar componentes, estados e diretrizes de uso.
+- **Acessibilidade:** [WCAG 2.2](https://www.w3.org/TR/WCAG22/) é a meta: contraste, foco não encoberto, alvo mínimo e navegação acessível.
+- **Governança e incubação:** o [processo de contribuição do Carbon Design System](https://carbondesignsystem.com/contributing/get-started/overview/) separa experimentos de ativos estáveis, exige ciclo de revisão e definição de pronto.
+
+O padrão de mercado não é apenas um PDF de marca. É um produto versionado: tokens + componentes + documentação + testes + governança + distribuição.
+
+---
+
+## 20. Changelog
+
+### 1.2.0 — 16/07/2026
+
+- Torna obrigatório o versionamento automático `v0.0.0 dd/mm/yyyy` em todos os apps.
+- Exige versão sempre visível, extremamente sutil e sem bloquear interação.
+- Exige incremento de PATCH e atualização de data em cada `npm run dev` e `npm run push`.
+
+### 1.1.2 — 16/07/2026
+
+- Documenta sidebar desktop recolhível com trilho de ícones acessível.
+- Define barra utilitária de ambiente e agrupamento explícito de ações de cabeçalho para evitar empilhamento indevido.
+
+### 1.1.1 — 15/07/2026
+
+- Obriga toda resposta de IA sobre design, UI ou UX a iniciar exatamente com `DESIGN CONTEXTO`.
+- Bloqueia a validação do design system quando o protocolo de resposta estiver ausente ou divergente.
+
+### 1.1.0 — 15/07/2026
+
+- Define descoberta obrigatória do design system a partir de repos filhos.
+- Torna `design-tokens.json` fonte única de valores.
+- Declara tema light-only e proíbe dark mode sem aprovação.
+- Torna `#FCFCFB` superfície normativa de listas, campos, buscas e cabeçalhos.
+- Elimina intervalos ambíguos nas alturas de controles.
+- Adiciona tokens de tipografia, componente, layout, borda, ícone, opacidade, z-index e shadow.
+- Adiciona geração, validação e publicação automática no diretório pai.
+- Gera no próprio documento um snapshot CSS completo para uso seguro por IAs sem arquivos auxiliares.
+
+### 1.0.0 — 15/07/2026
+
+- Extração da identidade visual real do Módulo Qualidade.
+- Fundação de cor, tipografia, spacing, radius, shadow, ícones e motion.
+- Especificação de componentes e padrões responsivos.
+- Diretrizes para web, Power Apps, Power BI, apresentações, e-mail e impresso.
+- Contrato completo para geração por IA.
+- Governança, versionamento, acessibilidade e fluxo de adoção.
