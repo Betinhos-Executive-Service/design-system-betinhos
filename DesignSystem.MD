@@ -1,10 +1,10 @@
 # Betinhos Design System
 
-**Versão:** 1.3.0
+**Versão:** 1.3.1
 
 **Status:** fonte oficial inicial
 
-**Atualizado em:** 18 de julho de 2026
+**Atualizado em:** 21 de julho de 2026
 
 **Idioma-base:** pt-BR
 
@@ -106,7 +106,7 @@ Regras:
 - [ ] Não depende somente de cor para comunicar status.
 - [ ] Funciona a partir de 320 px e não cria rolagem horizontal acidental.
 - [ ] Foco por teclado permanece visível e não fica coberto.
-- [ ] Motion usa apenas propriedades baratas e respeita `prefers-reduced-motion`.
+- [ ] Motion usa livremente a ferramenta mais adequada ao resultado pretendido e respeita `prefers-reduced-motion`.
 - [ ] Textos soam humanos, precisos e operacionais.
 - [ ] A resposta começa exatamente com `DESIGN CONTEXTO` quando tratar de design, UI ou UX.
 - [ ] Versão `v0.0.0 dd/mm/yyyy` sempre visível e atualizada por `npm run dev` e `npm run push`.
@@ -522,7 +522,9 @@ Overlay sobre foto: camada sólida/translúcida navy entre 60% e 84% quando houv
 - Pressionáveis: `transform: scale(.97)`; select compacto pode usar `.99`.
 - Entrada: rápida e `ease-out`.
 - Saída: aproximadamente 75% da duração de entrada.
-- Anime `transform` e `opacity`; evite `height`, `width`, `margin`, `padding`.
+- Não existe propriedade, técnica, biblioteca ou ferramenta obrigatória, preferencial ou proibida por motivo de performance presumida. Quem implementa tem liberdade para decidir a melhor solução no contexto real do componente.
+- Toda opção disponível pode ser usada — CSS, propriedades de layout, `transform`, `opacity`, `clip-path`, `filter`, View Transitions, WAAPI, springs, bibliotecas de motion, SVG, canvas, WebGL ou tecnologias futuras. Esta lista é apenas ilustrativa e não limita a decisão.
+- Escolha pelo melhor resultado conjunto de clareza, sensação, continuidade, acessibilidade, manutenção e desempenho observado. Não simplifique a experiência para obedecer a uma preferência técnica abstrata.
 - Hover visual somente em `@media (hover: hover) and (pointer: fine)`.
 - Não use `transition: all`.
 - Não anime ações recorrentes de teclado.
@@ -530,21 +532,19 @@ Overlay sobre foto: camada sólida/translúcida navy entre 60% e 84% quando houv
 - Nunca entrar a partir de `scale(0)`; mínimo `.95` + opacidade.
 - Backdrop de tela inteira não usa blur pesado. Drawer mantém overlay e sombra.
 
-### 9.3.1 Ferramenta por comportamento
+### 9.3.1 Referências não vinculantes
 
-O sistema autoriza motion mais rico quando ele melhora a orientação, a resposta tátil ou a continuidade espacial. A ferramenta segue o comportamento — não cria uma nova linguagem visual.
+Os exemplos abaixo servem apenas como repertório. Não definem ferramenta autorizada, preferência, hierarquia ou caminho obrigatório. Quem implementa pode usar qualquer abordagem, combiná-las ou escolher outra não listada quando ela produzir o melhor resultado no contexto real.
 
-| Cenário | Ferramenta autorizada | Regra de uso |
+| Cenário | Possibilidades de referência | Aspecto a observar |
 | --- | --- | --- |
-| Hover, press, foco, abrir/fechar previsível | CSS `transition` | Padrão para UI operacional; transicione apenas propriedades explícitas. |
-| Entrada após montagem | CSS `@starting-style` | Use quando houver suporte; mantenha fallback de estado para ambientes legados. |
-| Sequência programática, cancelável ou sincronizada | Web Animations API (WAAPI) | Cancele/reverta a animação anterior; use os tokens de duração e curva. |
-| Drag, swipe e gesto interrompível | Spring/Motion | Aplique somente ao elemento em gesto; bounce sutil (`0.1–0.2`) e sem salto ao soltar. |
-| Loading, progresso e confirmação rara | `@keyframes` | Permitido somente quando a animação é autônoma e não compete com tarefas recorrentes. |
+| Hover, press, foco, abrir/fechar | CSS, WAAPI, biblioteca de motion | Resposta imediata e estado compreensível. |
+| Entrada, saída e troca de layout | CSS, View Transitions, FLIP, motion layout | Continuidade espacial e interrupção sem saltos. |
+| Sequência programática ou sincronizada | WAAPI, timeline de biblioteca, animação declarativa | Cancelamento, reversão e sincronização. |
+| Drag, swipe e gesto interrompível | Pointer Events, spring, Motion, biblioteca de gestos | Continuidade de velocidade, limites e toque real. |
+| Visualização rica ou grande volume gráfico | SVG, canvas, WebGL | Legibilidade, responsividade e custo observado. |
 
-- CSS continua sendo a primeira escolha para movimento predeterminado; WAAPI e springs resolvem somente interações que realmente ganham com controle programático ou continuidade de velocidade.
-- Em React, uma biblioteca de motion é opcional. Não a adicione para substituir uma transição CSS simples.
-- Para gesto, prefira `transform` direto no elemento ativo; não propague uma CSS variable por toda a árvore a cada frame.
+- Não rejeite uma biblioteca, técnica ou propriedade apenas porque uma solução mais simples existe. Compare o resultado final e escolha livremente a que melhor resolve o componente.
 - Não use scroll-jacking, parallax contínuo, 3D decorativo, loops ociosos ou animação em lista/tabela de uso frequente.
 - Em `prefers-reduced-motion`, remova deslocamento, spring, drag animado e keyframes não essenciais; preserve mudança de cor/opacidade que ajude a compreender o estado.
 
@@ -1352,6 +1352,12 @@ O padrão de mercado não é apenas um PDF de marca. É um produto versionado: t
 - Adiciona tokens de tipografia, componente, layout, borda, ícone, opacidade, z-index e shadow.
 - Adiciona geração, validação e publicação automática no diretório pai.
 - Gera no próprio documento um snapshot CSS completo para uso seguro por IAs sem arquivos auxiliares.
+
+### 1.3.1 — 21/07/2026
+
+- Remove qualquer limitação ou preferência normativa por ferramenta, biblioteca, técnica ou propriedade de motion.
+- Dá a quem implementa liberdade para escolher a melhor solução no contexto real, inclusive tecnologias não enumeradas no documento.
+- Mantém resultado, clareza, acessibilidade, manutenção e desempenho observado como critérios de decisão.
 
 ### 1.0.0 — 15/07/2026
 
