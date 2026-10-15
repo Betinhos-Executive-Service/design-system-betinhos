@@ -182,8 +182,12 @@ async function main() {
   const css = generateCss(document);
   const markdownPath = resolve("DESIGN_SYSTEM.md");
   const markdown = await readFile(markdownPath, "utf8");
+  // O pacote @betinhos/tokens leva cópias exatas do CSS e do JSON (os apps instalam por versão).
+  const json = await readFile(resolve("design-tokens.json"), "utf8");
   await Promise.all([
     writeFile(resolve("design-tokens.css"), css, "utf8"),
+    writeFile(resolve("packages/tokens/design-tokens.css"), css, "utf8"),
+    writeFile(resolve("packages/tokens/design-tokens.json"), json, "utf8"),
     writeFile(markdownPath, synchronizeMarkdownSnapshot(markdown, css), "utf8"),
   ]);
   console.log("CSS e snapshot Markdown gerados a partir de design-tokens.json.");
