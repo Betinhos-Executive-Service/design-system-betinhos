@@ -7,6 +7,10 @@ import { Menu, type MenuAction } from '../components/Menu'
 import { useMediaQuery } from '../useMediaQuery'
 import type { ViewColumnDef } from './config'
 import { ColumnsPanel } from './ColumnsPanel'
+import { FilterChips } from './FilterChips'
+import type { LookupSearch } from './FilterEditors'
+import { countActiveFilters, readFilters, storedFilters, type FilterField, type TableFilters } from './filters'
+import { FiltersPanel, type FiltersPanelTab } from './FiltersPanel'
 import { icons } from './icons'
 import type { TableViewEntry } from './store'
 import type { TableViewState } from './useTableView'
@@ -22,6 +26,14 @@ export type ViewBarProps = {
   children?: ReactNode
   /** Erro ao gravar; sem isso usa o toast do `ToastProvider`. */
   onError?: (message: string) => void
+  /** Filtros da lista (§10.9.2): mostra "Filtros", "Filtro rápido", o painel e os chips. Os filtros moram em `view.config.filters`. */
+  filters?: {
+    fields: FilterField[]
+    search?: LookupSearch
+    countPreview?: (filters: TableFilters) => Promise<number | null>
+    /** Chaves/ids que a tela não conseguiu aplicar (chip com alerta). */
+    notApplied?: string[]
+  }
 }
 
 type Mode = 'create' | 'rename' | 'delete' | 'publish' | null
@@ -33,13 +45,14 @@ const messageOf = (error: unknown) => (error instanceof Error && error.message ?
  * Linha de comando da lista (§10.9.1): o seletor de visão é o título da página; à direita, "Colunas" e os comandos da tela.
  * Gravar, renomear, excluir e publicar abrem diálogo e avisam por toast.
  */
-export function ViewBar({ view, columns, children, onError }: ViewBarProps) {
+export function ViewBar({ view, columns, children, onError, filters }: ViewBarProps) {
   const mobile = useMediaQuery('(max-width: 820px)')
   const toast = useOptionalToast()
   const [mode, setMode] = useState<Mode>(null)
   const [name, setName] = useState('')
   const [busy, setBusy] = useState(false)
   const [panel, setPanel] = useState(false)
+  const [filtersTab, setFiltersTab] = useState<FiltersPanelTab | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   // O texto do diálogo não esvazia enquanto ele fecha.
   const lastName = useRef(view.active.name)
@@ -92,7 +105,19 @@ export function ViewBar({ view, columns, children, onError }: ViewBarProps) {
     ...(active.canEdit ? [{ id: 'excluir', label: 'Excluir visão…', icon: icons.trash, group: '', tone: 'danger' as const, onSelect: () => open('delete') }] : []),
   ]
 
+  const current = filters ? readFilters(view.config.filters, filters.fields) : null
+  const activeCount = filters && current ? countActiveFilters(current, filters.fields) : 0
+  const setFilters = (next: TableFilters) => view.setConfig((config) => ({ ...config, filters: storedFilters(next) }))
+  // O chip de filtro rápido foca a célula da coluna; sem a linha visível (ou no mobile), abre o painel.
+  const editQuick = (key: string) => {
+    const field = filters?.fields.find((f) => f.key === key)
+    const target = field ? document.querySelector<HTMLElement>(`.bt-table__filters [aria-label="Filtrar ${CSS.escape(field.label)}"]`) : null
+    if (target && view.quickRow && !mobile) target.focus()
+    else setFiltersTab('coluna')
+  }
+
   return (
+    <>
     <div className="bt-viewbar">
       <div className="bt-viewbar__start">
         <Menu
@@ -112,6 +137,16 @@ export function ViewBar({ view, columns, children, onError }: ViewBarProps) {
         <Button variant="secondary" size={mobile ? 'touch' : 'default'} icon={icons.columns} aria-haspopup="dialog" aria-label={mobile ? 'Colunas' : undefined} onClick={() => setPanel(true)}>
           {mobile ? null : 'Colunas'}
         </Button>
+        {filters ? (
+          <>
+            <Button variant="secondary" size={mobile ? 'touch' : 'default'} icon={icons.filter} aria-haspopup="dialog" aria-label={mobile ? `Filtros${activeCount ? ` (${activeCount})` : ''}` : undefined} onClick={() => setFiltersTab('coluna')}>
+              {mobile ? null : <>Filtros{activeCount ? <span className="bt-viewbar__count">{activeCount}</span> : null}</>}
+            </Button>
+            {mobile ? null : (
+              <Button variant={view.quickRow ? 'action' : 'secondary'} icon={icons.listFilter} aria-pressed={view.quickRow} aria-label="Filtro rápido" title="Filtro rápido" onClick={() => view.setQuickRow(!view.quickRow)} />
+            )}
+          </>
+        ) : null}
         {children}
       </div>
 
@@ -170,5 +205,28 @@ export function ViewBar({ view, columns, children, onError }: ViewBarProps) {
         </div>
       </Dialog>
     </div>
+    {filters && current ? (
+      <>
+        <FilterChips
+          filters={current}
+          fields={filters.fields}
+          notApplied={filters.notApplied}
+          onChange={setFilters}
+          onEditQuick={editQuick}
+          onEditAdvanced={() => setFiltersTab('avancado')}
+        />
+        <FiltersPanel
+          open={filtersTab !== null}
+          initialTab={filtersTab ?? 'coluna'}
+          onClose={() => setFiltersTab(null)}
+          fields={filters.fields}
+          value={current}
+          search={filters.search}
+          countPreview={filters.countPreview}
+          onApply={setFilters}
+        />
+      </>
+    ) : null}
+    </>
   )
 }

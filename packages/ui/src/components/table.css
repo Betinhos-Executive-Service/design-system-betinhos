@@ -45,6 +45,17 @@ button.bt-table__row:focus-visible { outline: 0; box-shadow: inset 0 0 0 2px var
 .bt-table__resize:focus-visible::after { background-color: var(--bt-focus-border); }
 .bt-table__live { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
+/* Filtro rápido (§10.9.2): linha de 36 px sob o cabeçalho, controles de 28 px, célula ativa com borda azul. */
+.bt-table__filters { display: grid; grid-template-columns: var(--bt-table-columns); align-items: center; gap: var(--bt-space-3); width: max-content; min-width: 100%; min-height: 36px; padding: var(--bt-space-1) var(--bt-space-3-5); border-top: var(--bt-border-width-default) solid var(--bt-color-border); background-color: var(--bt-color-surface-neutral); }
+.bt-quick { position: relative; overflow: visible; gap: var(--bt-space-1); }
+.bt-table--view .bt-quick { overflow: visible; }
+.bt-quick > :first-child { flex: 1 1 auto; min-width: 0; }
+.bt-quick .bt-control { min-height: 28px; height: 28px; font-size: var(--bt-font-size-12); }
+.bt-quick.is-active .bt-control { border-color: var(--bt-color-action); box-shadow: inset 0 0 0 1px var(--bt-color-action); }
+.bt-quick__clear { display: grid; place-items: center; flex: 0 0 auto; width: 20px; height: 20px; padding: 0; border: 0; border-radius: var(--bt-radius-full); background: transparent; color: var(--bt-color-text-secondary); cursor: pointer; }
+.bt-quick__clear:focus-visible { outline: 0; box-shadow: 0 0 0 2px var(--bt-focus-border); }
+.bt-table__funnel { flex: 0 0 auto; color: var(--bt-color-action); }
+
 @media (hover: hover) and (pointer: fine) {
   .bt-table__headcell--movable { cursor: grab; user-select: none; }
   .bt-table__headcell:hover .bt-table__sort-icon:not(.is-active) { opacity: .45; }
@@ -52,6 +63,7 @@ button.bt-table__row:focus-visible { outline: 0; box-shadow: inset 0 0 0 2px var
 }
 @media (pointer: coarse) {
   .bt-table__resize { display: none; }
+  .bt-table__filters { display: none; }
 }
 
 @media (hover: hover) and (pointer: fine) {
@@ -68,6 +80,7 @@ button.bt-table__row:focus-visible { outline: 0; box-shadow: inset 0 0 0 2px var
   .bt-table__chevron { display: none; }
   .bt-table--view .bt-table__head, .bt-table--view .bt-table__row { width: 100%; }
   .bt-table__cell--extra { display: none; }
+  .bt-table__filters { display: none; }
 }
 @media (prefers-reduced-motion: reduce) {
   .bt-table__row, .bt-table__sort-icon { transition: none; }

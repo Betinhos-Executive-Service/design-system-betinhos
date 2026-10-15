@@ -22,7 +22,7 @@ export { PageToolbar, pageToolbarClassName, type PageToolbarProps, type PageTool
 export { createShellHeaderStore, useShellHeader, type ShellHeaderEntry, type ShellHeaderStore } from './components/ShellHeader'
 export { SegmentedControl, type SegmentedControlProps, type SegmentedOption } from './components/SegmentedControl'
 export { Surface, type SurfaceProps } from './components/Surface'
-export { Table, TableTitle, columnDefaultWidth, tableViewColumns, viewLayout, type TableColumn, type TableProps, type TableView } from './components/Table'
+export { Table, TableTitle, columnDefaultWidth, tableViewColumns, viewLayout, type TableColumn, type TableProps, type TableQuickFilters, type TableView } from './components/Table'
 export {
   Field, Input, Textarea, fieldIds,
   type ControlSize, type FieldProps, type InputProps, type TextareaProps,
@@ -44,3 +44,14 @@ export { useTableView, type TableViewState, type UseTableViewOptions } from './t
 export { ColumnsPanel, type ColumnsPanelProps } from './tableView/ColumnsPanel'
 export { ViewBar, VIEW_NAME_MAX, type ViewBarProps } from './tableView/ViewBar'
 export { useMediaQuery } from './useMediaQuery'
+export {
+  DATE_PRESETS, FILTER_OPS, MAX_GROUP_DEPTH, appendTo, conditionProblem, countActiveFilters, countIncomplete, describeCondition, describeGroup,
+  emptyFilters, fieldLabel, filtersToFetchXml, keywordToFetchXml, matchesFilters, needsValue, newCondition, newGroup, parseNumberBR,
+  parseQuickNumber, parseQuickText, quickNumberOf, quickTextOf, readFilters, removeNode, storedFilters, todaySaoPaulo, updateNode,
+  type BoolOp, type DateOp, type FilterCondition, type FilterField, type FilterGroup, type FilterKind, type FilterOp, type FilterOption,
+  type ListOp, type NumberOp, type TableFilters, type TextOp,
+} from './tableView/filters'
+export { FilterValueEditor, QuickFilterCell, type LookupSearch } from './tableView/FilterEditors'
+export { FiltersPanel, type FiltersPanelProps, type FiltersPanelTab } from './tableView/FiltersPanel'
+export { FilterChips, type FilterChipsProps } from './tableView/FilterChips'
+export { useTableFilters } from './tableView/useTableFilters'
