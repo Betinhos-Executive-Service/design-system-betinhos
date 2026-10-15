@@ -10,7 +10,9 @@
     "design:publish-parent": "npm run design:generate && npm run design:check && node scripts/publish-design-system-parent.mjs",
     "check": "npm run design:generate && npm run design:check",
     "test": "pnpm -r --if-present test",
-    "typecheck": "pnpm -r --if-present typecheck"
+    "typecheck": "pnpm -r --if-present typecheck",
+    "dev": "pnpm --filter @betinhos/vitrine dev",
+    "build:vitrine": "pnpm --filter @betinhos/vitrine build"
   },
   "packageManager": "pnpm@12.4.1"
 }

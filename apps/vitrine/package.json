@@ -1,0 +1,26 @@
+{
+  "name": "@betinhos/vitrine",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "description": "Vitrine dos componentes do Design System Betinhos (dados de exemplo).",
+  "scripts": {
+    "dev": "node ../../scripts/dev-restart.mjs 36490 .",
+    "build": "vite build",
+    "preview": "vite preview --port 36490 --strictPort",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@betinhos/ui": "workspace:^",
+    "lucide-react": "^1.47.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "@vitejs/plugin-react": "^5.0.0",
+    "typescript": "^5.9.0",
+    "vite": "^7.1.0"
+  }
+}
