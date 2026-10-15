@@ -1,0 +1,13 @@
+{
+  "name": "design-system-betinhos",
+  "version": "1.7.0",
+  "private": true,
+  "type": "module",
+  "description": "Fonte oficial do Design System Betinhos: DESIGN_SYSTEM.md, design-tokens.json e o CSS gerado.",
+  "scripts": {
+    "design:generate": "node scripts/generate-design-tokens.mjs",
+    "design:check": "node scripts/validate-design-system.mjs",
+    "design:publish-parent": "npm run design:generate && npm run design:check && node scripts/publish-design-system-parent.mjs",
+    "check": "npm run design:generate && npm run design:check"
+  }
+}
