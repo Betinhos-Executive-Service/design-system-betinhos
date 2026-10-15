@@ -7,9 +7,10 @@ Fonte oficial do Design System da Betinhos Executive Service: regras (`DESIGN_SY
 - `DESIGN_SYSTEM.md` e `design-tokens.json`: fonte das regras e dos valores.
 - `scripts/`: gerar, validar e publicar no diretório pai (`vscode/`).
 - `packages/tokens` (`@betinhos/tokens`): CSS e JSON gerados, fontes (`fonts.css`) e marca. Versão igual à do Design System.
-- Próximas etapas (`docs/plano-centralizacao.md`): `packages/ui` (`@betinhos/ui`), `apps/vitrine` e publicação no GitHub Packages.
+- `packages/ui` (`@betinhos/ui`): componentes React (peer React 19); estilos em `@betinhos/ui/styles.css`, que já importa `@betinhos/tokens`.
+- Próximas etapas (`docs/plano-centralizacao.md`): `apps/vitrine` e publicação no GitHub Packages.
 
-Monorepo pnpm: `pnpm install` e `pnpm test` na raiz.
+Monorepo pnpm: `pnpm install`, `pnpm test` e `pnpm typecheck` na raiz.
 
 ## Como mudar
 

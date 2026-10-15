@@ -9,7 +9,8 @@
     "design:check": "node scripts/validate-design-system.mjs",
     "design:publish-parent": "npm run design:generate && npm run design:check && node scripts/publish-design-system-parent.mjs",
     "check": "npm run design:generate && npm run design:check",
-    "test": "pnpm -r --if-present test"
+    "test": "pnpm -r --if-present test",
+    "typecheck": "pnpm -r --if-present typecheck"
   },
   "packageManager": "pnpm@12.4.1"
 }
