@@ -8,6 +8,8 @@
     "design:generate": "node scripts/generate-design-tokens.mjs",
     "design:check": "node scripts/validate-design-system.mjs",
     "design:publish-parent": "npm run design:generate && npm run design:check && node scripts/publish-design-system-parent.mjs",
-    "check": "npm run design:generate && npm run design:check"
-  }
+    "check": "npm run design:generate && npm run design:check",
+    "test": "pnpm -r --if-present test"
+  },
+  "packageManager": "pnpm@12.4.1"
 }

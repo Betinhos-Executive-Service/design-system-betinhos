@@ -1,0 +1,37 @@
+{
+  "name": "@betinhos/tokens",
+  "version": "1.7.0",
+  "description": "Tokens, fontes e marca do Design System Betinhos.",
+  "type": "module",
+  "files": [
+    "design-tokens.css",
+    "design-tokens.json",
+    "fonts.css",
+    "index.css",
+    "fonts",
+    "brand",
+    "README.md"
+  ],
+  "exports": {
+    ".": "./index.css",
+    "./index.css": "./index.css",
+    "./design-tokens.css": "./design-tokens.css",
+    "./design-tokens.json": "./design-tokens.json",
+    "./fonts.css": "./fonts.css",
+    "./fonts/*": "./fonts/*",
+    "./brand/*": "./brand/*",
+    "./package.json": "./package.json"
+  },
+  "style": "./index.css",
+  "sideEffects": [
+    "*.css"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Betinhos-Executive-Service/design-system-betinhos.git",
+    "directory": "packages/tokens"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  }
+}

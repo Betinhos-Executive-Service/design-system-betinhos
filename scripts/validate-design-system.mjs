@@ -76,6 +76,12 @@ async function main() {
   const generated = generateCss(document);
   const committed = await readFile(resolve("design-tokens.css"), "utf8");
   if (generated !== committed) throw new Error("design-tokens.css está desatualizado. Rode npm run design:generate.");
+  const packaged = await readFile(resolve("packages/tokens/design-tokens.css"), "utf8");
+  if (packaged !== generated) throw new Error("packages/tokens/design-tokens.css está desatualizado. Rode npm run design:generate.");
+  const packagedJson = await readFile(resolve("packages/tokens/design-tokens.json"), "utf8");
+  if (packagedJson !== await readFile(resolve("design-tokens.json"), "utf8")) throw new Error("packages/tokens/design-tokens.json diverge do design-tokens.json da raiz. Rode npm run design:generate.");
+  const tokensPackage = JSON.parse(await readFile(resolve("packages/tokens/package.json"), "utf8"));
+  if (tokensPackage.version !== metadata.version) throw new Error(`@betinhos/tokens está na ${tokensPackage.version}; o Design System está na ${metadata.version}.`);
 
   const markdown = await readFile(resolve("DESIGN_SYSTEM.md"), "utf8");
   if (synchronizeMarkdownSnapshot(markdown, generated) !== markdown) {
