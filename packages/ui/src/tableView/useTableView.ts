@@ -36,9 +36,13 @@ export type TableViewState = {
   remove: () => Promise<void>
   publish: () => Promise<void>
   reload: () => Promise<void>
+  /** Linha de filtro rápido visível (preferência do usuário por tela, no navegador; esconder não limpa filtros). */
+  quickRow: boolean
+  setQuickRow: (visible: boolean) => void
 }
 
 const storageKey = (tela: string) => `betinhos.visao.${tela}`
+const quickRowKey = (tela: string) => `betinhos.filtroRapido.${tela}`
 
 function defaultStorage(): KV | null {
   try { return window.localStorage } catch { return null }
@@ -65,6 +69,13 @@ export function useTableView({ tela, columns, store, defaultSort = null, default
   const [views, setViews] = useState<TableViewEntry[]>(() => buildEntries([], defs, fallback, false))
   const [activeId, setActiveId] = useState(DEFAULT_VIEW_ID)
   const [config, setConfigState] = useState<ViewConfig>(fallback)
+  const [quickRow, setQuickRowState] = useState(() => {
+    try { return kv?.getItem(quickRowKey(tela)) !== '0' } catch { return true }
+  })
+  const setQuickRow = useCallback((visible: boolean) => {
+    setQuickRowState(visible)
+    try { kv?.setItem(quickRowKey(tela), visible ? '1' : '0') } catch { /* sem armazenamento: vale só nesta sessão */ }
+  }, [kv, tela])
   const live = useRef(true)
   // Volta a `true` na remontagem do StrictMode; só a desmontagem real deixa `false`.
   useEffect(() => {
@@ -139,7 +150,7 @@ export function useTableView({ tela, columns, store, defaultSort = null, default
   const reload = useCallback(() => load(activeId), [load, activeId])
 
   return {
-    status, error, views, active, config, dirty: !sameConfig(config, active.config), canPublish,
+    status, error, views, active, config, dirty: !sameConfig(config, active.config), canPublish, quickRow, setQuickRow,
     setConfig, select, restore, save, saveAs, rename, remove, publish, reload,
   }
 }

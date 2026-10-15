@@ -23,3 +23,6 @@ body { background-color: var(--bt-color-canvas); }
 @media (max-width: 820px) {
   .page { padding: var(--bt-space-4) var(--bt-space-4) var(--bt-space-8); }
 }
+
+.showcase__fetch summary { cursor: pointer; font-size: var(--bt-font-size-12); font-weight: var(--bt-font-weight-bold); color: var(--bt-color-text-secondary); }
+.showcase__fetch pre { margin: var(--bt-space-2) 0 0; padding: var(--bt-space-3); overflow-x: auto; border: var(--bt-border-width-default) solid var(--bt-color-border); border-radius: var(--bt-radius-md); background-color: var(--bt-color-surface-neutral); font-size: var(--bt-font-size-12); white-space: pre-wrap; word-break: break-all; }

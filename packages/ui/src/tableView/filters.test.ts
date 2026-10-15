@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   appendTo, conditionProblem, countActiveFilters, countIncomplete, describeCondition, describeGroup, emptyFilters, filtersToFetchXml,
-  keywordToFetchXml, matchesFilters, newGroup, parseQuickText, quickTextOf, readFilters, removeNode, todaySaoPaulo, updateNode,
+  keywordToFetchXml, matchesFilters, parseNumberBR, parseQuickNumber, quickNumberOf, newGroup, parseQuickText, quickTextOf, readFilters, removeNode, todaySaoPaulo, updateNode,
   type FilterCondition, type FilterField, type TableFilters,
 } from './filters'
 
@@ -149,5 +149,19 @@ describe('edição da árvore', () => {
     expect(JSON.stringify(updated)).toContain('"value":"b"')
     expect(removeNode(updated, 'g').items).toEqual([])
     expect(root.items).toEqual([])
+  })
+})
+
+describe('filtro rápido de número', () => {
+  it('lê formatos brasileiros e operadores', () => {
+    expect(parseNumberBR('1.234,56')).toBe(1234.56)
+    expect(parseNumberBR('R$ 99')).toBe(99)
+    expect(parseQuickNumber('valor', '>= 1.000')?.op).toBe('ge')
+    expect(parseQuickNumber('valor', '≤10')).toMatchObject({ op: 'le', value: 10 })
+    expect(parseQuickNumber('valor', '200..100')).toMatchObject({ op: 'between', value: 100, to: 200 })
+    expect(parseQuickNumber('valor', '10 a 20')).toMatchObject({ op: 'between', value: 10, to: 20 })
+    expect(parseQuickNumber('valor', '250')).toMatchObject({ op: 'eq', value: 250 })
+    expect(parseQuickNumber('valor', 'abc')).toBeNull()
+    expect(quickNumberOf(parseQuickNumber('valor', '>=12,5')!)).toBe('≥12,5')
   })
 })

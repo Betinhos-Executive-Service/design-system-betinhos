@@ -1,5 +1,7 @@
 import { useLayoutEffect, useRef, useState, type HTMLAttributes, type KeyboardEvent, type PointerEvent, type ReactNode } from 'react'
 import { moveVisibleColumn, resizeColumn, toggleSort, visibleColumns, type ViewColumnDef, type ViewConfig } from '../tableView/config'
+import { QuickFilterCell, type LookupSearch } from '../tableView/FilterEditors'
+import type { FilterCondition, FilterField } from '../tableView/filters'
 
 export type TableColumn<Row> = {
   key: string
@@ -24,6 +26,18 @@ export type TableColumn<Row> = {
 /** Liga a tabela a uma visão (§10.9.1): ordem, visibilidade, largura e ordenação vêm de `config`. */
 export type TableView = { config: ViewConfig; onChange: (update: (config: ViewConfig) => ViewConfig) => void }
 
+/** Linha de filtro rápido sob o cabeçalho (§10.9.2). Só aparece com `view`, em pointer fino e acima de 820 px. */
+export type TableQuickFilters = {
+  fields: FilterField[]
+  value: Record<string, FilterCondition>
+  onChange: (key: string, condition: FilterCondition | null) => void
+  search?: LookupSearch
+  /** Esconde a linha sem perder os valores (botão "Filtro rápido"). */
+  visible?: boolean
+  /** Colunas com qualquer filtro valendo (rápido ou avançado): funil azul no cabeçalho. */
+  filtered?: string[]
+}
+
 export type TableProps<Row> = Omit<HTMLAttributes<HTMLDivElement>, 'children'> & {
   columns: TableColumn<Row>[]
   rows: Row[]
@@ -40,6 +54,8 @@ export type TableProps<Row> = Omit<HTMLAttributes<HTMLDivElement>, 'children'> &
   loading?: boolean
   /** Visão salva: reordenar e ajustar largura no cabeçalho, ordenar e rolar na horizontal. */
   view?: TableView
+  /** Filtro rápido por coluna; exige `view`. */
+  quickFilters?: TableQuickFilters
 }
 
 /** Trilhas do grid: `full` com todas as colunas e `compact` (até 1120px) sem as colunas `hideBelow: 'compact'`. */
@@ -74,7 +90,7 @@ const DRAG_THRESHOLD = 4
 const reducedMotion = () => typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
 /** Lista operacional em linhas: cabeçalho off-white, barra de gravidade, linha clicável e cabeçalho que some no mobile. */
-export function Table<Row>({ columns, rows, rowKey, onRowClick, severity, empty, footer, loading = false, view, className, style, ...rest }: TableProps<Row>) {
+export function Table<Row>({ columns, rows, rowKey, onRowClick, severity, empty, footer, loading = false, view, quickFilters, className, style, ...rest }: TableProps<Row>) {
   const chevron = Boolean(onRowClick)
   const layout = view ? viewLayout(columns, view.config, chevron) : null
   const placed: Placed<Row>[] = layout ? layout.placed : columns.map((column, index) => ({ column, width: 0, label: tableViewColumns(columns)[index].label }))
@@ -87,12 +103,13 @@ export function Table<Row>({ columns, rows, rowKey, onRowClick, severity, empty,
 
   const body = (
     <>
-      {view && layout ? <ViewHead placed={placed} defs={layout.defs} view={view} chevron={chevron} cellClass={cellClass} /> : (
+      {view && layout ? <ViewHead placed={placed} defs={layout.defs} view={view} chevron={chevron} cellClass={cellClass} filtered={quickFilters?.filtered} /> : (
         <div className="bt-table__head" role="row">
           {placed.map(({ column }, index) => <span key={column.key} role="columnheader" className={cellClass(column, index)}>{column.header}</span>)}
           {chevron ? <span aria-hidden="true" /> : null}
         </div>
       )}
+      {view && quickFilters && quickFilters.visible !== false ? <QuickFilterRow placed={placed} chevron={chevron} quick={quickFilters} cellClass={cellClass} /> : null}
       {loading ? [0, 1, 2].map((index) => (
         <div key={index} className="bt-table__row bt-table__row--loading" role="row" aria-hidden="true">
           {placed.map(({ column }, i) => <span key={column.key} className={cellClass(column, i)}><span className="bt-table__skeleton" /></span>)}
@@ -136,7 +153,7 @@ type Drag = { key: string; pointerId: number; startX: number; grab: number; star
 type Resize = { key: string; pointerId: number; startX: number; startWidth: number }
 
 /** Cabeçalho com visão: ordenar, arrastar para reordenar, alça de largura e atalhos de teclado, com anúncio em `aria-live`. */
-function ViewHead<Row>({ placed, defs, view, chevron, cellClass }: { placed: Placed<Row>[]; defs: ViewColumnDef[]; view: TableView; chevron: boolean; cellClass: (column: TableColumn<Row>, index: number) => string }) {
+function ViewHead<Row>({ placed, defs, view, chevron, cellClass, filtered }: { placed: Placed<Row>[]; defs: ViewColumnDef[]; view: TableView; chevron: boolean; cellClass: (column: TableColumn<Row>, index: number) => string; filtered?: string[] }) {
   const headRef = useRef<HTMLDivElement>(null)
   const drag = useRef<Drag | null>(null)
   const resize = useRef<Resize | null>(null)
@@ -287,6 +304,9 @@ function ViewHead<Row>({ placed, defs, view, chevron, cellClass }: { placed: Pla
                 <svg className={['bt-table__sort-icon', sorted && 'is-active', sorted === 'desc' && 'is-desc'].filter(Boolean).join(' ')} width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 19V5" /><path d="m5 12 7-7 7 7" /></svg>
               </button>
             ) : <span className="bt-table__sort-label">{column.header}</span>}
+            {filtered?.includes(column.key) ? (
+              <svg className="bt-table__funnel" role="img" aria-label="Filtrada" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z" /></svg>
+            ) : null}
             <span
               className="bt-table__resize"
               role="separator"
@@ -310,6 +330,34 @@ function ViewHead<Row>({ placed, defs, view, chevron, cellClass }: { placed: Pla
     </div>
     <span className="bt-table__live" aria-live="polite">{message}</span>
     </>
+  )
+}
+
+/** Linha de filtro rápido: uma célula por coluna visível, alinhada pelas mesmas trilhas do grid. */
+function QuickFilterRow<Row>({ placed, chevron, quick, cellClass }: { placed: Placed<Row>[]; chevron: boolean; quick: TableQuickFilters; cellClass: (column: TableColumn<Row>, index: number) => string }) {
+  const fields = new Map(quick.fields.filter((f) => !f.advancedOnly).map((f) => [f.key, f]))
+  return (
+    <div className="bt-table__filters" role="row" aria-label="Filtro rápido">
+      {placed.map(({ column }, index) => {
+        const field = fields.get(column.key)
+        const active = Boolean(quick.value[column.key])
+        return (
+          <span key={column.key} role="cell" className={[cellClass(column, index), 'bt-quick', active && 'is-active'].filter(Boolean).join(' ')}>
+            {field ? (
+              <>
+                <QuickFilterCell field={field} value={quick.value[column.key]} onChange={(condition) => quick.onChange(column.key, condition)} search={quick.search} />
+                {active ? (
+                  <button type="button" className="bt-quick__clear" aria-label={`Limpar filtro de ${field.label}`} onClick={() => quick.onChange(column.key, null)}>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" /></svg>
+                  </button>
+                ) : null}
+              </>
+            ) : null}
+          </span>
+        )
+      })}
+      {chevron ? <span aria-hidden="true" /> : null}
+    </div>
   )
 }
 

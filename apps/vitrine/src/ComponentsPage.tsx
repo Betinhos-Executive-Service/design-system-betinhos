@@ -3,7 +3,7 @@ import { useQueryBandeira, useQueryTexto } from './nav/queryState'
 import { Check, ChevronRight, CircleCheck, Clock, Copy, EllipsisVertical, Home, Inbox, LayoutDashboard, Pencil, Plus, PlugZap, RefreshCw, SearchX, Trash2, TriangleAlert, Truck, X } from 'lucide-react'
 import {
   Alert, Avatar, BottomNav, Breadcrumb, Button, Checkbox, ChoiceGroup, Cluster, DateTile, Dialog, Drawer, EmptyState, Field, Grid, Input, Menu, MetricCard, PageHeader, PageToolbar, Pagination, Progress, Radio, SearchBox, SegmentedControl, Select, Sheet, Skeleton, Spinner, Stack, StatusBadge, Surface, Switch, Table, TableTitle, Tabs, Textarea, ToastProvider, Tooltip, Upload, ViewBar,
-  createMemoryViewStore, defaultConfig, filterOptions, serializeConfig, tableViewColumns, toggleColumn, useShellHeader, useTableView, useToast, type TableColumn, type AlertTone, type ButtonSize, type ButtonVariant, type ControlSize, type SelectOption, type StatusTone, type UploadFile,
+  createMemoryViewStore, defaultConfig, filterOptions, matchesFilters, useTableFilters, type FilterField, type FilterOption, serializeConfig, tableViewColumns, toggleColumn, useShellHeader, useTableView, useToast, type TableColumn, type AlertTone, type ButtonSize, type ButtonVariant, type ControlSize, type SelectOption, type StatusTone, type UploadFile,
 } from '@betinhos/ui'
 import { PageLayout } from './PageLayout'
 
@@ -548,6 +548,37 @@ const OCORRENCIA_COLUNAS: TableColumn<Ocorrencia>[] = [
 ]
 const OCORRENCIA_DEFS = tableViewColumns(OCORRENCIA_COLUNAS)
 
+// Mais linhas, com valor e reincidência (campos só do filtro avançado), para exercitar os filtros (§10.9.2).
+type OcorrenciaFiltro = Ocorrencia & { valor: number; reincidente: boolean }
+const STATUS_OPCOES = [{ value: 'danger', label: 'Atrasado' }, { value: 'info', label: 'Em andamento' }, { value: 'success', label: 'Concluído' }]
+const GRAVIDADE_OPCOES = [{ value: 'danger', label: 'Gravidade crítica' }, { value: 'warning', label: 'Gravidade média' }, { value: 'success', label: 'Gravidade baixa' }]
+const CLIENTES_FILTRO = ['Cliente Alfa', 'Cliente Beta', 'Cliente Gama', 'Cliente Delta']
+const OCORRENCIAS_FILTRO: OcorrenciaFiltro[] = Array.from({ length: 14 }, (_, i) => {
+  const base = OCORRENCIAS[i % OCORRENCIAS.length]
+  const status = STATUS_OPCOES[i % 3]
+  const gravidade = GRAVIDADE_OPCOES[(i + 1) % 3]
+  const day = new Date(Date.UTC(2026, 9, 15 + (i - 6) * 2)).toISOString().slice(0, 10)
+  return {
+    ...base, id: `OC-${String(420 - i).padStart(4, '0')}`, cliente: CLIENTES_FILTRO[i % 4], prazo: day,
+    status: status.value as StatusTone, statusLabel: status.label, gravidade: gravidade.value as Ocorrencia['gravidade'], gravidadeLabel: gravidade.label,
+    valor: 120 + i * 85.5, reincidente: i % 4 === 0,
+  }
+})
+const OCORRENCIA_FILTROS: FilterField[] = [
+  { key: 'titulo', label: 'Ocorrência', kind: 'text' },
+  { key: 'status', label: 'Status', kind: 'choice', options: STATUS_OPCOES },
+  { key: 'prazo', label: 'Prazo', kind: 'date' },
+  { key: 'cliente', label: 'Cliente', kind: 'lookup', attribute: '_cr40f_cliente_value' },
+  { key: 'responsavel', label: 'Responsável', kind: 'text' },
+  { key: 'local', label: 'Local', kind: 'text' },
+  { key: 'gravidade', label: 'Gravidade', kind: 'choice', options: GRAVIDADE_OPCOES },
+  { key: 'valor', label: 'Valor', kind: 'number', money: true, advancedOnly: true },
+  { key: 'reincidente', label: 'Reincidente', kind: 'bool', advancedOnly: true },
+]
+// Lookup de exemplo: em produção a tela busca no Dataverse (mínimo de 2 letras).
+const buscarCliente = async (_field: FilterField, text: string): Promise<FilterOption[]> =>
+  CLIENTES_FILTRO.filter((c) => c.toLowerCase().includes(text.toLowerCase())).map((c) => ({ value: c, label: c }))
+
 function TableViewShowcase() {
   const [gestor, setGestor] = useState(false)
   const [busca, setBusca] = useState('')
@@ -556,15 +587,20 @@ function TableViewShowcase() {
     { id: 'pub-1', name: 'Atrasadas por cliente', publica: true, mine: false, ordem: 1, config: serializeConfig({ ...toggleColumn(defaultConfig(OCORRENCIA_DEFS), OCORRENCIA_DEFS, 'responsavel'), sort: { key: 'cliente', dir: 'asc' } }) },
   ], { canPublish: gestor }), [gestor])
   const view = useTableView({ tela: 'componentes.ocorrencias', columns: OCORRENCIA_DEFS, store, defaultSort: { key: 'prazo', dir: 'asc' } })
+  const { filters, fetchXml, quickFilters } = useTableFilters(view, OCORRENCIA_FILTROS, buscarCliente)
   const sort = view.config.sort
   const rows = useMemo(() => {
-    if (!sort) return OCORRENCIAS
-    const value = (row: Ocorrencia) => String(row[sort.key as keyof Ocorrencia] ?? '')
-    return [...OCORRENCIAS].sort((a, b) => value(a).localeCompare(value(b), 'pt-BR') * (sort.dir === 'asc' ? 1 : -1))
-  }, [sort])
+    // Vitrine: dados todos locais, então filtra em memória. Telas reais mandam `fetchXml` para o Dataverse.
+    const q = busca.trim().toLowerCase()
+    const filtered = OCORRENCIAS_FILTRO.filter((row) => matchesFilters(row, filters, OCORRENCIA_FILTROS, (r, key) => (key === 'status' || key === 'gravidade' ? r[key] : r[key as keyof OcorrenciaFiltro]), '2026-10-15')
+      && (!q || [row.titulo, row.cliente, row.responsavel, row.local].some((v) => v.toLowerCase().includes(q))))
+    if (!sort) return filtered
+    const value = (row: OcorrenciaFiltro) => String(row[sort.key as keyof OcorrenciaFiltro] ?? '')
+    return [...filtered].sort((a, b) => value(a).localeCompare(value(b), 'pt-BR') * (sort.dir === 'asc' ? 1 : -1))
+  }, [sort, filters, busca])
   return (
-    <Section name="Visões e colunas" summary="§10.9.1: o seletor de visão é o título da lista; Colunas abre o painel; no cabeçalho, clique ordena, arraste reordena, a borda ajusta a largura e Alt+setas move a coluna em foco.">
-      <ViewBar view={view} columns={OCORRENCIA_DEFS}>
+    <Section name="Visões, colunas e filtros" summary="§10.9.1 e §10.9.2: seletor de visão como título; Colunas e Filtros abrem painéis; linha de filtro rápido sob o cabeçalho; chips dos filtros ativos. Dados de exemplo com 'hoje' = 15/10/2026.">
+      <ViewBar view={view} columns={OCORRENCIA_DEFS} filters={{ fields: OCORRENCIA_FILTROS, search: buscarCliente }}>
         <SearchBox placeholder="Filtrar por palavra-chave" aria-label="Filtrar por palavra-chave" value={busca} onChange={setBusca} />
         <Button icon={<Plus size={16} />}>Nova ocorrência</Button>
       </ViewBar>
@@ -573,9 +609,15 @@ function TableViewShowcase() {
         rowKey={(row) => row.id}
         columns={OCORRENCIA_COLUNAS}
         view={{ config: view.config, onChange: view.setConfig }}
+        quickFilters={quickFilters}
         severity={(row) => ({ tone: row.gravidade, label: row.gravidadeLabel })}
+        empty={<EmptyState icon={<SearchX />} title="Nenhum registro com estes filtros" action={<Button variant="secondary" onClick={() => view.setConfig((c) => ({ ...c, filters: {} }))}>Limpar filtros</Button>} />}
         footer={<span>Linhas: {rows.length}</span>}
       />
+      <details className="showcase__fetch">
+        <summary>FetchXML gerado para o Dataverse</summary>
+        <pre>{fetchXml || '(nenhum filtro valendo)'}</pre>
+      </details>
       <Cluster gap="3"><Toggle label="perfil gestor (publica visões)" value={gestor} onChange={setGestor} /></Cluster>
     </Section>
   )

@@ -160,6 +160,11 @@ export function readFilters(raw: unknown, fields: FilterField[]): TableFilters {
   return { quick, advanced: { ...advanced, id: 'raiz' } }
 }
 
+/** Forma gravada na visão: sem nenhum filtro vira `{}`, igual à visão padrão (não marca "Alterada" à toa). */
+export function storedFilters(filters: TableFilters): Record<string, unknown> {
+  return Object.keys(filters.quick).length || filters.advanced.items.length ? filters : {}
+}
+
 /** Condições completas do avançado (para o número no botão "Filtros"). */
 function completeConditions(group: FilterGroup, fields: Map<string, FilterField>): FilterCondition[] {
   return group.items.flatMap((item) => (item.type === 'group' ? completeConditions(item, fields) : conditionProblem(item, fields.get(item.field)) ? [] : [item]))
@@ -210,6 +215,47 @@ export function quickTextOf(c: FilterCondition | undefined): string {
     case 'not-contains': return `!${v}`
     default: return v
   }
+}
+
+/** "1.234,56", "1234.56" ou "1234" → número; vírgula é o decimal quando aparece. */
+export function parseNumberBR(text: string): number | null {
+  const raw = text.trim().replace(/^R\$\s*/i, '').replace(/\s/g, '')
+  if (!raw) return null
+  const normalized = raw.includes(',') ? raw.replace(/\./g, '').replace(',', '.') : raw
+  const n = Number(normalized)
+  return Number.isFinite(n) ? n : null
+}
+
+/**
+ * Texto da célula de número → condição: `100` igual, `>100`, `>=100`/`≥100`, `<100`, `<=100`/`≤100`, `<>100`/`≠100`,
+ * `100..200` ou `100 a 200` (entre) e `vazio`.
+ */
+export function parseQuickNumber(field: string, text: string): FilterCondition | null {
+  const raw = text.trim()
+  if (!raw) return null
+  const base = { type: 'condition' as const, id: `rapido-${field}`, field }
+  if (raw.toLowerCase() === 'vazio') return { ...base, op: 'empty' }
+  const range = raw.split(/\s*(?:\.\.|\s+a\s+)\s*/i)
+  if (range.length === 2) {
+    const from = parseNumberBR(range[0])
+    const to = parseNumberBR(range[1])
+    return from != null && to != null ? { ...base, op: 'between', value: Math.min(from, to), to: Math.max(from, to) } : null
+  }
+  const match = /^(>=|<=|<>|≥|≤|≠|>|<|=)?\s*(.+)$/.exec(raw)
+  const n = match ? parseNumberBR(match[2]) : null
+  if (n == null || !match) return null
+  const ops: Record<string, FilterOp> = { '>': 'gt', '>=': 'ge', '≥': 'ge', '<': 'lt', '<=': 'le', '≤': 'le', '<>': 'ne', '≠': 'ne', '=': 'eq' }
+  return { ...base, op: ops[match[1] ?? '='] ?? 'eq', value: n }
+}
+
+/** Inverso de `parseQuickNumber`. */
+export function quickNumberOf(c: FilterCondition | undefined): string {
+  if (!c) return ''
+  const n = (v: unknown) => (isNum(v) ? String(v).replace('.', ',') : '')
+  const sign: Partial<Record<FilterOp, string>> = { gt: '>', ge: '≥', lt: '<', le: '≤', ne: '≠', eq: '' }
+  if (c.op === 'empty') return 'vazio'
+  if (c.op === 'between') return `${n(c.value)}..${n(c.to)}`
+  return `${sign[c.op] ?? ''}${n(c.value)}`
 }
 
 // ---------- Texto do chip ----------
