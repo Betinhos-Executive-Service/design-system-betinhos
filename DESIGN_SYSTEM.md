@@ -1,10 +1,10 @@
 # Betinhos Design System
 
-**Versão:** 1.3.1
+**Versão:** 1.7.0
 
 **Status:** fonte oficial inicial
 
-**Atualizado em:** 21 de julho de 2026
+**Atualizado em:** 14 de outubro de 2026
 
 **Idioma-base:** pt-BR
 
@@ -106,7 +106,7 @@ Regras:
 - [ ] Não depende somente de cor para comunicar status.
 - [ ] Funciona a partir de 320 px e não cria rolagem horizontal acidental.
 - [ ] Foco por teclado permanece visível e não fica coberto.
-- [ ] Motion usa livremente a ferramenta mais adequada ao resultado pretendido e respeita `prefers-reduced-motion`.
+- [ ] Motion usa apenas propriedades baratas e respeita `prefers-reduced-motion`.
 - [ ] Textos soam humanos, precisos e operacionais.
 - [ ] A resposta começa exatamente com `DESIGN CONTEXTO` quando tratar de design, UI ou UX.
 - [ ] Versão `v0.0.0 dd/mm/yyyy` sempre visível e atualizada por `npm run dev` e `npm run push`.
@@ -137,9 +137,9 @@ Regras:
 
 ### 1.3 Assinatura visual reconhecível
 
-1. Navy `#001A3D` como âncora institucional e cor principal de ação.
-2. Azul suave `#E8EDF5` apenas para superfícies de apoio, seleção discreta e informação.
-3. Manrope com títulos compactos, fortes e levemente fechados.
+1. Navy `#001A3D` como âncora institucional.
+2. Azul `#2159D2` para ação, seleção e informação.
+3. Título de página em Centabel Book; todo o resto em Manrope, com títulos compactos e fortes.
 4. Fundo cinza neutro + superfícies brancas com borda fria e sombra baixa.
 5. Cantos entre 8 e 12 px; pílulas apenas para status e metadados curtos.
 6. Ícones Lucide lineares.
@@ -222,14 +222,33 @@ Em conflito de intenção, este documento vence. Em conflito de valor, `design-t
 
 ### 3.2 Cores semânticas
 
+A interface trabalha com cinco estados visuais: neutro, informação, sucesso, atenção e erro. Cada estado é um par: a cor forte serve de texto e de ícone sobre o próprio fundo suave e sobre branco.
+
 | Papel | Forte | Fundo suave | Uso |
 | --- | --- | --- | --- |
-| Sucesso | `#168F57` | `#EAF8F1` | concluído, conexão, confirmação |
-| Atenção | `#B17A00` | `#FFF7DF` | prazo, cautela, pendência |
+| Sucesso | `#147A4B` | `#EAF8F1` | concluído, conexão, confirmação |
+| Atenção | `#856000` | `#FFF7DF` | prazo, cautela, pendência |
 | Erro/perigo | `#C12F45` | `#FFF0F3` | falha, atraso crítico, exclusão |
 | Informação | `#2159D2` | `#EDF3FF` | ajuda, seleção, atualização |
-| Roxo de processo | `#6B4B9B` | `#F4EFFF` | estado intermediário específico |
-| Laranja operacional | `#9A4E12` | `#FFF0E5` | prioridade/ação em andamento |
+| Neutro | `#0F172A` | `#E2E8F0` | rascunho, encerrado, sem estado |
+
+Um fluxo com mais de cinco etapas reaproveita esses estados e se diferencia pelo rótulo.
+
+Obsoletos desde a 1.3.0 (continuam gerados por uma versão; não usar em trabalho novo): roxo `purple.700`/`purple.100`, laranja `orange.700`/`orange.100`, `green.600` e `amber.700` como texto, `color.text.control` (igual a `color.text.primary`) e `color.text.tertiary` (restrito à marca de versão do app).
+
+Componentes consomem apenas tokens semânticos (`--bt-color-brand`, `--bt-color-action`, `--bt-color-success`…). Primitivos (`navy.900`, `blue.600`…) existem para compor os semânticos e não entram em componente novo.
+
+### 3.2.1 Cores da marca
+
+Valores do Manual de Uso da Marca, para capas, apresentações, e-mail institucional, impressos e qualquer peça que leve o logotipo. Não entram em tela de produto.
+
+| Token | Hex | RGB | CMYK |
+| --- | --- | --- | --- |
+| `marca.azul` | `#001A35` | 0 26 53 | 100 60 0 80 |
+| `marca.dourado` | `#CFA85D` | 207 168 93 | 25 35 70 0 |
+| `marca.preto` | `#1D1D1B` | 29 29 27 | 0 0 0 100 |
+
+Dourado é título, fio e destaque sobre `marca.azul` (7,8:1); sobre branco fica em 2,2:1 e nunca é texto. O navy da interface (`#001A3D`) e o azul da marca (`#001A35`) são tokens distintos; não troque um pelo outro.
 
 ### 3.3 Proporção de uso
 
@@ -289,11 +308,13 @@ Combine pelo menos dois sinais:
 font-family: "Manrope", "Segoe UI", sans-serif;
 ```
 
-- Manrope é obrigatória em produtos digitais e materiais de marca quando tecnicamente possível.
-- Pesos autorizados: 400, 500, 600, 700, 800.
+- Manrope é obrigatória em produtos digitais. Pesos autorizados: 400, 500, 600, 700, 800.
 - `Segoe UI` é fallback de sistema.
 - `Consolas, monospace` é restrita a IDs, nomes lógicos, código e valores técnicos.
-- Não misture serifas ou fontes display decorativas.
+- **Centabel Book** (`font.family.display`, `"Centabel Book", Georgia, serif`) é a fonte de títulos do Manual da Marca. Em tela de produto ela aparece em um único lugar: o título de página (`typography.heading-page`), peso 400, cor `color.brand`. Não use em card, drawer, botão, tabela ou KPI, e não aplique negrito: a fonte só tem o peso Book.
+- Em materiais de marca, Centabel Book faz títulos e destaques e Area Normal faz textos longos.
+- O app precisa embutir o arquivo `centabel-book.ttf` e declarar o `@font-face`; sem ele o título cai em Georgia.
+- Fora esses casos, não misture serifas ou fontes display decorativas.
 
 ### 4.2 Escala tipográfica
 
@@ -305,13 +326,13 @@ font-family: "Manrope", "Segoe UI", sans-serif;
 | `body.comfortable` | 14 / 22 px | 400–600 | texto corrido e materiais externos |
 | `heading.3` | 17 / 22 px | 700–800 | título de card/painel |
 | `heading.2` | 20 / 25 px | 700–800 | detalhe, drawer, seção forte |
-| `heading.1` | 25–34 / 1.08 | 800 | título de página responsivo |
+| `heading.1` | 28–40 / 1.08 | 400 + traço de 0,5 px, Centabel Book | título de página responsivo |
 | `metric` | 26–38 / 1 | 800 | KPI isolado |
 | `display` | 40–56 / 1.02 | 700–800 | capa/apresentação, nunca em UI densa |
 
 ### 4.3 Regras de composição
 
-- Títulos de página: `letter-spacing: -0.035em`.
+- Título de página em Centabel Book: `letter-spacing: 0`. Demais títulos em Manrope 800.
 - Eyebrows/rótulos: caixa alta, 800, `letter-spacing: .08em–.10em`.
 - Corpo: caixa normal; nunca parágrafos em caixa alta.
 - Largura ideal de texto corrido: 55–75 caracteres.
@@ -352,8 +373,11 @@ Use valores intermediários existentes de 7, 9, 11, 13, 15 e 17 px apenas em com
 | Input/select | 32 px | 40 px | 44 px |
 | Icon button | 32 px | 40 px | 44 px |
 | Linha de tabela | 54–62 px | 64 px | card responsivo 78–88 px |
+| Linha de tabela — Densa (grades operacionais editáveis) | 44 px (`component.table.row-dense`) | — | 44 px (alvo touch mantido) |
 
 Valores normativos: `compact=32px`, `default=40px`, `touch=44px`, `prominent=48px`. Não use intervalo ao implementar um controle; selecione uma variante.
+
+A variante **Densa** de linha de tabela (`component.table.row-dense` = 44 px, CSS `--bt-table-row-dense`) é exclusiva de grades operacionais editáveis; as regras de uso estão em §10.9.
 
 Alvo de ponteiro deve ter no mínimo 24 × 24 px com espaçamento conforme WCAG 2.2 AA; a meta interna Betinhos é 44 × 44 px em touch.
 
@@ -435,6 +459,8 @@ Esse padrão pode identificar módulos internos. Não deve substituir o logotipo
 - Não distorça, incline, aplique sombra, contorno ou cor não aprovada.
 - Sobre navy, prefira versão branca oficial; sobre branco, versão navy oficial.
 - Sem arquivo oficial, escreva “Betinhos Executive Service” em Manrope 800; não invente símbolo.
+- Regras do Manual de Uso da Marca: versão principal em fundos claros e neutros; versão negativa em fundos escuros; símbolo isolado só em redução ou quando a marca já é reconhecida. Área de proteção igual à altura da letra “O” em todos os lados. Largura mínima de 180 px no digital e 80 mm no impresso. Proibido distorcer, rotacionar ou recolorir.
+- Os gradientes e brilhos do símbolo pertencem ao arquivo oficial do logotipo e não autorizam gradiente em nenhum outro lugar.
 
 ### 7.4 Fotografia
 
@@ -522,31 +548,13 @@ Overlay sobre foto: camada sólida/translúcida navy entre 60% e 84% quando houv
 - Pressionáveis: `transform: scale(.97)`; select compacto pode usar `.99`.
 - Entrada: rápida e `ease-out`.
 - Saída: aproximadamente 75% da duração de entrada.
-- Não existe propriedade, técnica, biblioteca ou ferramenta obrigatória, preferencial ou proibida por motivo de performance presumida. Quem implementa tem liberdade para decidir a melhor solução no contexto real do componente.
-- Toda opção disponível pode ser usada — CSS, propriedades de layout, `transform`, `opacity`, `clip-path`, `filter`, View Transitions, WAAPI, springs, bibliotecas de motion, SVG, canvas, WebGL ou tecnologias futuras. Esta lista é apenas ilustrativa e não limita a decisão.
-- Escolha pelo melhor resultado conjunto de clareza, sensação, continuidade, acessibilidade, manutenção e desempenho observado. Não simplifique a experiência para obedecer a uma preferência técnica abstrata.
+- Anime `transform` e `opacity`; evite `height`, `width`, `margin`, `padding`.
 - Hover visual somente em `@media (hover: hover) and (pointer: fine)`.
 - Não use `transition: all`.
 - Não anime ações recorrentes de teclado.
 - Popover nasce perto do gatilho; modal permanece centrado.
 - Nunca entrar a partir de `scale(0)`; mínimo `.95` + opacidade.
 - Backdrop de tela inteira não usa blur pesado. Drawer mantém overlay e sombra.
-
-### 9.3.1 Referências não vinculantes
-
-Os exemplos abaixo servem apenas como repertório. Não definem ferramenta autorizada, preferência, hierarquia ou caminho obrigatório. Quem implementa pode usar qualquer abordagem, combiná-las ou escolher outra não listada quando ela produzir o melhor resultado no contexto real.
-
-| Cenário | Possibilidades de referência | Aspecto a observar |
-| --- | --- | --- |
-| Hover, press, foco, abrir/fechar | CSS, WAAPI, biblioteca de motion | Resposta imediata e estado compreensível. |
-| Entrada, saída e troca de layout | CSS, View Transitions, FLIP, motion layout | Continuidade espacial e interrupção sem saltos. |
-| Sequência programática ou sincronizada | WAAPI, timeline de biblioteca, animação declarativa | Cancelamento, reversão e sincronização. |
-| Drag, swipe e gesto interrompível | Pointer Events, spring, Motion, biblioteca de gestos | Continuidade de velocidade, limites e toque real. |
-| Visualização rica ou grande volume gráfico | SVG, canvas, WebGL | Legibilidade, responsividade e custo observado. |
-
-- Não rejeite uma biblioteca, técnica ou propriedade apenas porque uma solução mais simples existe. Compare o resultado final e escolha livremente a que melhor resolve o componente.
-- Não use scroll-jacking, parallax contínuo, 3D decorativo, loops ociosos ou animação em lista/tabela de uso frequente.
-- Em `prefers-reduced-motion`, remova deslocamento, spring, drag animado e keyframes não essenciais; preserve mudança de cor/opacidade que ajude a compreender o estado.
 
 ### 9.4 Redução de movimento
 
@@ -577,26 +585,45 @@ Cada componente deve documentar anatomia, variantes, estados, conteúdo, acessib
 - Rodapé: status de conexão com ponto e texto; nunca só ponto.
 - No desktop, pode recolher para trilho de 72 px por ação explícita do usuário. Nesse estado, preserve ícones, `title` e `aria-label`; textos não somem em mobile, onde a sidebar já não existe.
 - Mobile troca sidebar por header sticky e bottom nav.
+- No desktop o shell não tem header: o topo é de cada página (§10.2). Telas embutidas por iframe também não ganham header do shell.
+- Header mobile: `layout.mobile-header-height` (62 px), com menu, título da tela e, à direita, as ações que a tela registrar; normalmente só atualizar, em botão de ícone com `aria-label`. A ação primária continua no cabeçalho de página.
+- Em React, a rota registra título e ações do header mobile com `useShellHeader({ title, actions })` de `@betinhos/ui`; o registro é limpo quando a tela sai. Sem registro, o header mostra o título do menu.
 
 ### 10.2 Cabeçalho de página
 
-**Anatomia:** eyebrow opcional, H1, descrição curta, ação primária/secundária.
+**Anatomia:** eyebrow ou caminho, H1 com meta opcional, descrição curta, ação primária/secundária e linha extra opcional.
 
-- Altura mínima 72 px desktop / 68 px mobile.
-- H1 25–34 px, 800, navy.
+- O header pertence à página e é sempre o `PageHeader` do Design System. Tela nova não cria CSS próprio de header (`topbar`, `app-header`, `page-title` e similares ficam proibidos em trabalho novo).
+- Slots: `eyebrow` ou `breadcrumb` (o caminho substitui o eyebrow, só com hierarquia real), `title`, `meta` (contador, status ou identificador ao lado do H1), `description`, `actions` e `children` (KPIs ou tabs de seção, abaixo, na largura toda).
+- Altura mínima 72 px desktop / 68 px mobile (`layout.page-header-min-height.desktop` / `.mobile`).
+- H1 28–40 px, Centabel Book 400, navy. Um por página.
+- A Centabel só tem o peso Book. O reforço de peso do H1 vem de `-webkit-text-stroke: var(--bt-heading-page-stroke-width) currentColor` (0,5 px), nunca de `font-weight` acima de 400, que faria o navegador sintetizar um negrito borrado.
 - Descrição 13–14 px, slate.
 - Uma ação primária por cabeçalho.
 - Quando houver duas ações, use um grupo flex explícito no cabeçalho, com ações secundária e primária lado a lado (40–42 px). Não deixe uma regra genérica de bloco converter o grupo em coluna.
 - Em mobile, ação pode ir para nova linha; alinhamento à esquerda.
+- **Exceção (páginas de lista, §11.2):** não usam `PageHeader`. Sem eyebrow, descrição, KPIs nem H1 em Centabel: o seletor de visão (§10.9.1) faz o papel de título e divide a linha com os comandos. Dashboards, detalhes e formulários continuam com o `PageHeader`.
 
 ### 10.2.1 Barra utilitária do ambiente
 
 **Anatomia:** contexto do ambiente à esquerda do grupo e ações operacionais à direita, todos no mesmo eixo.
 
-- Altura mínima 40 px; gap de 6–8 px; margem inferior de 12 px antes do conteúdo.
+- Componente: `PageToolbar variant="utility"` de `@betinhos/ui`, com `start` (contexto) e `end` (ações).
+- Altura mínima 40 px (`layout.toolbar-min-height`); gap de 6–8 px; margem inferior de 12 px antes do conteúdo.
 - Contexto usa `environment-pill`; atualização e manutenção usam botão secundário ou de ícone com rótulo.
 - Ordem: contexto, ações secundárias, ação de atualização. A ação principal da página fica no cabeçalho, não nesta barra.
 - Em mobile a barra some junto da sidebar; o header mobile mantém somente atualização com `aria-label`.
+
+### 10.2.2 Barra de filtros
+
+**Anatomia:** filtros à esquerda (busca, segmentos, selects, tabs) e ações secundárias da lista à direita.
+
+- Componente: `PageToolbar variant="filters"`, logo abaixo do cabeçalho de página.
+- Altura mínima 40 px (`layout.toolbar-min-height`); gap de 8 px; margem inferior de 12 px antes do conteúdo (a mesma da barra utilitária). A margem é do componente; quando a barra fica dentro de um `Stack` que já dá o espaçamento, a tela zera a margem.
+- O grupo de filtros (`start`) ocupa a linha disponível: busca flexível e selects ficam na mesma linha e só quebram quando falta espaço.
+- Em mobile não some: os grupos quebram linha, alinhados à esquerda.
+- A ação primária fica no cabeçalho, nunca nesta barra.
+- **Exceção (grades operacionais com comandos sempre visíveis):** a ação primária da lista (ex.: "Criar serviço") pode ficar na barra de comandos, desde que seja a única ação primária da página. Se o cabeçalho já tiver uma primária, a barra fica só com secundárias.
 
 ### 10.3 Botões
 
@@ -670,11 +697,103 @@ Rótulos começam com verbo: “Registrar erro”, “Salvar alterações”, �
 
 - Cabeçalho 36 px, fundo suave, 11 px/800, uppercase.
 - Linha 54–62 px, borda superior, texto 12–13 px.
+- **Variante densa (`--bt-table-row-dense` = 44 px):** use apenas em listas operacionais densas com edição na célula (grade editável). Cabeçalho 32 px, fundo suave. Alvos de toque continuam 44 × 44 px: a linha inteira é o alvo e nenhum controle dentro da célula pode ficar menor que isso em touch. Não use em listas de leitura, dashboards ou detalhes.
 - Primeira coluna recebe maior espaço e hierarquia.
 - Indicador vertical/ponto semântico pode mostrar gravidade, acompanhado de rótulo acessível.
 - Hover apenas em pointer fino.
 - Linha inteira clicável usa elemento interativo real.
 - Em mobile, converter para duas colunas/card e manter título + status + dado essencial.
+
+### 10.9.1 Visões e colunas (obrigatório em listas de registros)
+
+**Anatomia:** uma linha de comando (seletor de visão à esquerda; Colunas, Filtros, busca e a ação primária à direita), a tabela logo abaixo e o rodapé com a contagem. Nada entre a linha de comando e a tabela.
+
+**Onde é obrigatório:** toda lista de registros (cadastro, operação, financeiro). Dispensadas: tabelas de resumo dentro de dashboards, tabelas em drawer de detalhe e a tabela landscape compacta do Operacional.
+
+Seletor de visão:
+
+- É o título da página: `heading.2` (Manrope 20/25 px, 700), navy, seguido de chevron. Abre um menu agrupado em "Padrão", "Públicas" e "Minhas", nessa ordem. Visão pública leva ícone de grupo; a diferença nunca é só de cor.
+- Quando a tela difere da visão salva (colunas, larguras, ordenação ou filtros), mostra o rótulo "Alterada" em texto de apoio ao lado do nome.
+- Ações do menu: Salvar, Salvar como, Renomear, Excluir, Tornar pública e Restaurar padrão. Salvar, Renomear e Excluir só aparecem para visões que o usuário pode alterar.
+- Visão pessoal é visível só para o dono; qualquer usuário cria. Visão pública é visível para todos; só o perfil de gestor cria, altera, exclui ou publica.
+- A visão padrão é definida no código da tela, não pode ser editada nem excluída e é o destino de "Restaurar padrão".
+- A última visão usada em cada tela é lembrada no navegador; é conveniência, não dado.
+
+Comandos da linha:
+
+- Botões secundários com ícone e rótulo: "Colunas" (`Columns3`) e "Filtros" (`Filter`, com o número de condições ativas); botão de ícone "Filtro rápido" (`ListFilter`, `aria-pressed`); busca por palavra-chave com largura fixa à direita. Em mobile os rótulos podem virar só ícone, com `aria-label`.
+- A ação primária da lista, quando existir, é a última à direita e é a única primária da página.
+
+Painel de colunas:
+
+- `Drawer` à direita no desktop e `Sheet` no mobile, título "Colunas".
+- Cada item: alça de arraste, checkbox com o rótulo da coluna e botões ↑/↓. Rodapé: "Restaurar colunas" (ghost), "Cancelar" e "Aplicar".
+- As mudanças só valem em "Aplicar". Fechar com alteração pendente abre "Descartar alterações?" com "Continuar editando" e "Descartar".
+- A primeira coluna (título do registro) não pode ser ocultada nem sair da primeira posição. Sempre fica ao menos uma coluna visível.
+
+Direto no cabeçalho da tabela (apenas pointer fino):
+
+- **Reordenar:** arrastar o cabeçalho. A coluna arrastada fica com fundo `#FCFCFB`, borda de foco azul e sem sombra pesada; as vizinhas deslizam em 150 ms ease-out. Com `prefers-reduced-motion`, trocam de lugar sem deslizar.
+- **Largura:** alça de 8 px na borda direita do cabeçalho, cursor `col-resize`, mínimo 90 px e máximo 1200 px. Duplo clique volta à largura da visão.
+- **Teclado:** `Alt+←/→` move a coluna em foco; com foco na alça, `←/→` ajusta 16 px. Cada movimento é anunciado em `aria-live` (ex.: "Coluna Cliente na posição 3 de 8").
+- **Ordenação:** clique no cabeçalho alterna crescente/decrescente; a seta indica o sentido e `aria-sort` acompanha.
+- Em pointer grosso e no mobile, reordenar e ocultar só pelo painel; largura não se ajusta.
+
+Mobile (até 820 px): a lista vira card (§10.9) e o card usa as três primeiras colunas visíveis da visão.
+
+Rodapé: contagem em texto de apoio ("Linhas: 28") e paginação, quando houver.
+
+O que a visão guarda: colunas visíveis, ordem, larguras, ordenação e filtros (§10.9.2). Coluna que deixou de existir é ignorada; coluna nova entra no fim, visível só se for visível na visão padrão.
+
+### 10.9.2 Filtros (obrigatório em listas de registros)
+
+**Anatomia:** três camadas que se somam com E — filtro rápido por coluna, filtro avançado (painel) e busca por palavra-chave — e uma faixa de chips com tudo o que está ativo, entre a linha de comando e a tabela.
+
+Filtro rápido por coluna (hot filters):
+
+- Linha de filtros logo abaixo do cabeçalho, uma célula por coluna visível, alinhada à coluna e com a mesma largura. Altura 36 px, fundo `#FCFCFB`, controles de 28 px com borda de 1 px.
+- Ligada por padrão no desktop. O botão "Filtro rápido" mostra ou esconde a linha; esconder não limpa os valores. A preferência mostrar/esconder é por usuário e por tela, no navegador.
+- O controle segue o tipo da coluna:
+  - **Texto:** campo "contém", aplicado 300 ms depois da última tecla. Prefixos opcionais: `=` igual, `^` começa com, `!` não contém, `vazio` e `preenchido`.
+  - **Opção:** seleção múltipla com busca; os valores escolhidos combinam com OU. Mostra a contagem por valor quando a fonte entrega sem custo extra.
+  - **Lookup:** seleção múltipla pesquisável (busca no servidor depois de 2 caracteres).
+  - **Data:** atalhos relativos (Hoje, Amanhã, Ontem, Esta semana, Próximos 7 dias, Últimos 7 dias, Este mês, Mês passado) e Intervalo com duas datas.
+  - **Número e valor:** campo com operador (`=`, `≥`, `≤`, `entre`); valores em BRL quando a coluna é moeda.
+  - **Sim/Não:** Todos, Sim, Não.
+- Célula com filtro ativo: borda azul e botão × para limpar. O cabeçalho da coluna filtrada mostra o ícone de funil em azul, com `aria-label` "Filtrada".
+- Colunas que não filtram (calculadas, imagem) mostram a célula vazia, sem controle.
+- Cada controle tem `aria-label` "Filtrar <coluna>". `Esc` limpa o campo em foco; `Enter` aplica na hora, sem esperar os 300 ms.
+- No mobile e em pointer grosso a linha não aparece: os mesmos filtros ficam no painel, na aba "Por coluna".
+
+Filtro avançado (painel "Filtros"):
+
+- `Drawer` largo (720 px) no desktop e `Sheet` no mobile, título "Filtros". Duas abas: "Por coluna" (os filtros rápidos em lista, para quem está no mobile ou prefere o painel) e "Avançado".
+- "Avançado" monta condições em grupos: cada linha tem campo, operador e valor; cada grupo tem o seletor E/OU (segmented control) e os botões "+ Condição" e "+ Grupo". Até dois níveis de grupo; mais que isso fica ilegível e não é oferecido.
+- Os campos incluem colunas fora da visão. Campos de tabelas relacionadas aparecem agrupados pelo nome da relação ("Cliente › Cidade").
+- Operadores por tipo, sempre em português: Texto (contém, não contém, igual a, diferente de, começa com, termina com, está vazio, está preenchido); Opção e Lookup (é um de, não é nenhum de, está vazio, está preenchido); Data (os atalhos relativos, em, antes de, depois de, entre, está vazio, está preenchido); Número (igual a, diferente de, maior que, maior ou igual, menor que, menor ou igual, entre, está vazio); Sim/Não (é sim, é não).
+- Condição incompleta fica marcada em vermelho com a mensagem do que falta e é ignorada até ser completada; "Aplicar" mostra quantas serão ignoradas.
+- Rodapé: "Limpar tudo" (ghost), "Cancelar" e "Aplicar". Quando a fonte permitir contar sem custo, "Aplicar" mostra o resultado previsto ("Aplicar · 42 registros").
+- As mudanças só valem em "Aplicar". Fechar com alteração pendente abre "Descartar alterações?".
+- Uma condição avançada sobre a mesma coluna de um filtro rápido não substitui o rápido: os dois valem com E, e os chips mostram os dois.
+
+Busca por palavra-chave:
+
+- Campo da linha de comando; procura nas colunas de texto da visão, com 300 ms de espera. Não é guardada na visão.
+
+Chips de filtros ativos:
+
+- Faixa logo acima da tabela, só quando há filtro. Um chip por filtro rápido ("Status: Pendente, Confirmado") e um por condição ou grupo de primeiro nível do avançado ("Data: Esta semana", "Grupo OU: Cliente é Alfa · Tipo é Blindado").
+- O texto do chip reabre onde o filtro foi feito (foca a célula do filtro rápido ou abre o painel na condição); o × remove. No fim, "Limpar filtros" (ghost).
+- Chip de filtro que a tela não conseguiu aplicar (coluna removida, metadata indisponível) leva ícone de alerta e o texto "não aplicado".
+- Em mobile os chips rolam na horizontal, com alvo de 44 px.
+
+Comportamento:
+
+- Toda filtragem acontece na fonte (FetchXML/OData no Dataverse). Filtrar só as linhas já carregadas é proibido, porque esconde registros sem avisar.
+- Mudar filtro volta para a primeira página e mantém a ordenação.
+- Sem resultado: `EmptyState` "Nenhum registro com estes filtros" com a ação "Limpar filtros".
+- O estado dos filtros vai para a URL, para o link compartilhado abrir igual.
+- A visão guarda filtros rápidos e avançados (não guarda a busca). Mudar qualquer filtro marca a visão como "Alterada".
 
 ### 10.10 Date tile
 
@@ -753,14 +872,13 @@ Priorize anomalia e ação. Nunca transforme toda informação em KPI.
 ### 11.2 Página de gestão
 
 ```text
-Cabeçalho
-Busca
-Filtros em grade
-Tabela/lista
-Paginação
+Seletor de visão ...... Colunas · Filtros · Filtro rápido · Busca · Ação primária
+Chips de filtros ativos (só quando há filtro)
+Tabela: cabeçalho + linha de filtro rápido (rolagem horizontal quando preciso)
+Linhas: N · Paginação
 ```
 
-Busca fica acima dos filtros. Filtros devem poder ser limpos e refletir estado atual.
+Sem `PageHeader`, descrição, KPIs ou cards acima da tabela: a página é a linha de comando, os chips de filtros ativos e a tabela com a linha de filtro rápido (§10.9.1 e §10.9.2). Filtros sempre refletem o estado atual.
 
 ### 11.3 Detalhe operacional
 
@@ -896,7 +1014,7 @@ Em fundo azul/navy, use anel branco de 2 px + azul claro externo.
 - Capa navy; conteúdo branco/cinza-claro.
 - Título 36–56 px, corpo 20–28 px.
 - Uma conclusão por slide; dados com fonte e período.
-- Transições discretas, 180–300 ms; use CSS, `@starting-style`, WAAPI ou spring conforme a seção 9.3.1, sem animação ornamental em toda página.
+- Transições discretas, 180–300 ms; sem animação ornamental em toda página.
 
 ### 14.5 E-mail
 
@@ -956,13 +1074,13 @@ Cada componente deve ter stories de:
 
 Stories viram documentação executável, casos de teste e revisão visual.
 
-### 15.3 Comandos oficiais do repo mantenedor
+### 15.3 Comandos oficiais do repo mantenedor (`design-system-betinhos`)
 
 ```powershell
 npm run design:generate       # design-tokens.json -> design-tokens.css
 npm run design:check          # integridade, aliases, tema, gradiente e adoção
 npm run design:publish-parent # gera, valida e publica no diretório pai
-npm run check                 # gate completo do app
+npm run check                 # gate do repo (geração + validação)
 ```
 
 ---
@@ -1053,7 +1171,7 @@ Este bloco permite implementação mesmo quando os arquivos auxiliares não acom
 
 <!-- GENERATED:TOKENS_CSS:START -->
 ```css
-/* Betinhos Design System 1.2.0.
+/* Betinhos Design System 1.7.0.
  * GENERATED from design-tokens.json. Do not edit this file manually.
  */
 :root {
@@ -1062,7 +1180,6 @@ Este bloco permite implementação mesmo quando os arquivos auxiliares não acom
   --bt-color-navy-800: #0b2d5a;
   --bt-color-blue-600: #2159d2;
   --bt-color-blue-100: #edf3ff;
-  --bt-color-navy-100: #e8edf5;
   --bt-color-ink-950: #0f172a;
   --bt-color-ink-900: #172033;
   --bt-color-slate-700: #475569;
@@ -1074,8 +1191,10 @@ Este bloco permite implementação mesmo quando os arquivos auxiliares não acom
   --bt-color-white: #ffffff;
   --bt-color-line-200: #e2e8f0;
   --bt-color-green-600: #168f57;
+  --bt-color-green-700: #147a4b;
   --bt-color-green-100: #eaf8f1;
   --bt-color-amber-700: #b17a00;
+  --bt-color-amber-800: #856000;
   --bt-color-amber-100: #fff7df;
   --bt-color-red-700: #c12f45;
   --bt-color-red-100: #fff0f3;
@@ -1085,25 +1204,31 @@ Este bloco permite implementação mesmo quando os arquivos auxiliares não acom
   --bt-color-orange-100: #fff0e5;
   --bt-color-brand: var(--bt-color-navy-900);
   --bt-color-brand-hover: var(--bt-color-navy-800);
-  --bt-color-action: var(--bt-color-brand);
-  --bt-color-action-soft: var(--bt-color-navy-100);
+  --bt-color-action: var(--bt-color-blue-600);
+  --bt-color-action-soft: var(--bt-color-blue-100);
   --bt-color-canvas: var(--bt-color-gray-100);
   --bt-color-surface: var(--bt-color-white);
   --bt-color-surface-soft: var(--bt-color-gray-050);
   --bt-color-surface-neutral: var(--bt-color-neutral-050);
   --bt-color-text-primary: var(--bt-color-ink-950);
-  --bt-color-text-control: var(--bt-color-ink-900);
+  --bt-color-text-control: var(--bt-color-ink-950);
   --bt-color-text-secondary: var(--bt-color-slate-500);
   --bt-color-text-tertiary: var(--bt-color-slate-400);
   --bt-color-border: var(--bt-color-line-200);
-  --bt-color-success: var(--bt-color-green-600);
+  --bt-color-success: var(--bt-color-green-700);
   --bt-color-success-soft: var(--bt-color-green-100);
-  --bt-color-warning: var(--bt-color-amber-700);
+  --bt-color-warning: var(--bt-color-amber-800);
   --bt-color-warning-soft: var(--bt-color-amber-100);
   --bt-color-danger: var(--bt-color-red-700);
   --bt-color-danger-soft: var(--bt-color-red-100);
 
+  /* marca */
+  --bt-marca-azul: #001a35;
+  --bt-marca-dourado: #cfa85d;
+  --bt-marca-preto: #1d1d1b;
+
   /* font */
+  --bt-font-family-display: "Centabel Book", "Georgia", serif;
   --bt-font-family-sans: "Manrope", "Segoe UI", sans-serif;
   --bt-font-family-mono: "Consolas", "SFMono-Regular", monospace;
   --bt-font-weight-regular: 400;
@@ -1121,6 +1246,7 @@ Este bloco permite implementação mesmo quando os arquivos auxiliares não acom
   --bt-font-size-20: 20px;
   --bt-font-size-26: 26px;
   --bt-font-size-34: 34px;
+  --bt-font-size-40: 40px;
 
   /* space */
   --bt-space-1: 4px;
@@ -1155,6 +1281,11 @@ Este bloco permite implementação mesmo quando os arquivos auxiliares não acom
   --bt-ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
 
   /* typography */
+  --bt-typography-heading-page-font-family: var(--bt-font-family-display);
+  --bt-typography-heading-page-font-size: var(--bt-font-size-40);
+  --bt-typography-heading-page-font-weight: var(--bt-font-weight-regular);
+  --bt-typography-heading-page-letter-spacing: 0px;
+  --bt-typography-heading-page-line-height: 1.08;
   --bt-typography-label-micro-font-family: var(--bt-font-family-sans);
   --bt-typography-label-micro-font-size: var(--bt-font-size-11);
   --bt-typography-label-micro-font-weight: var(--bt-font-weight-extrabold);
@@ -1215,6 +1346,10 @@ Este bloco permite implementação mesmo quando os arquivos auxiliares não acom
   --bt-layout-sidebar-width: 238px;
   --bt-layout-drawer-width: 520px;
   --bt-layout-drawer-width-wide: 720px;
+  --bt-layout-page-header-min-height-desktop: 72px;
+  --bt-layout-page-header-min-height-mobile: 68px;
+  --bt-layout-toolbar-min-height: 40px;
+  --bt-layout-mobile-header-height: 62px;
 
   /* z-index */
   --bt-z-index-content: 1;
@@ -1226,12 +1361,14 @@ Este bloco permite implementação mesmo quando os arquivos auxiliares não acom
   --bt-z-index-popover: 2147483647;
 
   /* shadow */
+  --bt-shadow-popover: 0px 18px 42px 0px rgba(15, 23, 42, 0.18), 0px 2px 7px 0px rgba(15, 23, 42, 0.08);
   --bt-shadow-surface: 0px 8px 24px 0px rgba(0, 26, 61, 0.045);
   --bt-shadow-panel: 0px 10px 28px 0px rgba(0, 26, 61, 0.045);
   --bt-shadow-drawer: -24px 0px 70px 0px rgba(0, 18, 45, 0.22);
   --bt-shadow-toast: 0px 12px 35px 0px rgba(0, 18, 45, 0.18);
 
   /* component */
+  --bt-heading-page-stroke-width: 0.5px;
   --bt-button-primary-background: var(--bt-color-brand);
   --bt-button-primary-background-hover: var(--bt-color-brand-hover);
   --bt-button-primary-foreground: var(--bt-color-white);
@@ -1253,6 +1390,7 @@ Este bloco permite implementação mesmo quando os arquivos auxiliares não acom
   --bt-surface-shadow: var(--bt-shadow-panel);
   --bt-badge-radius: var(--bt-radius-full);
   --bt-badge-height: 24px;
+  --bt-table-row-dense: var(--bt-control-height-touch);
   --bt-focus-border: #6c91e8;
   --bt-focus-ring-color: rgba(33, 89, 210, 0.11);
   --bt-focus-ring: 0px 0px 0px 3px rgba(33, 89, 210, 0.11);
@@ -1326,6 +1464,48 @@ O padrão de mercado não é apenas um PDF de marca. É um produto versionado: t
 
 ## 20. Changelog
 
+### 1.7.0 — 15/10/2026
+
+- Novo §10.9.2 **Filtros**, obrigatório em toda lista de registros: filtro rápido por coluna (linha sob o cabeçalho, controle por tipo), filtro avançado com grupos E/OU (até dois níveis) e operadores por tipo, busca por palavra-chave, chips de filtros ativos e regras de comportamento (filtrar na fonte, URL, visão "Alterada").
+- §10.9.1 e §11.2: botão "Filtro rápido" e a faixa de chips entram na anatomia da página de lista.
+- Sem tokens novos.
+- A fonte oficial passa a ser o repo `design-system-betinhos` (pasta `vscode/Design System Betinhos`); o Módulo Qualidade vira consumidor, com cópia sincronizada do `design-tokens.css`.
+- Decisões aprovadas por Renan em 15/10/2026 (Sistema Betinhos).
+
+### 1.6.0 — 15/10/2026
+
+- Novo §10.9.1 **Visões e colunas**, obrigatório em toda lista de registros: seletor de visão como título, visões pessoais e públicas (só gestor publica), visão padrão em código, painel de colunas (mostrar/ocultar, reordenar), arraste e largura no cabeçalho com alternativa por teclado, e o que a visão guarda.
+- §10.2 e §11.2: página de lista deixa de usar `PageHeader`. Sem título em Centabel, descrição ou KPIs: linha de comando com o seletor de visão e a tabela logo abaixo, no estilo do grid nativo do model-driven.
+- Sem tokens novos: o seletor usa `heading.2`.
+- Decisões aprovadas por Renan em 15/10/2026 (Sistema Betinhos).
+
+### 1.5.1 — 14/10/2026
+
+- §10.2.2: a barra de filtros ganha margem inferior de 12 px antes do conteúdo (igual à barra utilitária) e o grupo `start` ocupa a linha disponível. Antes, a barra colava no conteúdo e os selects caíam para a linha de baixo em todas as telas; o `PageToolbar` do `@betinhos/ui` passa a aplicar as duas regras.
+- Correção aprovada por Renan em 14/10/2026 (Sistema Betinhos).
+
+### 1.5.0 — 08/10/2026
+
+- Novo token `component.table.row-dense` (44 px, CSS `--bt-table-row-dense`) para a variante **Densa** de linha de tabela em grades operacionais editáveis (§5.2 e §10.9): cabeçalho 32 px, alvos touch continuam 44 px.
+- §10.2.2: em grades operacionais com comandos sempre visíveis, a ação primária da lista (ex.: "Criar serviço") pode ficar na barra de comandos, desde que seja a única primária da página.
+- Decisões aprovadas por Renan em 08/10/2026 para a tela Geral do Sistema Betinhos.
+
+### 1.4.0 — 05/10/2026
+
+- O header passa a pertencer à página: `PageHeader` ganha os slots `breadcrumb`, `meta` e `children`, e o shell não tem header no desktop.
+- Novo `PageToolbar` com as variantes `utility` (§10.2.1) e `filters` (§10.2.2).
+- Header mobile do shell aceita ações da tela via `useShellHeader`.
+- Novos tokens: `layout.page-header-min-height.desktop` (72 px), `layout.page-header-min-height.mobile` (68 px), `layout.toolbar-min-height` (40 px) e `layout.mobile-header-height` (62 px).
+
+### 1.3.0 — 02/10/2026
+
+- Título de página passa a usar Centabel Book (`font.family.display`, `typography.heading-page`), de 28 a 40 px, com traço de 0,5 px para dar peso; o resto da interface segue em Manrope.
+- Paleta de status simplificada para cinco estados em pares: `color.success` passa a `#147A4B` e `color.warning` a `#856000`, que servem de texto e de ícone.
+- `color.text.control` passa a valer o mesmo que `color.text.primary`.
+- Roxo, laranja, `green.600`, `amber.700`, `color.text.control` e `color.text.tertiary` ficam obsoletos; continuam gerados nesta versão.
+- Adiciona as cores do Manual de Uso da Marca (`marca.azul`, `marca.dourado`, `marca.preto`) e as regras de uso do logotipo.
+- Componentes novos consomem apenas tokens semânticos.
+
 ### 1.2.0 — 16/07/2026
 
 - Torna obrigatório o versionamento automático `v0.0.0 dd/mm/yyyy` em todos os apps.
@@ -1352,12 +1532,6 @@ O padrão de mercado não é apenas um PDF de marca. É um produto versionado: t
 - Adiciona tokens de tipografia, componente, layout, borda, ícone, opacidade, z-index e shadow.
 - Adiciona geração, validação e publicação automática no diretório pai.
 - Gera no próprio documento um snapshot CSS completo para uso seguro por IAs sem arquivos auxiliares.
-
-### 1.3.1 — 21/07/2026
-
-- Remove qualquer limitação ou preferência normativa por ferramenta, biblioteca, técnica ou propriedade de motion.
-- Dá a quem implementa liberdade para escolher a melhor solução no contexto real, inclusive tecnologias não enumeradas no documento.
-- Mantém resultado, clareza, acessibilidade, manutenção e desempenho observado como critérios de decisão.
 
 ### 1.0.0 — 15/07/2026
 

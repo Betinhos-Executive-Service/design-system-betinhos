@@ -1,10 +1,10 @@
 {
   "$schema": "https://www.designtokens.org/schemas/2025.10/format.json",
-  "$description": "Betinhos Design System 1.3.0. Identidade operacional premium extraída do Módulo Qualidade.",
+  "$description": "Betinhos Design System 1.7.0. Identidade operacional premium extraída do Módulo Qualidade.",
   "$extensions": {
     "com.betinhos.design-system": {
-      "version": "1.3.0",
-      "updated": "2026-07-18",
+      "version": "1.7.0",
+      "updated": "2026-10-14",
       "source": "Módulo Qualidade",
       "theme": "light-only",
       "cssPrefix": "bt",
@@ -39,7 +39,7 @@
       },
       "validation": {
         "forbidGradients": true,
-        "requireTokenImport": ["src/styles.css"],
+        "requireTokenImport": [],
         "requiredResponsePrefix": "DESIGN CONTEXTO",
         "appVersioning": {
           "required": true,
@@ -57,7 +57,6 @@
       "$type": "color",
       "navy-900": { "$value": { "colorSpace": "srgb", "components": [0, 0.101961, 0.239216], "alpha": 1, "hex": "#001a3d" } },
       "navy-800": { "$value": { "colorSpace": "srgb", "components": [0.043137, 0.176471, 0.352941], "alpha": 1, "hex": "#0b2d5a" } },
-      "navy-100": { "$value": { "colorSpace": "srgb", "components": [0.909804, 0.929412, 0.960784], "alpha": 1, "hex": "#e8edf5" } },
       "blue-600": { "$value": { "colorSpace": "srgb", "components": [0.129412, 0.34902, 0.823529], "alpha": 1, "hex": "#2159d2" } },
       "blue-100": { "$value": { "colorSpace": "srgb", "components": [0.929412, 0.952941, 1], "alpha": 1, "hex": "#edf3ff" } },
       "ink-950": { "$value": { "colorSpace": "srgb", "components": [0.058824, 0.090196, 0.164706], "alpha": 1, "hex": "#0f172a" } },
@@ -71,8 +70,10 @@
       "white": { "$value": { "colorSpace": "srgb", "components": [1, 1, 1], "alpha": 1, "hex": "#ffffff" } },
       "line-200": { "$value": { "colorSpace": "srgb", "components": [0.886275, 0.909804, 0.941176], "alpha": 1, "hex": "#e2e8f0" } },
       "green-600": { "$value": { "colorSpace": "srgb", "components": [0.086275, 0.560784, 0.341176], "alpha": 1, "hex": "#168f57" } },
+      "green-700": { "$value": { "colorSpace": "srgb", "components": [0.078431, 0.478431, 0.294118], "alpha": 1, "hex": "#147a4b" } },
       "green-100": { "$value": { "colorSpace": "srgb", "components": [0.917647, 0.972549, 0.945098], "alpha": 1, "hex": "#eaf8f1" } },
       "amber-700": { "$value": { "colorSpace": "srgb", "components": [0.694118, 0.478431, 0], "alpha": 1, "hex": "#b17a00" } },
+      "amber-800": { "$value": { "colorSpace": "srgb", "components": [0.521569, 0.376471, 0], "alpha": 1, "hex": "#856000" } },
       "amber-100": { "$value": { "colorSpace": "srgb", "components": [1, 0.968627, 0.87451], "alpha": 1, "hex": "#fff7df" } },
       "red-700": { "$value": { "colorSpace": "srgb", "components": [0.756863, 0.184314, 0.270588], "alpha": 1, "hex": "#c12f45" } },
       "red-100": { "$value": { "colorSpace": "srgb", "components": [1, 0.941176, 0.952941], "alpha": 1, "hex": "#fff0f3" } },
@@ -85,28 +86,35 @@
       "$type": "color",
       "brand": { "$value": "{color.primitive.navy-900}" },
       "brand-hover": { "$value": "{color.primitive.navy-800}" },
-      "action": { "$value": "{color.primitive.navy-900}" },
-      "action-soft": { "$value": "{color.primitive.navy-100}" },
+      "action": { "$value": "{color.primitive.blue-600}" },
+      "action-soft": { "$value": "{color.primitive.blue-100}" },
       "canvas": { "$value": "{color.primitive.gray-100}" },
       "surface": { "$value": "{color.primitive.white}" },
       "surface-soft": { "$value": "{color.primitive.gray-050}" },
       "surface-neutral": { "$value": "{color.primitive.neutral-050}" },
       "text-primary": { "$value": "{color.primitive.ink-950}" },
-      "text-control": { "$value": "{color.primitive.ink-900}" },
+      "text-control": { "$value": "{color.primitive.ink-950}" },
       "text-secondary": { "$value": "{color.primitive.slate-500}" },
       "text-tertiary": { "$value": "{color.primitive.slate-400}" },
       "border": { "$value": "{color.primitive.line-200}" },
-      "success": { "$value": "{color.primitive.green-600}" },
+      "success": { "$value": "{color.primitive.green-700}" },
       "success-soft": { "$value": "{color.primitive.green-100}" },
-      "warning": { "$value": "{color.primitive.amber-700}" },
+      "warning": { "$value": "{color.primitive.amber-800}" },
       "warning-soft": { "$value": "{color.primitive.amber-100}" },
       "danger": { "$value": "{color.primitive.red-700}" },
       "danger-soft": { "$value": "{color.primitive.red-100}" }
     }
   },
+  "marca": {
+    "$type": "color",
+    "azul": { "$value": { "colorSpace": "srgb", "components": [0, 0.101961, 0.207843], "alpha": 1, "hex": "#001a35" } },
+    "dourado": { "$value": { "colorSpace": "srgb", "components": [0.811765, 0.658824, 0.364706], "alpha": 1, "hex": "#cfa85d" } },
+    "preto": { "$value": { "colorSpace": "srgb", "components": [0.113725, 0.113725, 0.105882], "alpha": 1, "hex": "#1d1d1b" } }
+  },
   "font": {
     "family": {
       "$type": "fontFamily",
+      "display": { "$value": ["Centabel Book", "Georgia", "serif"] },
       "sans": { "$value": ["Manrope", "Segoe UI", "sans-serif"] },
       "mono": { "$value": ["Consolas", "SFMono-Regular", "monospace"] }
     },
@@ -128,7 +136,8 @@
     "font-17": { "$value": { "value": 17, "unit": "px" } },
     "font-20": { "$value": { "value": 20, "unit": "px" } },
     "font-26": { "$value": { "value": 26, "unit": "px" } },
-    "font-34": { "$value": { "value": 34, "unit": "px" } }
+    "font-34": { "$value": { "value": 34, "unit": "px" } },
+    "font-40": { "$value": { "value": 40, "unit": "px" } }
   },
   "space": {
     "$type": "dimension",
@@ -171,6 +180,16 @@
     }
   },
   "typography": {
+    "heading-page": {
+      "$type": "typography",
+      "$value": {
+        "fontFamily": "{font.family.display}",
+        "fontSize": "{size.font-40}",
+        "fontWeight": "{font.weight.regular}",
+        "letterSpacing": { "value": 0, "unit": "px" },
+        "lineHeight": 1.08
+      }
+    },
     "label-micro": {
       "$type": "typography",
       "$value": {
@@ -268,7 +287,14 @@
     "content-max": { "$type": "dimension", "$value": { "value": 1500, "unit": "px" } },
     "sidebar-width": { "$type": "dimension", "$value": { "value": 238, "unit": "px" } },
     "drawer-width": { "$type": "dimension", "$value": { "value": 520, "unit": "px" } },
-    "drawer-width-wide": { "$type": "dimension", "$value": { "value": 720, "unit": "px" } }
+    "drawer-width-wide": { "$type": "dimension", "$value": { "value": 720, "unit": "px" } },
+    "page-header-min-height": {
+      "$type": "dimension",
+      "desktop": { "$value": { "value": 72, "unit": "px" } },
+      "mobile": { "$value": { "value": 68, "unit": "px" } }
+    },
+    "toolbar-min-height": { "$type": "dimension", "$value": { "value": 40, "unit": "px" } },
+    "mobile-header-height": { "$type": "dimension", "$value": { "value": 62, "unit": "px" } }
   },
   "z-index": {
     "$type": "number",
@@ -281,6 +307,25 @@
     "popover": { "$value": 2147483647 }
   },
   "shadow": {
+    "popover": {
+      "$type": "shadow",
+      "$value": [
+        {
+          "color": { "colorSpace": "srgb", "components": [0.058824, 0.090196, 0.164706], "alpha": 0.18, "hex": "#0f172a" },
+          "offsetX": { "value": 0, "unit": "px" },
+          "offsetY": { "value": 18, "unit": "px" },
+          "blur": { "value": 42, "unit": "px" },
+          "spread": { "value": 0, "unit": "px" }
+        },
+        {
+          "color": { "colorSpace": "srgb", "components": [0.058824, 0.090196, 0.164706], "alpha": 0.08, "hex": "#0f172a" },
+          "offsetX": { "value": 0, "unit": "px" },
+          "offsetY": { "value": 2, "unit": "px" },
+          "blur": { "value": 7, "unit": "px" },
+          "spread": { "value": 0, "unit": "px" }
+        }
+      ]
+    },
     "surface": {
       "$type": "shadow",
       "$value": {
@@ -323,6 +368,9 @@
     }
   },
   "component": {
+    "heading-page": {
+      "stroke-width": { "$type": "dimension", "$value": { "value": 0.5, "unit": "px" } }
+    },
     "button": {
       "primary": {
         "background": { "$type": "color", "$value": "{color.semantic.brand}" },
@@ -353,6 +401,13 @@
     "badge": {
       "radius": { "$type": "dimension", "$value": "{radius.full}" },
       "height": { "$type": "dimension", "$value": { "value": 24, "unit": "px" } }
+    },
+    "table": {
+      "row-dense": {
+        "$type": "dimension",
+        "$description": "Linha densa de grade operacional editável (edição na célula). Cabeçalho 32 px; alvos touch continuam 44 px.",
+        "$value": "{control.height.touch}"
+      }
     },
     "focus": {
       "border": { "$type": "color", "$value": { "colorSpace": "srgb", "components": [0.423529, 0.568627, 0.909804], "alpha": 1, "hex": "#6c91e8" } },
