@@ -1,6 +1,6 @@
 /* Base e primitives de layout compartilhados. */
-/* Fontes (Manrope self-hosted e Centabel Book) e variáveis vêm do @betinhos/tokens. */
-@import '@betinhos/tokens/index.css';
+/* Fontes (Manrope self-hosted e Centabel Book) e variáveis vêm do @betinhos-executive-service/tokens. */
+@import '@betinhos-executive-service/tokens/index.css';
 @import './components/button.css';
 @import './components/field.css';
 @import './components/select.css';
