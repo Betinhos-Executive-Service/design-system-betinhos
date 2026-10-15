@@ -1,0 +1,29 @@
+name: CI
+
+# Valida regras, tokens, pacotes e vitrine em todo PR e na main. Também é chamado pelo release.
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_call:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Tokens gerados estão em dia
+        run: |
+          node scripts/generate-design-tokens.mjs
+          git diff --exit-code -- design-tokens.css DESIGN_SYSTEM.md packages/tokens || { echo "::error::Rode npm run design:generate e commite o resultado."; exit 1; }
+      - run: node scripts/validate-design-system.mjs
+      - run: node scripts/check-versions.mjs
+      - run: pnpm typecheck
+      - run: pnpm test
+      - run: pnpm build:vitrine

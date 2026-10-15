@@ -169,7 +169,7 @@ importers:
   apps/vitrine:
     dependencies:
       '@betinhos/ui':
-        specifier: workspace:^
+        specifier: workspace:@betinhos-executive-service/ui@*
         version: link:../../packages/ui
       lucide-react:
         specifier: ^1.47.0
@@ -201,7 +201,7 @@ importers:
 
   packages/ui:
     dependencies:
-      '@betinhos/tokens':
+      '@betinhos-executive-service/tokens':
         specifier: workspace:^
         version: link:../tokens
     devDependencies:

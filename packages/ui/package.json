@@ -1,6 +1,6 @@
 {
-  "name": "@betinhos/ui",
-  "version": "1.7.0",
+  "name": "@betinhos-executive-service/ui",
+  "version": "1.8.0",
   "description": "Componentes React do Design System Betinhos.",
   "type": "module",
   "exports": {
@@ -22,7 +22,7 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@betinhos/tokens": "workspace:^"
+    "@betinhos-executive-service/tokens": "workspace:^"
   },
   "peerDependencies": {
     "react": "^19.2.0",

@@ -11,7 +11,7 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@betinhos/ui": "workspace:^",
+    "@betinhos/ui": "workspace:@betinhos-executive-service/ui@*",
     "lucide-react": "^1.47.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0"

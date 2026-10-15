@@ -18,7 +18,7 @@ Tudo o que é Design System mora neste repo e chega aos apps por versão, pelo G
 ## Decisões (15/10/2026)
 
 - Componentes e vitrine vêm para cá (monorepo pnpm).
-- Distribuição pelo GitHub Packages (`@betinhos/*`, registro npm privado da organização).
+- Distribuição pelo GitHub Packages, registro npm privado da organização. O GitHub exige o escopo igual ao dono do repo: os pacotes publicam como `@betinhos-executive-service/tokens` e `@betinhos-executive-service/ui`; os apps instalam com alias (`"@betinhos/ui": "npm:@betinhos-executive-service/ui@^1.8.0"`) e o código continua importando `@betinhos/ui`.
 - Migração agora, antes da etapa de filtros: os filtros (DS §10.9.2) já são construídos aqui.
 - Sem histórico de commits (mesma regra da migração da 1.7.0).
 - `tenaris.svg` é logo de cliente: fica no Painel de Clientes.
