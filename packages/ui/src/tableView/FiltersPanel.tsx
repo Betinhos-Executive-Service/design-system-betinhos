@@ -110,9 +110,10 @@ export function FiltersPanel({ open, onClose, fields, value, onApply, search, co
 
   return (
     <>
+      {/* O conteúdo só existe aberto: fechado, os editores de todos os campos pesariam na lista e duplicariam os da linha rápida. */}
       {mobile
-        ? <Sheet open={open} onClose={requestClose} title="Filtros" footer={footer}>{body}</Sheet>
-        : <Drawer open={open} onClose={requestClose} title="Filtros" size="wide" footer={footer}>{body}</Drawer>}
+        ? <Sheet open={open} onClose={requestClose} title="Filtros" footer={footer}>{open ? body : null}</Sheet>
+        : <Drawer open={open} onClose={requestClose} title="Filtros" size="wide" footer={footer}>{open ? body : null}</Drawer>}
       <Dialog
         open={confirming}
         onClose={() => setConfirming(false)}
