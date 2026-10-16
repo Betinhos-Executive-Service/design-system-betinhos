@@ -1,6 +1,6 @@
 {
   "name": "design-system-betinhos",
-  "version": "1.9.0",
+  "version": "1.9.1",
   "private": true,
   "type": "module",
   "description": "Fonte oficial do Design System Betinhos: DESIGN_SYSTEM.md, design-tokens.json e o CSS gerado.",

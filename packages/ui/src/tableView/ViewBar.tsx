@@ -9,7 +9,7 @@ import type { ViewColumnDef } from './config'
 import { ColumnsPanel } from './ColumnsPanel'
 import { FilterChips } from './FilterChips'
 import type { LookupSearch } from './FilterEditors'
-import { countActiveFilters, readFilters, storedFilters, type FilterField, type TableFilters } from './filters'
+import { countActiveFilters, emptyFilters, readFilters, storedFilters, type FilterField, type TableFilters } from './filters'
 import { FiltersPanel, type FiltersPanelTab } from './FiltersPanel'
 import { icons } from './icons'
 import type { TableViewEntry } from './store'
@@ -106,6 +106,12 @@ export function ViewBar({ view, columns, children, onError, filters }: ViewBarPr
   ]
 
   const current = filters ? readFilters(view.config.filters, filters.fields) : null
+  // Filtro que a tela não conseguiu aplicar (campos indisponíveis) some no `readFilters`; o chip dele precisa continuar
+  // visível, com o alerta "não aplicado" (§10.9.2). Nesse caso os chips mostram o que está gravado.
+  const raw = view.config.filters as Partial<TableFilters> | undefined
+  const shown = filters?.notApplied?.length && raw?.quick && typeof raw.quick === 'object'
+    ? { quick: raw.quick, advanced: raw.advanced?.type === 'group' ? raw.advanced : emptyFilters().advanced }
+    : current
   const activeCount = filters && current ? countActiveFilters(current, filters.fields) : 0
   const setFilters = (next: TableFilters) => view.setConfig((config) => ({ ...config, filters: storedFilters(next) }))
   // O chip de filtro rápido foca a célula da coluna; sem a linha visível (ou no mobile), abre o painel.
@@ -208,7 +214,7 @@ export function ViewBar({ view, columns, children, onError, filters }: ViewBarPr
     {filters && current ? (
       <>
         <FilterChips
-          filters={current}
+          filters={shown ?? current}
           fields={filters.fields}
           notApplied={filters.notApplied}
           onChange={setFilters}
