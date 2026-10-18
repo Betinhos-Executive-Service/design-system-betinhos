@@ -118,6 +118,12 @@ describe('buildEntries e pickInitial', () => {
     expect(entries.find((e) => e.id === 'p1')?.config).toEqual(fallback)
   })
 
+  it('a visão padrão leva o nome da tela quando informado', () => {
+    expect(buildEntries(stored, defs, fallback, false)[0].name).toBe('Visão padrão')
+    expect(buildEntries(stored, defs, fallback, false, 'Todas as OPs')[0].name).toBe('Todas as OPs')
+    expect(buildEntries(stored, defs, fallback, false, '  ')[0].name).toBe('Visão padrão')
+  })
+
   it('só gestor edita pública; ninguém edita a padrão', () => {
     const comum = buildEntries(stored, defs, fallback, false)
     const gestor = buildEntries(stored, defs, fallback, true)

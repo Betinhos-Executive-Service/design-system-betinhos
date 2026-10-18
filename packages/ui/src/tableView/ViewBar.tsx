@@ -15,6 +15,9 @@ import { icons } from './icons'
 import type { TableViewEntry } from './store'
 import type { TableViewState } from './useTableView'
 
+/** Explica o selo "Alterada" (§10.9.1): o que difere e onde resolver, sem abrir o menu para descobrir. */
+const DIRTY_HINT = 'Colunas, ordem ou filtros diferentes da visão salva. No menu: Salvar, Salvar como ou Restaurar padrão.'
+
 export const VIEW_NAME_MAX = 100
 
 export type ViewBarProps = {
@@ -130,7 +133,7 @@ export function ViewBar({ view, columns, children, onError, filters }: ViewBarPr
           align="start"
           actions={actions}
           trigger={(props) => (
-            <button {...props} type="button" className="bt-viewbar__trigger" aria-label={`Visão: ${active.name}${dirty ? ' (alterada)' : ''}. Trocar ou salvar visão`}>
+            <button {...props} type="button" className="bt-viewbar__trigger" title={dirty ? DIRTY_HINT : undefined} aria-label={`Visão: ${active.name}${dirty ? ` (alterada: ${DIRTY_HINT})` : ''}. Trocar ou salvar visão`}>
               {active.scope === 'padrao' ? null : <span className="bt-viewbar__scope" aria-hidden="true">{scopeIcon(active)}</span>}
               <span className="bt-viewbar__name">{active.name}</span>
               <span className="bt-viewbar__chevron" aria-hidden="true">{icons.chevronDown}</span>
