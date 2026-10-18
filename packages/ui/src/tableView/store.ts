@@ -38,14 +38,14 @@ export const DEFAULT_VIEW_NAME = 'Visão padrão'
 const byName = (a: { name: string }, b: { name: string }) => a.name.localeCompare(b.name, 'pt-BR')
 
 /** Padrão, depois públicas (por ordem e nome), depois as minhas (por nome); pessoais de outros ficam de fora. */
-export function buildEntries(stored: StoredView[], defs: ViewColumnDef[], fallback: ViewConfig, canPublish: boolean): TableViewEntry[] {
+export function buildEntries(stored: StoredView[], defs: ViewColumnDef[], fallback: ViewConfig, canPublish: boolean, defaultName = DEFAULT_VIEW_NAME): TableViewEntry[] {
   const entry = (v: StoredView, scope: ViewScope): TableViewEntry => ({
     id: v.id, name: v.name, scope, canEdit: scope === 'pessoal' || canPublish, config: normalizeConfig(parseConfig(v.config), defs, fallback),
   })
   const publicas = stored.filter((v) => v.publica).sort((a, b) => (a.ordem ?? 9999) - (b.ordem ?? 9999) || byName(a, b))
   const minhas = stored.filter((v) => !v.publica && v.mine).sort(byName)
   return [
-    { id: DEFAULT_VIEW_ID, name: DEFAULT_VIEW_NAME, scope: 'padrao', canEdit: false, config: fallback },
+    { id: DEFAULT_VIEW_ID, name: defaultName.trim() || DEFAULT_VIEW_NAME, scope: 'padrao', canEdit: false, config: fallback },
     ...publicas.map((v) => entry(v, 'publica')),
     ...minhas.map((v) => entry(v, 'pessoal')),
   ]

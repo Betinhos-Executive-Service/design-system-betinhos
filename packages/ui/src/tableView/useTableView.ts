@@ -11,6 +11,11 @@ export type UseTableViewOptions = {
   store: ViewStore
   defaultSort?: ViewSort
   defaultFilters?: ViewFilters
+  /**
+   * Nome da visão padrão, que também é o título da lista (§10.9.1). Use o nome da tela ("Todas as OPs", "Pessoas")
+   * para o usuário saber onde está; sem ele, "Visão padrão".
+   */
+  defaultName?: string
   /** Onde lembrar a última visão; padrão `localStorage` (falha silenciosa). */
   storage?: KV | null
 }
@@ -55,7 +60,7 @@ function writeLast(kv: KV | null, tela: string, id: string) {
 }
 
 /** Visões salvas e estado das colunas de uma lista (Design System §10.9.1). */
-export function useTableView({ tela, columns, store, defaultSort = null, defaultFilters, storage }: UseTableViewOptions): TableViewState {
+export function useTableView({ tela, columns, store, defaultSort = null, defaultFilters, defaultName, storage }: UseTableViewOptions): TableViewState {
   const kv = storage === undefined ? defaultStorage() : storage
   // A tela declara as colunas a cada render; a identidade estável vem das chaves.
   const signature = columns.map((c) => `${c.key}:${c.defaultHidden ? 0 : 1}`).join('|')
@@ -66,7 +71,7 @@ export function useTableView({ tela, columns, store, defaultSort = null, default
   const [status, setStatus] = useState<TableViewState['status']>('loading')
   const [error, setError] = useState<unknown>(null)
   const [canPublish, setCanPublish] = useState(false)
-  const [views, setViews] = useState<TableViewEntry[]>(() => buildEntries([], defs, fallback, false))
+  const [views, setViews] = useState<TableViewEntry[]>(() => buildEntries([], defs, fallback, false, defaultName))
   const [activeId, setActiveId] = useState(DEFAULT_VIEW_ID)
   const [config, setConfigState] = useState<ViewConfig>(fallback)
   const [quickRow, setQuickRowState] = useState(() => {
@@ -89,7 +94,7 @@ export function useTableView({ tela, columns, store, defaultSort = null, default
     try {
       const [stored, publisher] = await Promise.all([store.list(tela), store.canPublish().catch(() => false)])
       if (!live.current) return
-      const entries = buildEntries(stored, defs, fallback, publisher)
+      const entries = buildEntries(stored, defs, fallback, publisher, defaultName)
       const chosen = selectId ? entries.find((e) => e.id === selectId) ?? entries[0] : pickInitial(entries, readLast(kv, tela))
       setViews(entries)
       setCanPublish(publisher)
@@ -103,7 +108,7 @@ export function useTableView({ tela, columns, store, defaultSort = null, default
       setStatus('error')
       setError(err)
     }
-  }, [store, tela, defs, fallback, kv])
+  }, [store, tela, defs, fallback, kv, defaultName])
 
   useEffect(() => { void load() }, [load])
 
