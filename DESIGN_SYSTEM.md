@@ -713,7 +713,7 @@ Rótulos começam com verbo: “Registrar erro”, “Salvar alterações”, �
 Seletor de visão:
 
 - É o título da página: `heading.2` (Manrope 20/25 px, 700), navy, seguido de chevron. Abre um menu agrupado em "Padrão", "Públicas" e "Minhas", nessa ordem. Visão pública leva ícone de grupo; a diferença nunca é só de cor.
-- Quando a tela difere da visão salva (colunas, larguras, ordenação ou filtros), mostra o rótulo "Alterada" em texto de apoio ao lado do nome.
+- Quando a tela difere da visão salva (colunas, larguras, ordenação ou filtros), mostra o rótulo "Alterada" em texto de apoio ao lado do nome, com dica que diz o que difere e onde resolver (Salvar, Salvar como, Restaurar padrão).
 - Ações do menu: Salvar, Salvar como, Renomear, Excluir, Tornar pública e Restaurar padrão. Salvar, Renomear e Excluir só aparecem para visões que o usuário pode alterar.
 - Visão pessoal é visível só para o dono; qualquer usuário cria. Visão pública é visível para todos; só o perfil de gestor cria, altera, exclui ou publica.
 - A visão padrão é definida no código da tela, não pode ser editada nem excluída e é o destino de "Restaurar padrão". Como o seletor é o título, a visão padrão leva o nome da tela ("Todas as OPs", "Pessoas", "Funcionários ativos"), nunca o genérico "Visão padrão": o usuário precisa saber onde está sem olhar o menu lateral.
@@ -1468,6 +1468,7 @@ O padrão de mercado não é apenas um PDF de marca. É um produto versionado: t
 
 - §10.9.1: a visão padrão leva o nome da tela, já que o seletor de visão é o título da lista (auditoria de UX de 18/10: sete listas do Sistema Betinhos mostravam só "Visão padrão").
 - `useTableView` aceita `defaultName`; sem ele, continua "Visão padrão". `buildEntries` recebe o nome como quinto argumento opcional.
+- `ViewBar`: o seletor com "Alterada" ganha dica (title e `aria-label`) explicando o que difere da visão salva e onde resolver (Salvar, Salvar como, Restaurar padrão).
 
 ### 1.9.1 — 15/10/2026
 
