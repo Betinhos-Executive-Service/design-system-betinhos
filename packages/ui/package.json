@@ -1,16 +1,20 @@
 {
   "name": "@betinhos-executive-service/ui",
-  "version": "1.10.1",
+  "version": "1.11.0",
   "description": "Componentes React do Design System Betinhos.",
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
+    "./error-logger": "./src/errorLogger.ts",
+    "./error-logger.js": "./dist/error-logger.js",
+    "./error-logger.iife.js": "./dist/error-logger.iife.js",
     "./styles.css": "./src/styles.css",
     "./package.json": "./package.json"
   },
   "types": "./src/index.ts",
   "files": [
     "src",
+    "dist",
     "!src/**/*.test.ts",
     "!src/**/*.test.tsx"
   ],
@@ -18,6 +22,8 @@
     "*.css"
   ],
   "scripts": {
+    "build": "node scripts/build-error-logger.mjs",
+    "prepack": "node scripts/build-error-logger.mjs",
     "test": "vitest run",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
@@ -32,6 +38,7 @@
     "@types/node": "^24.19.2",
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",
+    "esbuild": "^0.28.2",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "typescript": "^5.9.0",

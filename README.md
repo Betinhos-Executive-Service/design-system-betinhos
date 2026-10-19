@@ -27,6 +27,24 @@ O alias mantém os imports `@betinhos/ui` no código. Localmente, `NODE_AUTH_TOK
 
 Monorepo pnpm: `pnpm install`, `pnpm test` e `pnpm typecheck` na raiz.
 
+## Logger de erros do front
+
+`@betinhos-executive-service/ui/error-logger` (sem React) grava erros na tabela compartilhada `new_appmotoristaslog`. Em modo mock (sem `Xrm`/`GetGlobalContext`) não grava.
+
+```ts
+// main.tsx, antes do createRoot
+import { installErrorLogger } from '@betinhos/ui/error-logger'
+installErrorLogger({ appName: 'Tela X', appVersion: `v${__APP_VERSION__}`, builtAt: __APP_BUILT_AT__ })
+```
+
+```html
+<!-- HTML único: cole o conteúdo de packages/ui/dist/error-logger.iife.js (ou referencie-o como web resource JS) -->
+<script>/* conteúdo de error-logger.iife.js */</script>
+<script>BetinhosErrorLogger.installErrorLogger({ appName: 'Tela X', appVersion: 'v0.0.1' })</script>
+```
+
+Também: `logAppError(error, { action, phase, component, errorCode, payload })`, `logDataverseFailure({ method, path, status, body })` ou `({ method, path, error })` para erro de rede, e `setErrorLogContext({ screen, userEmail })`. Depois de mudar `src/errorLogger.ts`, rode `pnpm --filter @betinhos-executive-service/ui build` e commite `packages/ui/dist` (o CI confere).
+
 ## Como mudar
 
 1. Edite `DESIGN_SYSTEM.md` e/ou `design-tokens.json`. Nunca edite `design-tokens.css` à mão.

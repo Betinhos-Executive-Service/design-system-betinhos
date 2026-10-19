@@ -2,3 +2,8 @@ node_modules/
 graphify-out/
 .npm-cache/
 dist/
+# Logger de erros em JS puro: versionado para telas HTML sem npm (o CI confere que está em dia).
+!packages/ui/dist/
+
+# Evidências da verificação
+.verificacao/

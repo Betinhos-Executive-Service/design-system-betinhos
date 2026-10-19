@@ -24,6 +24,10 @@ jobs:
           git diff --exit-code -- design-tokens.css DESIGN_SYSTEM.md packages/tokens || { echo "::error::Rode npm run design:generate e commite o resultado."; exit 1; }
       - run: node scripts/validate-design-system.mjs
       - run: node scripts/check-versions.mjs
+      - name: Logger de erros (dist) em dia
+        run: |
+          pnpm --filter @betinhos-executive-service/ui build
+          git diff --exit-code -- packages/ui/dist || { echo "::error::Rode pnpm --filter @betinhos-executive-service/ui build e commite o dist."; exit 1; }
       - run: pnpm typecheck
       - run: pnpm test
       - run: pnpm build:vitrine
