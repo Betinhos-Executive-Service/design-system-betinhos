@@ -35,7 +35,10 @@ export function Menu({ trigger, actions, align = 'end' }: MenuProps) {
       const width = panel.offsetWidth
       const left = align === 'end' ? Math.max(8, r.right - width) : Math.min(r.left, window.innerWidth - width - 8)
       const below = window.innerHeight - r.bottom - 8
-      const up = below < panel.offsetHeight && r.top > below
+      const above = r.top - 8
+      const up = below < panel.scrollHeight && above > below
+      // Lista longa: limita ao espaço visível e rola dentro do painel, sem passar da tela.
+      panel.style.maxHeight = `${Math.max(120, (up ? above : below) - 4)}px`
       panel.style.left = `${left}px`
       panel.style.top = up ? 'auto' : `${r.bottom + 4}px`
       panel.style.bottom = up ? `${window.innerHeight - r.top + 4}px` : 'auto'
