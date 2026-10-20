@@ -1,30 +1,35 @@
-/* Alert (na página) e Toast (flutuante): ícone e texto no par de tokens do tom. */
+/* Alert (na página) e Toast (flutuante): texto em tinta; a cor do tom vai só no ícone e no fundo do Alert. */
 .bt-alert, .bt-toast {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: var(--bt-space-2);
   font-family: var(--bt-font-family-sans);
-  font-size: var(--bt-font-size-12);
+  font-size: var(--bt-font-size-13);
+  font-weight: var(--bt-font-weight-semibold);
   line-height: 1.42;
+  color: var(--bt-color-text-control);
 }
-.bt-alert { padding: var(--bt-space-2-5) var(--bt-space-3); border-radius: var(--bt-radius-md); }
-.bt-alert__icon { flex: 0 0 auto; display: grid; place-items: center; height: 17px; }
+.bt-alert { padding: var(--bt-space-3) var(--bt-space-4); border-radius: var(--bt-radius-md); }
+.bt-alert__icon { flex: 0 0 auto; display: grid; place-items: center; width: var(--bt-icon-size-small); height: var(--bt-icon-size-small); }
+.bt-alert__icon svg { width: 100%; height: 100%; }
 .bt-alert__body { flex: 1 1 auto; min-width: 0; display: grid; gap: var(--bt-space-0-5); }
 .bt-alert__title { margin: 0; font-weight: var(--bt-font-weight-extrabold); }
-.bt-alert__text { color: var(--bt-color-text-primary); }
 .bt-alert__title + .bt-alert__text { font-weight: var(--bt-font-weight-regular); }
-.bt-alert__text:first-child { font-weight: var(--bt-font-weight-bold); color: inherit; }
 .bt-alert__action { margin-top: var(--bt-space-1); }
 .bt-alert__close { flex: 0 0 auto; display: grid; place-items: center; width: 24px; height: 24px; margin: -4px -4px -4px 0; padding: 0; border: 0; border-radius: var(--bt-radius-full); background: transparent; color: inherit; cursor: pointer; }
-.bt-alert__close:focus-visible { outline: 0; box-shadow: 0 0 0 2px currentColor; }
+.bt-alert__close:focus-visible { outline: 0; box-shadow: 0 0 0 2px var(--bt-color-action); }
 
-.bt-alert--info, .bt-toast--info { color: var(--bt-color-action); background-color: var(--bt-color-action-soft); }
-.bt-alert--success, .bt-toast--success { color: var(--bt-color-success); background-color: var(--bt-color-success-soft); }
-.bt-alert--warning, .bt-toast--warning { color: var(--bt-color-warning); background-color: var(--bt-color-warning-soft); }
-.bt-alert--danger, .bt-toast--danger { color: var(--bt-color-danger); background-color: var(--bt-color-danger-soft); }
+.bt-alert--info { background-color: var(--bt-color-action-soft); }
+.bt-alert--success { background-color: var(--bt-color-success-soft); }
+.bt-alert--warning { background-color: var(--bt-color-warning-soft); }
+.bt-alert--danger { background-color: var(--bt-color-danger-soft); }
+.bt-alert--info .bt-alert__icon, .bt-toast--info .bt-alert__icon { color: var(--bt-color-action); }
+.bt-alert--success .bt-alert__icon, .bt-toast--success .bt-alert__icon { color: var(--bt-color-success); }
+.bt-alert--warning .bt-alert__icon, .bt-toast--warning .bt-alert__icon { color: var(--bt-color-warning); }
+.bt-alert--danger .bt-alert__icon, .bt-toast--danger .bt-alert__icon { color: var(--bt-color-danger); }
 
 .bt-toast-region { position: fixed; top: var(--bt-space-4); left: 50%; z-index: var(--bt-z-index-toast); display: grid; gap: var(--bt-space-2); width: min(460px, 90vw); transform: translateX(-50%); pointer-events: none; }
-.bt-toast { align-items: center; min-height: var(--bt-control-height-default); padding: var(--bt-space-2) var(--bt-space-3); border-radius: var(--bt-radius-md); box-shadow: var(--bt-shadow-toast); font-weight: var(--bt-font-weight-bold); pointer-events: auto; animation: bt-toast-in var(--bt-duration-normal) var(--bt-ease-out); }
+.bt-toast { align-items: center; min-height: var(--bt-control-height-default); padding: var(--bt-space-2) var(--bt-space-3); border: var(--bt-border-width-default) solid var(--bt-color-border); border-radius: var(--bt-radius-lg); background-color: var(--bt-color-surface); box-shadow: var(--bt-shadow-toast); pointer-events: auto; animation: bt-toast-in var(--bt-duration-normal) var(--bt-ease-out); }
 .bt-toast__text { flex: 1 1 auto; min-width: 0; }
 .bt-toast .bt-alert__close { margin: 0; }
 @keyframes bt-toast-in { from { opacity: 0; transform: translateY(-10px); } }
