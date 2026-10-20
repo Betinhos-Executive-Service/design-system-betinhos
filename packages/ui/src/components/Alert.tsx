@@ -27,7 +27,7 @@ export type AlertProps = Omit<HTMLAttributes<HTMLDivElement>, 'title'> & {
   children?: ReactNode
 }
 
-/** Aviso dentro da página: ícone e texto num bloco suave do tom. Erro usa `role="alert"`; o resto, `role="status"`. */
+/** Aviso dentro da página: bloco sólido no tom suave, ícone na cor do tom e texto em tinta. Erro usa `role="alert"`; o resto, `role="status"`. */
 export function Alert({ tone = 'info', title, action, onDismiss, className, children, ...rest }: AlertProps) {
   return (
     <div className={['bt-alert', `bt-alert--${tone}`, className].filter(Boolean).join(' ')} role={tone === 'danger' ? 'alert' : 'status'} {...rest}>
