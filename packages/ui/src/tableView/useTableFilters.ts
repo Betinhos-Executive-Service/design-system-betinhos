@@ -4,7 +4,7 @@ import type { LookupSearch } from './FilterEditors'
 import { conditionProblem, filtersToFetchXml, readFilters, storedFilters, type FilterCondition, type FilterField, type FilterGroup, type TableFilters } from './filters'
 import type { TableViewState } from './useTableView'
 
-/** Colunas com alguma condição valendo (rápida ou avançada): o cabeçalho mostra o funil. */
+/** Colunas com alguma condição valendo (por coluna ou avançada): o título mostra o ▾ azul com ponto. */
 function filteredKeys(filters: TableFilters, fields: FilterField[]): string[] {
   const map = new Map(fields.map((f) => [f.key, f]))
   const keys = new Set<string>()
@@ -32,7 +32,7 @@ export function useTableFilters(view: TableViewState, fields: FilterField[], sea
   }, [view, fields])
   const fetchXml = useMemo(() => filtersToFetchXml(filters, fields), [filters, fields])
   const quickFilters: TableQuickFilters = useMemo(() => ({
-    fields, value: filters.quick, onChange: setQuick, search, visible: view.quickRow, filtered: filteredKeys(filters, fields),
-  }), [fields, filters, setQuick, search, view.quickRow])
+    fields, value: filters.quick, onChange: setQuick, search, filtered: filteredKeys(filters, fields),
+  }), [fields, filters, setQuick, search])
   return { filters, setFilters, setQuick, fetchXml, quickFilters }
 }

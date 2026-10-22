@@ -1,6 +1,6 @@
 # Betinhos Design System
 
-**Versão:** 1.12.0
+**Versão:** 1.13.0
 
 **Status:** fonte oficial inicial
 
@@ -721,7 +721,7 @@ Seletor de visão:
 
 Comandos da linha:
 
-- Botões secundários com ícone e rótulo: "Colunas" (`Columns3`) e "Filtros" (`Filter`, com o número de condições ativas); botão de ícone "Filtro rápido" (`ListFilter`, `aria-pressed`); busca por palavra-chave com largura fixa à direita. Em mobile os rótulos podem virar só ícone, com `aria-label`.
+- Botões secundários com ícone e rótulo: "Colunas" (`Columns3`) e "Filtros" (`Filter`, com o número de condições ativas); busca por palavra-chave com largura fixa à direita. Em mobile os rótulos podem virar só ícone, com `aria-label`. O filtro por coluna não tem botão na linha de comando: mora no menu do título de cada coluna (§10.9.2).
 - A ação primária da lista, quando existir, é a última à direita e é a única primária da página.
 
 Painel de colunas:
@@ -747,34 +747,34 @@ O que a visão guarda: colunas visíveis, ordem, larguras, ordenação e filtros
 
 ### 10.9.2 Filtros (obrigatório em listas de registros)
 
-**Anatomia:** três camadas que se somam com E — filtro rápido por coluna, filtro avançado (painel) e busca por palavra-chave — e uma faixa de chips com tudo o que está ativo, entre a linha de comando e a tabela.
+**Anatomia:** três camadas que se somam com E — filtro por coluna (menu do título), filtro avançado (painel) e busca por palavra-chave — e uma faixa de chips com tudo o que está ativo, entre a linha de comando e a tabela.
 
-Filtro rápido por coluna (hot filters):
+Filtro por coluna (hot filters, no menu do título):
 
-- Linha de filtros logo abaixo do cabeçalho, uma célula por coluna visível, alinhada à coluna e com a mesma largura. Altura 36 px, fundo `#FCFCFB`, controles de 28 px com borda de 1 px.
-- Ligada por padrão no desktop. O botão "Filtro rápido" mostra ou esconde a linha; esconder não limpa os valores. A preferência mostrar/esconder é por usuário e por tela, no navegador.
-- O controle segue o tipo da coluna:
-  - **Texto:** campo "contém", aplicado 300 ms depois da última tecla. Prefixos opcionais: `=` igual, `^` começa com, `!` não contém, `vazio` e `preenchido`.
-  - **Opção:** seleção múltipla com busca; os valores escolhidos combinam com OU. Mostra a contagem por valor quando a fonte entrega sem custo extra.
+- O título de cada coluna é o gatilho de um menu, como no model-driven: "Ordenar A→Z", "Ordenar Z→A", "Filtrar por…", "Limpar filtro" (só com filtro valendo) e "Ocultar coluna" (desabilitado na última coluna visível). O ▾ do título aparece no hover, no foco, com o menu aberto e sempre que a coluna está filtrada; em pointer grosso fica sempre visível. Não existe linha de controles sob o cabeçalho nem botão "Filtro rápido" na linha de comando.
+- "Filtrar por…" abre um painel ancorado logo abaixo do título (300 px, `role="dialog"` "Filtro da coluna <coluna>", camada superior como o `Menu`), com o título "Filtrar por <coluna>", o operador do tipo da coluna, o controle de valor e os botões "Limpar" (secundário, só com filtro valendo) e "Aplicar" (primário). Com filtro valendo, uma linha "Filtro ativo: …" em azul descreve a condição atual e o painel abre já com ela.
+- Operadores e controle seguem o tipo da coluna, os mesmos do filtro avançado:
+  - **Texto:** contém, não contém, igual a, diferente de, começa com, termina com, está vazio, está preenchido.
+  - **Opção:** seleção múltipla com busca; os valores escolhidos combinam com OU.
   - **Lookup:** seleção múltipla pesquisável (busca no servidor depois de 2 caracteres).
-  - **Data:** atalhos relativos (Hoje, Amanhã, Ontem, Esta semana, Próximos 7 dias, Últimos 7 dias, Este mês, Mês passado) e Intervalo com duas datas.
-  - **Número e valor:** campo com operador (`=`, `≥`, `≤`, `entre`); valores em BRL quando a coluna é moeda.
-  - **Sim/Não:** Todos, Sim, Não.
-- Célula com filtro ativo: borda azul e botão × para limpar. O cabeçalho da coluna filtrada mostra o ícone de funil em azul, com `aria-label` "Filtrada".
-- Colunas que não filtram (calculadas, imagem) mostram a célula vazia, sem controle.
-- Cada controle tem `aria-label` "Filtrar <coluna>". `Esc` limpa o campo em foco; `Enter` aplica na hora, sem esperar os 300 ms.
-- No mobile e em pointer grosso a linha não aparece: os mesmos filtros ficam no painel, na aba "Por coluna".
+  - **Data:** atalhos relativos (Hoje, Amanhã, Ontem, Esta semana, Próximos 7 dias, Últimos 7 dias, Este mês, Mês passado), em, antes de, depois de e entre (duas datas).
+  - **Número e valor:** igual, diferente, maior, maior ou igual, menor, menor ou igual, entre; valores em BRL quando a coluna é moeda.
+  - **Sim/Não:** é sim, é não.
+- Nada vale antes de "Aplicar": `Enter` num campo de texto, número ou data aplica; `Esc` e clique fora fecham sem aplicar; condição incompleta desabilita "Aplicar" e mostra o que falta. Ao fechar, o foco volta ao título da coluna.
+- Coluna com filtro valendo (por coluna ou avançado): ▾ do título em azul, sempre visível, com um ponto de ação; o menu ganha "Limpar filtro".
+- Colunas que não filtram (calculadas, imagem, tabela relacionada) não mostram "Filtrar por…": só ordenar e ocultar.
+- No mobile o mesmo painel abre ancorado ao título quando o cabeçalho está visível; nas listas que viram cartões (cabeçalho escondido) os mesmos filtros ficam no painel "Filtros", aba "Por coluna".
 
 Filtro avançado (painel "Filtros"):
 
-- `Drawer` largo (720 px) no desktop e `Sheet` no mobile, título "Filtros". Duas abas: "Por coluna" (os filtros rápidos em lista, para quem está no mobile ou prefere o painel) e "Avançado".
+- `Drawer` largo (720 px) no desktop e `Sheet` no mobile, título "Filtros". Duas abas: "Por coluna" (os filtros por coluna em lista, para quem está no mobile ou prefere o painel) e "Avançado".
 - "Avançado" monta condições em grupos: cada linha tem campo, operador e valor; cada grupo tem o seletor E/OU (segmented control) e os botões "+ Condição" e "+ Grupo". Até dois níveis de grupo; mais que isso fica ilegível e não é oferecido.
 - Os campos incluem colunas fora da visão. Campos de tabelas relacionadas aparecem agrupados pelo nome da relação ("Cliente › Cidade").
 - Operadores por tipo, sempre em português: Texto (contém, não contém, igual a, diferente de, começa com, termina com, está vazio, está preenchido); Opção e Lookup (é um de, não é nenhum de, está vazio, está preenchido); Data (os atalhos relativos, em, antes de, depois de, entre, está vazio, está preenchido); Número (igual a, diferente de, maior que, maior ou igual, menor que, menor ou igual, entre, está vazio); Sim/Não (é sim, é não).
 - Condição incompleta fica marcada em vermelho com a mensagem do que falta e é ignorada até ser completada; "Aplicar" mostra quantas serão ignoradas.
 - Rodapé: "Limpar tudo" (ghost), "Cancelar" e "Aplicar". Quando a fonte permitir contar sem custo, "Aplicar" mostra o resultado previsto ("Aplicar · 42 registros").
 - As mudanças só valem em "Aplicar". Fechar com alteração pendente abre "Descartar alterações?".
-- Uma condição avançada sobre a mesma coluna de um filtro rápido não substitui o rápido: os dois valem com E, e os chips mostram os dois.
+- Uma condição avançada sobre a mesma coluna de um filtro por coluna não substitui o filtro da coluna: os dois valem com E, e os chips mostram os dois.
 
 Busca por palavra-chave:
 
@@ -782,8 +782,8 @@ Busca por palavra-chave:
 
 Chips de filtros ativos:
 
-- Faixa logo acima da tabela, só quando há filtro. Um chip por filtro rápido ("Status: Pendente, Confirmado") e um por condição ou grupo de primeiro nível do avançado ("Data: Esta semana", "Grupo OU: Cliente é Alfa · Tipo é Blindado").
-- O texto do chip reabre onde o filtro foi feito (foca a célula do filtro rápido ou abre o painel na condição); o × remove. No fim, "Limpar filtros" (ghost).
+- Faixa logo acima da tabela, só quando há filtro. Um chip por filtro de coluna ("Status: Pendente, Confirmado") e um por condição ou grupo de primeiro nível do avançado ("Data: Esta semana", "Grupo OU: Cliente é Alfa · Tipo é Blindado").
+- O texto do chip reabre onde o filtro foi feito (o painel "Filtrar por" no título da coluna, ou o painel "Filtros" na condição); o × remove. No fim, "Limpar filtros" (ghost).
 - Chip de filtro que a tela não conseguiu aplicar (coluna removida, metadata indisponível) leva ícone de alerta e o texto "não aplicado".
 - Em mobile os chips rolam na horizontal, com alvo de 44 px.
 
@@ -793,7 +793,7 @@ Comportamento:
 - Mudar filtro volta para a primeira página e mantém a ordenação.
 - Sem resultado: `EmptyState` "Nenhum registro com estes filtros" com a ação "Limpar filtros".
 - O estado dos filtros vai para a URL, para o link compartilhado abrir igual.
-- A visão guarda filtros rápidos e avançados (não guarda a busca). Mudar qualquer filtro marca a visão como "Alterada".
+- A visão guarda filtros por coluna e avançados (não guarda a busca). Mudar qualquer filtro marca a visão como "Alterada".
 
 ### 10.10 Date tile
 
@@ -875,13 +875,13 @@ Priorize anomalia e ação. Nunca transforme toda informação em KPI.
 ### 11.2 Página de gestão
 
 ```text
-Seletor de visão ...... Colunas · Filtros · Filtro rápido · Busca · Ação primária
+Seletor de visão ...... Colunas · Filtros · Busca · Ação primária
 Chips de filtros ativos (só quando há filtro)
-Tabela: cabeçalho + linha de filtro rápido (rolagem horizontal quando preciso)
+Tabela: cabeçalho com menu por coluna (ordenar, filtrar, ocultar); rolagem horizontal quando preciso
 Linhas: N · Paginação
 ```
 
-Sem `PageHeader`, descrição, KPIs ou cards acima da tabela: a página é a linha de comando, os chips de filtros ativos e a tabela com a linha de filtro rápido (§10.9.1 e §10.9.2). Filtros sempre refletem o estado atual.
+Sem `PageHeader`, descrição, KPIs ou cards acima da tabela: a página é a linha de comando, os chips de filtros ativos e a tabela com o menu de filtro no título de cada coluna (§10.9.1 e §10.9.2). Filtros sempre refletem o estado atual.
 
 ### 11.3 Detalhe operacional
 
@@ -1174,7 +1174,7 @@ Este bloco permite implementação mesmo quando os arquivos auxiliares não acom
 
 <!-- GENERATED:TOKENS_CSS:START -->
 ```css
-/* Betinhos Design System 1.12.0.
+/* Betinhos Design System 1.13.0.
  * GENERATED from design-tokens.json. Do not edit this file manually.
  */
 :root {
@@ -1466,6 +1466,12 @@ O padrão de mercado não é apenas um PDF de marca. É um produto versionado: t
 ---
 
 ## 20. Changelog
+
+### 1.13.0 — 22/10/2026
+
+- §10.9.2: o filtro por coluna (hot filters) passa a morar no menu do título da coluna, como no model-driven e na Geral do Sistema Betinhos: "Ordenar A→Z", "Ordenar Z→A", "Filtrar por…", "Limpar filtro" e "Ocultar coluna". "Filtrar por…" abre um painel ancorado ao título com operador, valor, "Limpar" e "Aplicar". A linha de controles sob o cabeçalho e o botão "Filtro rápido" da linha de comando saem do padrão (§10.9.1 e §11.2 ajustados).
+- `@betinhos-executive-service/ui`: novos `ColumnMenu` e `ColumnFilter` (migrados da Geral); a `Table` com `view` usa o menu no título e abre o painel quando recebe `quickFilters` (prop `visible` removida); `sortBy` no modelo de visão; `useTableView` perde `quickRow`/`setQuickRow`; `ViewBar` sem o botão "Filtro rápido", e o chip de filtro ativo reabre o painel da coluna pelo evento `COLUMN_FILTER_EVENT`.
+- **Quebra:** telas que liam `view.quickRow` ou passavam `visible` em `quickFilters` precisam remover isso; a Geral do Sistema Betinhos passa a importar `ColumnMenu`/`ColumnFilter` do pacote.
 
 ### 1.12.0 — 20/10/2026
 

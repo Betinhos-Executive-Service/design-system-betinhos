@@ -126,6 +126,9 @@ export function resizeColumn(config: ViewConfig, key: string, width: number | nu
 }
 
 /** Clique no cabeçalho: outra coluna começa crescente; a mesma alterna o sentido. */
+/** Ordena pela coluna na direção pedida (menu do título: A→Z ou Z→A). */
+export const sortBy = (config: ViewConfig, key: string, dir: SortDir): ViewConfig => ({ ...config, sort: { key, dir } })
+
 export function toggleSort(config: ViewConfig, key: string): ViewConfig {
   const dir: SortDir = config.sort?.key === key && config.sort.dir === 'asc' ? 'desc' : 'asc'
   return { ...config, sort: { key, dir } }
