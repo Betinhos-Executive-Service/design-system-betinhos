@@ -581,6 +581,7 @@ Cada componente deve documentar anatomia, variantes, estados, conteúdo, acessib
 
 - Sidebar navy, 238 px, texto branco/cinza azulado.
 - Item de navegação: 44 px, raio 10 px, ícone 20 px, peso 700.
+- Todo item e grupo da sidebar principal do AppShell tem ícone Lucide. O ícone precisa representar a tela (não genérico) e ser distinto dos itens vizinhos e dos demais do menu, para o trilho recolhido continuar legível. Repetir ícone só quando for a mesma função em grupos diferentes (ex.: "Assistente" de cada departamento). Item sem ícone não entra no menu.
 - Ativo: branco + fundo branco 12%.
 - Rodapé: status de conexão com ponto e texto; nunca só ponto.
 - No desktop, pode recolher para trilho de 72 px por ação explícita do usuário. Nesse estado, preserve ícones, `title` e `aria-label`; textos não somem em mobile, onde a sidebar já não existe.
@@ -1466,6 +1467,10 @@ O padrão de mercado não é apenas um PDF de marca. É um produto versionado: t
 ---
 
 ## 20. Changelog
+
+### Próxima versão (não publicada)
+
+- §10.1 (App shell): ícone obrigatório em todo item e grupo da sidebar principal, coerente com a tela e distinto dos demais.
 
 ### 1.13.0 — 22/10/2026
 
