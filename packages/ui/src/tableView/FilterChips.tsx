@@ -5,7 +5,7 @@ export type FilterChipsProps = {
   filters: TableFilters
   fields: FilterField[]
   onChange: (filters: TableFilters) => void
-  /** O texto do chip reabre onde o filtro foi feito: a célula do filtro rápido ou o painel na condição. */
+  /** O texto do chip reabre onde o filtro foi feito: o painel "Filtrar por" da coluna ou o painel na condição. */
   onEditQuick?: (key: string) => void
   onEditAdvanced?: (id: string) => void
   /** Chaves (filtro rápido) ou ids (avançado) que a tela não conseguiu aplicar: ícone de alerta e "não aplicado". */

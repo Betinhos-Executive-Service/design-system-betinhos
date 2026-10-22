@@ -21,5 +21,9 @@ export const icons = {
   share: icon(<><circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" /><path d="m8.59 13.51 6.83 3.98" /><path d="m15.41 6.51-6.82 3.98" /></>),
   filter: icon(<path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z" />),
   listFilter: icon(<><path d="M3 6h18" /><path d="M7 12h10" /><path d="M10 18h4" /></>),
+  arrowUp: icon(<><path d="m5 12 7-7 7 7" /><path d="M12 19V5" /></>),
+  arrowDown: icon(<><path d="M12 5v14" /><path d="m19 12-7 7-7-7" /></>),
+  filterX: icon(<><path d="M13.013 3H2l8 9.46V19l4 2v-8.54l.9-1.055" /><path d="m22 3-5 5" /><path d="m17 3 5 5" /></>),
+  eyeOff: icon(<><path d="M10.733 5.076a10.744 10.744 0 0 1 11.205 6.575 1 1 0 0 1 0 .696 10.747 10.747 0 0 1-1.444 2.49" /><path d="M14.084 14.158a3 3 0 0 1-4.242-4.242" /><path d="M17.479 17.499a10.75 10.75 0 0 1-15.417-5.151 1 1 0 0 1 0-.696 10.75 10.75 0 0 1 4.446-5.143" /><path d="m2 2 20 20" /></>),
   reset: icon(<><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" /><path d="M3 3v5h5" /></>),
 }

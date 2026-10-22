@@ -33,37 +33,42 @@ button.bt-table__row:focus-visible { outline: 0; box-shadow: inset 0 0 0 2px var
 .bt-table__headcell { position: relative; align-self: stretch; padding-right: var(--bt-space-2); border-radius: var(--bt-radius-xs); }
 .bt-table__headcell:focus-visible { outline: 0; box-shadow: inset 0 0 0 2px var(--bt-focus-border); }
 .bt-table__headcell.is-dragging { z-index: 1; background-color: var(--bt-color-surface-neutral); box-shadow: inset 0 0 0 1px var(--bt-focus-border); cursor: grabbing; }
-.bt-table__sort { display: inline-flex; align-items: center; gap: var(--bt-space-1); min-width: 0; height: 100%; padding: 0; border: 0; background: transparent; color: inherit; font: inherit; letter-spacing: inherit; text-transform: inherit; cursor: pointer; }
-.bt-table__sort:focus-visible { outline: 0; box-shadow: 0 0 0 2px var(--bt-focus-border); border-radius: var(--bt-radius-xs); }
-.bt-table__sort-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.bt-table__sort-icon { flex: 0 0 auto; opacity: 0; transition: transform var(--bt-duration-fast) var(--bt-ease-out), opacity var(--bt-duration-fast) ease; }
-.bt-table__sort-icon.is-active { opacity: 1; color: var(--bt-color-action); }
-.bt-table__sort-icon.is-desc { transform: rotate(180deg); }
+/* O gatilho do menu vem envolto no `.bt-menu` (inline-flex): encolhe como item do flex para o rótulo truncar em vez de vazar. */
+.bt-table__headcell > .bt-menu { display: flex; flex: 0 1 auto; min-width: 0; max-width: 100%; height: 100%; }
 .bt-table__resize { position: absolute; top: 0; right: calc(var(--bt-space-3) / -2 - 4px); bottom: 0; z-index: 2; width: 8px; cursor: col-resize; touch-action: none; }
 .bt-table__resize::after { content: ""; position: absolute; top: 8px; bottom: 8px; left: 3px; width: 2px; border-radius: var(--bt-radius-full); background-color: transparent; transition: background-color var(--bt-duration-fast) ease; }
 .bt-table__resize:focus-visible { outline: 0; }
 .bt-table__resize:focus-visible::after { background-color: var(--bt-focus-border); }
 .bt-table__live { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
-/* Filtro rápido (§10.9.2): linha de 36 px sob o cabeçalho, controles de 28 px, célula ativa com borda azul. */
-.bt-table__filters { display: grid; grid-template-columns: var(--bt-table-columns); align-items: center; gap: var(--bt-space-3); width: max-content; min-width: 100%; min-height: 36px; padding: var(--bt-space-1) var(--bt-space-3-5); border-top: var(--bt-border-width-default) solid var(--bt-color-border); background-color: var(--bt-color-surface-neutral); }
-.bt-quick { position: relative; overflow: visible; gap: var(--bt-space-1); }
-.bt-table--view .bt-quick { overflow: visible; }
-.bt-quick > :first-child { flex: 1 1 auto; min-width: 0; }
-.bt-quick .bt-control { min-height: 28px; height: 28px; font-size: var(--bt-font-size-12); }
-.bt-quick.is-active .bt-control { border-color: var(--bt-color-action); box-shadow: inset 0 0 0 1px var(--bt-color-action); }
-.bt-quick__clear { display: grid; place-items: center; flex: 0 0 auto; width: 20px; height: 20px; padding: 0; border: 0; border-radius: var(--bt-radius-full); background: transparent; color: var(--bt-color-text-secondary); cursor: pointer; }
-.bt-quick__clear:focus-visible { outline: 0; box-shadow: 0 0 0 2px var(--bt-focus-border); }
-.bt-table__funnel { flex: 0 0 auto; color: var(--bt-color-action); }
+/* Título da coluna como gatilho de menu (§10.9.2): ordenar, "Filtrar por…", ocultar. O ▾ só aparece no hover, no foco, com o menu aberto ou com filtro. */
+.bt-colhead { display: inline-flex; align-items: center; gap: var(--bt-space-1); flex: 0 1 auto; min-width: 0; max-width: 100%; min-height: 32px; height: 100%; padding: 0; border: 0; background: transparent; color: inherit; font: inherit; letter-spacing: inherit; text-transform: inherit; cursor: pointer; }
+.bt-colhead:focus-visible { outline: 0; box-shadow: 0 0 0 2px var(--bt-focus-border); border-radius: var(--bt-radius-xs); }
+.bt-colhead__label { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bt-colhead__sort { display: inline-flex; flex: 0 0 auto; color: var(--bt-color-action); transition: transform var(--bt-duration-fast) var(--bt-ease-out); }
+.bt-colhead__sort.is-desc { transform: rotate(180deg); }
+.bt-colhead__chevron { position: relative; display: inline-grid; place-items: center; flex: 0 0 auto; width: 18px; height: 18px; color: var(--bt-color-text-secondary); opacity: 0; }
+.bt-colhead:focus-visible .bt-colhead__chevron, .bt-colhead[aria-expanded="true"] .bt-colhead__chevron, .bt-colhead.is-filtered .bt-colhead__chevron { opacity: 1; }
+.bt-colhead.is-filtered .bt-colhead__chevron { color: var(--bt-color-action); }
+.bt-colhead__dot { position: absolute; top: -1px; right: -1px; width: 6px; height: 6px; border-radius: var(--bt-radius-full); background-color: var(--bt-color-action); }
+@media (hover: none), (pointer: coarse) { .bt-colhead__chevron { opacity: 1; } }
+/* Painel "Filtrar por", ancorado ao título (top layer, como o menu). */
+.bt-colfilter { position: fixed; inset: auto; z-index: var(--bt-z-index-popover); width: min(300px, calc(100vw - 16px)); margin: 0; padding: var(--bt-space-3); border: var(--bt-border-width-default) solid var(--bt-color-border); border-radius: var(--bt-radius-md); background-color: var(--bt-color-surface); color: var(--bt-color-text-primary); box-shadow: var(--bt-shadow-popover); font-family: var(--bt-font-family-sans); }
+.bt-colfilter__title { margin-bottom: var(--bt-space-2); font-size: var(--bt-font-size-13); font-weight: var(--bt-font-weight-semibold); color: var(--bt-color-text-primary); }
+.bt-colfilter__active { margin: 0 0 var(--bt-space-2); font-size: var(--bt-font-size-12); color: var(--bt-color-action); font-weight: var(--bt-font-weight-semibold); }
+.bt-colfilter__controls { display: grid; gap: var(--bt-space-2); }
+.bt-colfilter__controls .bt-control, .bt-colfilter__controls .bt-filters__pair { width: 100%; }
+.bt-colfilter__hint { margin: var(--bt-space-1) 0 0; font-size: var(--bt-font-size-12); color: var(--bt-color-text-secondary); }
+.bt-colfilter__actions { display: flex; justify-content: flex-end; gap: var(--bt-space-2); margin-top: var(--bt-space-3); }
 
 @media (hover: hover) and (pointer: fine) {
   .bt-table__headcell--movable { cursor: grab; user-select: none; }
-  .bt-table__headcell:hover .bt-table__sort-icon:not(.is-active) { opacity: .45; }
+  .bt-table__headcell:hover .bt-colhead__chevron { opacity: 1; }
+  .bt-colhead:hover .bt-colhead__chevron { color: var(--bt-color-action); }
   .bt-table__resize:hover::after { background-color: var(--bt-color-border); }
 }
 @media (pointer: coarse) {
   .bt-table__resize { display: none; }
-  .bt-table__filters { display: none; }
 }
 
 @media (hover: hover) and (pointer: fine) {
@@ -80,9 +85,8 @@ button.bt-table__row:focus-visible { outline: 0; box-shadow: inset 0 0 0 2px var
   .bt-table__chevron { display: none; }
   .bt-table--view .bt-table__head, .bt-table--view .bt-table__row { width: 100%; }
   .bt-table__cell--extra { display: none; }
-  .bt-table__filters { display: none; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .bt-table__row, .bt-table__sort-icon { transition: none; }
+  .bt-table__row, .bt-colhead__sort { transition: none; }
   .bt-table__skeleton { animation: none; }
 }

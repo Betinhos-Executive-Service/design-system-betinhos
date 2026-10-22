@@ -9,6 +9,7 @@ import type { ViewColumnDef } from './config'
 import { ColumnsPanel } from './ColumnsPanel'
 import { FilterChips } from './FilterChips'
 import type { LookupSearch } from './FilterEditors'
+import { COLUMN_FILTER_EVENT } from './ColumnMenu'
 import { countActiveFilters, emptyFilters, readFilters, storedFilters, type FilterField, type TableFilters } from './filters'
 import { FiltersPanel, type FiltersPanelTab } from './FiltersPanel'
 import { icons } from './icons'
@@ -117,12 +118,12 @@ export function ViewBar({ view, columns, children, onError, filters }: ViewBarPr
     : current
   const activeCount = filters && current ? countActiveFilters(current, filters.fields) : 0
   const setFilters = (next: TableFilters) => view.setConfig((config) => ({ ...config, filters: storedFilters(next) }))
-  // O chip de filtro rápido foca a célula da coluna; sem a linha visível (ou no mobile), abre o painel.
+  // O chip de filtro por coluna reabre o painel "Filtrar por" no título da coluna (evento tratado pelo cabeçalho, que
+  // cancela o evento). Coluna fora da visão, cabeçalho escondido (mobile) ou ninguém tratando: painel na aba "Por coluna".
   const editQuick = (key: string) => {
-    const field = filters?.fields.find((f) => f.key === key)
-    const target = field ? document.querySelector<HTMLElement>(`.bt-table__filters [aria-label="Filtrar ${CSS.escape(field.label)}"]`) : null
-    if (target && view.quickRow && !mobile) target.focus()
-    else setFiltersTab('coluna')
+    const target = mobile ? null : document.querySelector<HTMLElement>(`.bt-colhead[data-col="${CSS.escape(key)}"]`)
+    const handled = target ? !target.dispatchEvent(new CustomEvent(COLUMN_FILTER_EVENT, { bubbles: true, cancelable: true })) : false
+    if (!handled) setFiltersTab('coluna')
   }
 
   return (
@@ -151,9 +152,6 @@ export function ViewBar({ view, columns, children, onError, filters }: ViewBarPr
             <Button variant="secondary" size={mobile ? 'touch' : 'default'} icon={icons.filter} aria-haspopup="dialog" aria-label={mobile ? `Filtros${activeCount ? ` (${activeCount})` : ''}` : undefined} onClick={() => setFiltersTab('coluna')}>
               {mobile ? null : <>Filtros{activeCount ? <span className="bt-viewbar__count">{activeCount}</span> : null}</>}
             </Button>
-            {mobile ? null : (
-              <Button variant={view.quickRow ? 'action' : 'secondary'} icon={icons.listFilter} aria-pressed={view.quickRow} aria-label="Filtro rápido" title="Filtro rápido" onClick={() => view.setQuickRow(!view.quickRow)} />
-            )}
           </>
         ) : null}
         {children}

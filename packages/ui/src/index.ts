@@ -33,7 +33,7 @@ export { Select, filterOptions, normalizeSearch, type SelectOption, type SelectP
 export { Cluster, Grid, Split, Stack } from './primitives'
 export {
   CONFIG_VERSION, MAX_COLUMN_WIDTH, MIN_COLUMN_WIDTH, cleanWidth, defaultConfig, moveColumn, moveVisibleColumn, normalizeConfig, parseConfig, resizeColumn,
-  sameConfig, serializeConfig, setFilters, toggleColumn, toggleSort, visibleColumns,
+  sameConfig, serializeConfig, setFilters, toggleColumn, sortBy, toggleSort, visibleColumns,
   type SortDir, type ViewColumnDef, type ViewColumnState, type ViewConfig, type ViewFilters, type ViewSort,
 } from './tableView/config'
 export {
@@ -55,3 +55,5 @@ export { FilterValueEditor, QuickFilterCell, type LookupSearch } from './tableVi
 export { FiltersPanel, type FiltersPanelProps, type FiltersPanelTab } from './tableView/FiltersPanel'
 export { FilterChips, type FilterChipsProps } from './tableView/FilterChips'
 export { useTableFilters } from './tableView/useTableFilters'
+export { ColumnMenu, COLUMN_FILTER_EVENT, type ColumnMenuProps } from './tableView/ColumnMenu'
+export { ColumnFilter, type ColumnFilterProps } from './tableView/ColumnFilter'

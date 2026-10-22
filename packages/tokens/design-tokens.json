@@ -1,9 +1,9 @@
 {
   "$schema": "https://www.designtokens.org/schemas/2025.10/format.json",
-  "$description": "Betinhos Design System 1.12.0. Identidade operacional premium extraída do Módulo Qualidade.",
+  "$description": "Betinhos Design System 1.13.0. Identidade operacional premium extraída do Módulo Qualidade.",
   "$extensions": {
     "com.betinhos.design-system": {
-      "version": "1.12.0",
+      "version": "1.13.0",
       "updated": "2026-10-19",
       "source": "Módulo Qualidade",
       "theme": "light-only",
@@ -246,7 +246,7 @@
       "$type": "dimension",
       "default": { "$value": { "value": 1, "unit": "px" } },
       "emphasis": { "$value": { "value": 2, "unit": "px" } },
-      "severity": { "$value": { "value": 3, "unit": "px" }, "$deprecated": "Descontinuado na 1.12.0: mensagens não usam borda lateral de severidade. Será removido numa versão futura." }
+      "severity": { "$value": { "value": 3, "unit": "px" }, "$deprecated": "Descontinuado na 1.13.0: mensagens não usam borda lateral de severidade. Será removido numa versão futura." }
     }
   },
   "opacity": {

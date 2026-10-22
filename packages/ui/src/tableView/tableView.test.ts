@@ -173,3 +173,10 @@ describe('moveVisibleColumn', () => {
     expect(moveVisibleColumn(base, defs, 'nome', 2)).toBe(base)
   })
 })
+
+it('sortBy ordena pela coluna na direção pedida, sem alternar', async () => {
+  const { defaultConfig, sortBy } = await import('./config')
+  const config = defaultConfig([{ key: 'a', label: 'A' }, { key: 'b', label: 'B' }])
+  expect(sortBy(config, 'b', 'desc').sort).toEqual({ key: 'b', dir: 'desc' })
+  expect(sortBy(sortBy(config, 'b', 'desc'), 'b', 'desc').sort).toEqual({ key: 'b', dir: 'desc' })
+})
