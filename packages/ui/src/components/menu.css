@@ -1,5 +1,6 @@
 /* Menu de ações: painel pequeno na camada superior. */
 .bt-menu { display: inline-flex; }
+.bt-menu__context { display: contents; }
 .bt-menu__panel { position: fixed; inset: auto; z-index: var(--bt-z-index-popover); min-width: 180px; max-width: 280px; overflow-y: auto; overscroll-behavior: contain; margin: 0; padding: var(--bt-space-1); border: var(--bt-border-width-default) solid var(--bt-color-border); border-radius: var(--bt-radius-md); background-color: var(--bt-color-surface); color: var(--bt-color-text-primary); box-shadow: var(--bt-shadow-popover); font-family: var(--bt-font-family-sans); animation: bt-menu-in var(--bt-duration-instant) var(--bt-ease-out); }
 @keyframes bt-menu-in { from { opacity: 0; transform: translateY(-2px); } }
 .bt-menu__item { display: flex; align-items: center; gap: var(--bt-space-2); width: 100%; min-height: 36px; padding: 0 var(--bt-space-2-5); border: 0; border-radius: var(--bt-radius-sm); background: transparent; color: inherit; font: inherit; font-size: var(--bt-font-size-13); font-weight: var(--bt-font-weight-semibold); text-align: left; cursor: pointer; }

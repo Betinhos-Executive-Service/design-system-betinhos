@@ -515,12 +515,17 @@ function TableShowcase() {
   const [loading, setLoading] = useState(false)
   const [empty, setEmpty] = useState(false)
   return (
-    <Section name="Table" summary="Lista operacional em linhas clicáveis, com cabeçalho off-white, barra de gravidade, carregamento, vazio e rodapé.">
+    <Section name="Table" summary="Lista operacional em linhas clicáveis, com cabeçalho off-white, barra de gravidade, carregamento, vazio, rodapé e menu de contexto no clique direito.">
       <Table<Ocorrencia>
         rows={empty ? [] : OCORRENCIAS}
         rowKey={(row) => row.id}
         loading={loading}
         onRowClick={(row) => toast({ tone: 'info', message: `Abrir ${row.id}: ${row.titulo}` })}
+        rowActions={(row) => [
+          { id: 'abrir', label: 'Abrir', icon: <Pencil />, onSelect: () => toast({ tone: 'info', message: `Abrir ${row.id}: ${row.titulo}` }) },
+          { id: 'duplicar', label: 'Duplicar', icon: <Copy />, onSelect: () => toast({ message: `${row.id} duplicada.` }) },
+          { id: 'excluir', label: 'Excluir', icon: <Trash2 />, tone: 'danger', group: '', onSelect: () => toast({ message: `Excluir ${row.id}?` }) },
+        ]}
         severity={(row) => ({ tone: row.gravidade, label: row.gravidadeLabel })}
         columns={[
           { key: 'titulo', header: 'Ocorrência', width: 'minmax(240px, 1.6fr)', cell: (row) => <TableTitle title={row.titulo} meta={`${row.id} · ${row.local}`} /> },
