@@ -5,6 +5,7 @@ import { COLUMN_FILTER_EVENT, ColumnMenu } from '../tableView/ColumnMenu'
 import type { LookupSearch } from '../tableView/FilterEditors'
 import type { FilterCondition, FilterField } from '../tableView/filters'
 import { icons } from '../tableView/icons'
+import { useContextMenu, type MenuAction } from './Menu'
 
 export type TableColumn<Row> = {
   key: string
@@ -57,6 +58,8 @@ export type TableProps<Row> = Omit<HTMLAttributes<HTMLDivElement>, 'children'> &
   view?: TableView
   /** Filtro por coluna no menu do título; exige `view`. */
   quickFilters?: TableQuickFilters
+  /** Ações do clique direito na linha (§10.9.3). Sem ela, a linha com `onRowClick` oferece "Abrir"; `[]` desliga o menu. */
+  rowActions?: (row: Row) => MenuAction[]
 }
 
 /** Trilhas do grid: `full` com todas as colunas e `compact` (até 1120px) sem as colunas `hideBelow: 'compact'`. */
@@ -91,7 +94,9 @@ const DRAG_THRESHOLD = 4
 const reducedMotion = () => typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
 /** Lista operacional em linhas: cabeçalho off-white, barra de gravidade, linha clicável e cabeçalho que some no mobile. */
-export function Table<Row>({ columns, rows, rowKey, onRowClick, severity, empty, footer, loading = false, view, quickFilters, className, style, ...rest }: TableProps<Row>) {
+export function Table<Row>({ columns, rows, rowKey, onRowClick, severity, empty, footer, loading = false, view, quickFilters, rowActions, className, style, ...rest }: TableProps<Row>) {
+  const context = useContextMenu()
+  const actionsOf = rowActions ?? (onRowClick ? (row: Row) => [{ id: 'abrir', label: 'Abrir', icon: icons.open, onSelect: () => onRowClick(row) }] : null)
   const chevron = Boolean(onRowClick)
   const layout = view ? viewLayout(columns, view.config, chevron) : null
   const placed: Placed<Row>[] = layout ? layout.placed : columns.map((column, index) => ({ column, width: 0, label: tableViewColumns(columns)[index].label }))
@@ -125,6 +130,7 @@ export function Table<Row>({ columns, rows, rowKey, onRowClick, severity, empty,
             className="bt-table__row"
             role="row"
             onClick={onRowClick ? () => onRowClick(row) : undefined}
+            onContextMenu={actionsOf ? (event) => { context.onContextMenu(event, actionsOf(row)) } : undefined}
           >
             {placed.map(({ column }, index) => (
               <span key={column.key} role="cell" className={cellClass(column, index)}>
@@ -145,6 +151,7 @@ export function Table<Row>({ columns, rows, rowKey, onRowClick, severity, empty,
     <div className={['bt-table', view && 'bt-table--view', className].filter(Boolean).join(' ')} style={{ ...style, ['--bt-table-columns' as string]: template.full, ['--bt-table-columns-compact' as string]: template.compact }} role="table" aria-busy={loading || undefined} {...rest}>
       {view ? <div className="bt-table__scroll">{body}</div> : body}
       {footer != null ? <div className="bt-table__footer">{footer}</div> : null}
+      {context.menu}
     </div>
   )
 }

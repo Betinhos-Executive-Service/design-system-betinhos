@@ -5,7 +5,7 @@ export { Button, buttonClassName, type ButtonProps, type ButtonSize, type Button
 export { Checkbox, ChoiceGroup, Radio, Switch, type ChoiceProps } from './components/Choice'
 export { DateTile, dateTileParts, type DateTileProps } from './components/DateTile'
 export { Dialog, type DialogProps } from './components/Dialog'
-export { Menu, type MenuAction, type MenuProps } from './components/Menu'
+export { ContextMenu, Menu, useContextMenu, wantsNativeMenu, type ContextMenuProps, type MenuAction, type MenuProps } from './components/Menu'
 export {
   Avatar, BottomNav, Breadcrumb, Pagination, Progress, Skeleton, Spinner, Tooltip, initials,
   type AvatarProps, type BottomNavItem, type Crumb, type PaginationProps, type ProgressProps, type SkeletonProps, type TooltipProps,
