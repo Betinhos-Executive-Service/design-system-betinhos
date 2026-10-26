@@ -24,7 +24,7 @@ description: "Verifica a Table com visão e filtros do @betinhos-executive-servi
 
 9. Painel "Colunas" → "Adicionar coluna": trilha "Esta lista", seções "Campos" e "Tabelas relacionadas". Abra Cliente › Gestor da conta, adicione "Telefone" (vira ✓ desabilitado), volte pela trilha a "Cliente", adicione "Cidade", "Concluir" → as duas no fim com "Adicionada" e ✕.
 10. Arraste "Cliente › Cidade" pela alça até a 2ª posição (borda azul, vizinhas deslizam). Foco na alça de "Status" (JS `.focus()`), teclas `space Down Down space` → `.bt-columns__live` anuncia "Status solta na posição 5 de 9" e o foco continua na alça.
-11. "Aplicar" → `.bt-colhead[data-col]` inclui "Cliente › Cidade" e "Cliente › Gestor da conta › Telefone" com valores nas linhas (`extraCell`).
+11. "Aplicar" → `.bt-colhead[data-col]` inclui "Cliente › Cidade" e "Cliente › Gestor da conta › Telefone" com valores nas linhas (`view.extraCell`).
 
 ## Casos de borda
 - Coluna `x:` removida (✕) leva junto a ordenação por ela; campo já visível não pode ser adicionado de novo; relações só até 3 níveis.

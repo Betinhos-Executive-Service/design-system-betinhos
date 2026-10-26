@@ -1490,7 +1490,7 @@ O padrão de mercado não é apenas um PDF de marca. É um produto versionado: t
 
 - §10.9.1 **Adicionar coluna**: o painel de colunas lista os campos da tabela e das relações N:1/1:1 (até 3 níveis), com trilha e busca; a coluna adicionada fica salva na visão e pode ser ordenada, filtrada e removida.
 - §10.9.1 **Arrastar no painel**: alça vira botão com teclado (Espaço, setas, Esc), vizinhas deslizam (FLIP 150 ms), rolagem automática na borda, item arrastado destacado e anúncio em `aria-live`; cadeado na coluna fixa.
-- `@betinhos-executive-service/ui`: `ColumnsPanel` e `ViewBar` ganham `catalog` (`ColumnCatalog`, `ColumnCatalogEntry`); `Table` ganha `extraCell` e `withExtraColumns`; `config` ganha `addColumn`, `removeColumn`, `isExtraColumn`, `EXTRA_COLUMN_PREFIX` e `label` em `ViewColumnState`; `normalizeConfig` preserva colunas `x:` com rótulo.
+- `@betinhos-executive-service/ui`: `ColumnsPanel` e `ViewBar` ganham `catalog` (`ColumnCatalog`, `ColumnCatalogEntry`); `TableView` ganha `extraCell(rowKey, key)` e há `withExtraColumns`; `config` ganha `addColumn`, `removeColumn`, `isExtraColumn`, `EXTRA_COLUMN_PREFIX` e `label` em `ViewColumnState`; `normalizeConfig` preserva colunas `x:` com rótulo.
 
 ### Próxima versão (não publicada)
 

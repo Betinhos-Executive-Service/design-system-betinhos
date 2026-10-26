@@ -27,8 +27,15 @@ export type TableColumn<Row> = {
   sortable?: boolean
 }
 
-/** Liga a tabela a uma visão (§10.9.1): ordem, visibilidade, largura e ordenação vêm de `config`. */
-export type TableView = { config: ViewConfig; onChange: (update: (config: ViewConfig) => ViewConfig) => void }
+/**
+ * Liga a tabela a uma visão (§10.9.1): ordem, visibilidade, largura e ordenação vêm de `config`.
+ * `extraCell` desenha as colunas adicionadas pelo usuário (`x:`), recebendo o `rowKey` da linha; sem ele elas não aparecem.
+ */
+export type TableView = {
+  config: ViewConfig
+  onChange: (update: (config: ViewConfig) => ViewConfig) => void
+  extraCell?: (rowKey: string, key: string) => ReactNode
+}
 
 /** Filtro por coluna (§10.9.2): "Filtrar por…" no menu do título abre o painel ancorado ao cabeçalho. Exige `view`. */
 export type TableQuickFilters = {
@@ -60,8 +67,6 @@ export type TableProps<Row> = Omit<HTMLAttributes<HTMLDivElement>, 'children'> &
   quickFilters?: TableQuickFilters
   /** Ações do clique direito na linha (§10.9.3). Sem ela, a linha com `onRowClick` oferece "Abrir"; `[]` desliga o menu. */
   rowActions?: (row: Row) => MenuAction[]
-  /** Célula das colunas adicionadas pelo usuário (`x:`, §10.9.1); sem ela essas colunas não aparecem. Ordenáveis. */
-  extraCell?: (row: Row, key: string) => ReactNode
 }
 
 /** Trilhas do grid: `full` com todas as colunas e `compact` (até 1120px) sem as colunas `hideBelow: 'compact'`. */
@@ -105,8 +110,9 @@ const DRAG_THRESHOLD = 4
 const reducedMotion = () => typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
 /** Lista operacional em linhas: cabeçalho off-white, barra de gravidade, linha clicável e cabeçalho que some no mobile. */
-export function Table<Row>({ columns: own, rows, rowKey, onRowClick, severity, empty, footer, loading = false, view, quickFilters, rowActions, extraCell, className, style, ...rest }: TableProps<Row>) {
-  const columns = view && extraCell ? withExtraColumns(own, view.config, extraCell) : own
+export function Table<Row>({ columns: own, rows, rowKey, onRowClick, severity, empty, footer, loading = false, view, quickFilters, rowActions, className, style, ...rest }: TableProps<Row>) {
+  const extraCell = view?.extraCell
+  const columns = view && extraCell ? withExtraColumns(own, view.config, (row: Row, key) => extraCell(rowKey(row), key)) : own
   const context = useContextMenu()
   const actionsOf = rowActions ?? (onRowClick ? (row: Row) => [{ id: 'abrir', label: 'Abrir', icon: icons.open, onSelect: () => onRowClick(row) }] : null)
   const chevron = Boolean(onRowClick)

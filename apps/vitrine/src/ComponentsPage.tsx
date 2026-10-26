@@ -630,8 +630,7 @@ function TableViewShowcase() {
         rows={rows}
         rowKey={(row) => row.id}
         columns={OCORRENCIA_COLUNAS}
-        extraCell={(row, key) => valorExtra(row as OcorrenciaFiltro, key)}
-        view={{ config: view.config, onChange: view.setConfig }}
+        view={{ config: view.config, onChange: view.setConfig, extraCell: (id, key) => valorExtra(OCORRENCIAS_FILTRO.find((r) => r.id === id)!, key) }}
         quickFilters={quickFilters}
         severity={(row) => ({ tone: row.gravidade, label: row.gravidadeLabel })}
         empty={<EmptyState icon={<SearchX />} title="Nenhum registro com estes filtros" action={<Button variant="secondary" onClick={() => view.setConfig((c) => ({ ...c, filters: {} }))}>Limpar filtros</Button>} />}
