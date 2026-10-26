@@ -6,11 +6,11 @@ description: "Verifica o logger de erros do front (@betinhos-executive-service/u
 
 ## Cobre
 - Código: `packages/ui/src/errorLogger.ts`, `packages/ui/scripts/build-error-logger.mjs`, `packages/ui/dist/error-logger*.js`
-- Tabela: `new_appmotoristaslog` (entity set `new_appmotoristaslogs`) no DEV `https://org23b93544.crm2.dynamics.com`
+- Tabela: `new_appmotoristaslog` (entity set `new_appmotoristaslogs`) no DEV (URL em `DV_URL`, fora do repo)
 
 ## Preparar ambiente
 - `pnpm install --frozen-lockfile` na raiz.
-- Token DEV: `az account get-access-token --resource https://org23b93544.crm2.dynamics.com --query accessToken -o tsv` (nunca grave o token em arquivo).
+- Token DEV: `az account get-access-token --resource "$DV_URL" --query accessToken -o tsv` (nunca grave o token em arquivo).
 
 ## Roteiro
 1. `pnpm --filter @betinhos-executive-service/ui exec vitest run src/errorLogger.test.ts` → 12 testes passando (registro, contexto, shim do shell via WhoAmI, POST com `credentials: include`, mock sem gravação, dedupe 60 s + limite 30, fila/retry 30 s, evento `online`, listeners e desinstalação, falha Dataverse HTTP e rede).
