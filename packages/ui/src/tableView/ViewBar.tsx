@@ -6,7 +6,7 @@ import { Field, Input } from '../components/Field'
 import { Menu, type MenuAction } from '../components/Menu'
 import { useMediaQuery } from '../useMediaQuery'
 import type { ViewColumnDef } from './config'
-import { ColumnsPanel } from './ColumnsPanel'
+import { ColumnsPanel, type ColumnCatalog } from './ColumnsPanel'
 import { FilterChips } from './FilterChips'
 import type { LookupSearch } from './FilterEditors'
 import { COLUMN_FILTER_EVENT } from './ColumnMenu'
@@ -26,6 +26,8 @@ export type ViewBarProps = {
   view: TableViewState
   /** Colunas da tabela (`tableViewColumns(columns)`), para o painel. */
   columns: ViewColumnDef[]
+  /** Liga "Adicionar coluna" no painel: campos da tabela e das relações N:1 (§10.9.1). */
+  catalog?: ColumnCatalog
   /** Comandos à direita, depois de "Colunas": Filtros, busca e a ação primária, nessa ordem. */
   children?: ReactNode
   /** Erro ao gravar; sem isso usa o toast do `ToastProvider`. */
@@ -49,7 +51,7 @@ const messageOf = (error: unknown) => (error instanceof Error && error.message ?
  * Linha de comando da lista (§10.9.1): o seletor de visão é o título da página; à direita, "Colunas" e os comandos da tela.
  * Gravar, renomear, excluir e publicar abrem diálogo e avisam por toast.
  */
-export function ViewBar({ view, columns, children, onError, filters }: ViewBarProps) {
+export function ViewBar({ view, columns, catalog, children, onError, filters }: ViewBarProps) {
   const mobile = useMediaQuery('(max-width: 820px)')
   const toast = useOptionalToast()
   const [mode, setMode] = useState<Mode>(null)
@@ -164,6 +166,7 @@ export function ViewBar({ view, columns, children, onError, filters }: ViewBarPr
         config={view.config}
         defaults={defaults}
         onApply={(next) => view.setConfig(() => next)}
+        catalog={catalog}
       />
 
       <Dialog
