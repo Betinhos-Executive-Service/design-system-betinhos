@@ -22,7 +22,7 @@ export { PageToolbar, pageToolbarClassName, type PageToolbarProps, type PageTool
 export { createShellHeaderStore, useShellHeader, type ShellHeaderEntry, type ShellHeaderStore } from './components/ShellHeader'
 export { SegmentedControl, type SegmentedControlProps, type SegmentedOption } from './components/SegmentedControl'
 export { Surface, type SurfaceProps } from './components/Surface'
-export { Table, TableTitle, columnDefaultWidth, tableViewColumns, viewLayout, type TableColumn, type TableProps, type TableQuickFilters, type TableView } from './components/Table'
+export { Table, TableTitle, columnDefaultWidth, tableViewColumns, viewLayout, withExtraColumns, type TableColumn, type TableProps, type TableQuickFilters, type TableView } from './components/Table'
 export {
   Field, Input, Textarea, fieldIds,
   type ControlSize, type FieldProps, type InputProps, type TextareaProps,
@@ -32,7 +32,7 @@ export { StatusBadge, statusBadgeClassName, type StatusBadgeProps, type StatusTo
 export { Select, filterOptions, normalizeSearch, type SelectOption, type SelectProps } from './components/Select'
 export { Cluster, Grid, Split, Stack } from './primitives'
 export {
-  CONFIG_VERSION, MAX_COLUMN_WIDTH, MIN_COLUMN_WIDTH, cleanWidth, defaultConfig, moveColumn, moveVisibleColumn, normalizeConfig, parseConfig, resizeColumn,
+  CONFIG_VERSION, EXTRA_COLUMN_PREFIX, MAX_COLUMN_WIDTH, addColumn, isExtraColumn, removeColumn, MIN_COLUMN_WIDTH, cleanWidth, defaultConfig, moveColumn, moveVisibleColumn, normalizeConfig, parseConfig, resizeColumn,
   sameConfig, serializeConfig, setFilters, toggleColumn, sortBy, toggleSort, visibleColumns,
   type SortDir, type ViewColumnDef, type ViewColumnState, type ViewConfig, type ViewFilters, type ViewSort,
 } from './tableView/config'
@@ -41,7 +41,7 @@ export {
   type StoredView, type TableViewEntry, type ViewScope, type ViewStore,
 } from './tableView/store'
 export { useTableView, type TableViewState, type UseTableViewOptions } from './tableView/useTableView'
-export { ColumnsPanel, type ColumnsPanelProps } from './tableView/ColumnsPanel'
+export { ColumnsPanel, type ColumnCatalog, type ColumnCatalogEntry, type ColumnsPanelProps } from './tableView/ColumnsPanel'
 export { ViewBar, VIEW_NAME_MAX, type ViewBarProps } from './tableView/ViewBar'
 export { useMediaQuery } from './useMediaQuery'
 export {

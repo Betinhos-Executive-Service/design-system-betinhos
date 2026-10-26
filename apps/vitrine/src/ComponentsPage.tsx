@@ -3,7 +3,7 @@ import { useQueryBandeira, useQueryTexto } from './nav/queryState'
 import { Check, ChevronRight, CircleCheck, Clock, Copy, EllipsisVertical, Home, Inbox, LayoutDashboard, Pencil, Plus, PlugZap, RefreshCw, SearchX, Trash2, TriangleAlert, Truck, X } from 'lucide-react'
 import {
   Alert, Avatar, BottomNav, Breadcrumb, Button, Checkbox, ChoiceGroup, Cluster, DateTile, Dialog, Drawer, EmptyState, Field, Grid, Input, Menu, MetricCard, PageHeader, PageToolbar, Pagination, Progress, Radio, SearchBox, SegmentedControl, Select, Sheet, Skeleton, Spinner, Stack, StatusBadge, Surface, Switch, Table, TableTitle, Tabs, Textarea, ToastProvider, Tooltip, Upload, ViewBar,
-  createMemoryViewStore, defaultConfig, filterOptions, matchesFilters, useTableFilters, type FilterField, type FilterOption, serializeConfig, tableViewColumns, toggleColumn, useShellHeader, useTableView, useToast, type TableColumn, type AlertTone, type ButtonSize, type ButtonVariant, type ControlSize, type SelectOption, type StatusTone, type UploadFile,
+  createMemoryViewStore, defaultConfig, type ColumnCatalog, type ColumnCatalogEntry, filterOptions, matchesFilters, useTableFilters, type FilterField, type FilterOption, serializeConfig, tableViewColumns, toggleColumn, useShellHeader, useTableView, useToast, type TableColumn, type AlertTone, type ButtonSize, type ButtonVariant, type ControlSize, type SelectOption, type StatusTone, type UploadFile,
 } from '@betinhos/ui'
 import { PageLayout } from './PageLayout'
 
@@ -584,6 +584,23 @@ const OCORRENCIA_FILTROS: FilterField[] = [
 const buscarCliente = async (_field: FilterField, text: string): Promise<FilterOption[]> =>
   CLIENTES_FILTRO.filter((c) => c.toLowerCase().includes(text.toLowerCase())).map((c) => ({ value: c, label: c }))
 
+// Catálogo de exemplo para "Adicionar coluna": campos da ocorrência e das relações N:1 (Cliente › Gestor).
+const CATALOGO: Record<string, ColumnCatalogEntry[]> = {
+  '': [{ id: 'criadoem', label: 'Criado em' }, { id: 'valor', label: 'Valor' }, { id: 'cliente', label: 'Cliente', relation: true, description: 'Clientes' }],
+  cliente: [{ id: 'cidade', label: 'Cidade' }, { id: 'segmento', label: 'Segmento' }, { id: 'gestor', label: 'Gestor da conta', relation: true, description: 'Funcionários' }],
+  'cliente/gestor': [{ id: 'nome', label: 'Nome' }, { id: 'telefone', label: 'Telefone' }, { id: 'cargo', label: 'Cargo', relation: true, description: 'Cargos' }],
+  'cliente/gestor/cargo': [{ id: 'nome', label: 'Nome' }],
+}
+const catalogoExemplo: ColumnCatalog = { load: async (path) => { await new Promise((r) => setTimeout(r, 250)); return CATALOGO[path.join('/')] ?? [] } }
+const valorExtra = (row: OcorrenciaFiltro, key: string) => {
+  const path = key.slice(2)
+  if (path === 'valor') return row.valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+  if (path === 'criadoem') return dataBR(row.prazo)
+  const n = CLIENTES_FILTRO.indexOf(row.cliente)
+  return ({ 'cliente/cidade': ['Taubaté', 'São José dos Campos', 'Jacareí', 'Guaratinguetá'][n], 'cliente/segmento': ['Indústria', 'Serviços', 'Varejo', 'Indústria'][n],
+    'cliente/gestor/nome': ['Ana Souza', 'Bruno Lima', 'Carla Dias', 'Diego Reis'][n], 'cliente/gestor/telefone': `(12) 99${n}12-34${n}5`, 'cliente/gestor/cargo/nome': 'Gerente de contas' } as Record<string, string>)[path] ?? ''
+}
+
 function TableViewShowcase() {
   const [gestor, setGestor] = useState(false)
   const [busca, setBusca] = useState('')
@@ -605,7 +622,7 @@ function TableViewShowcase() {
   }, [sort, filters, busca])
   return (
     <Section name="Visões, colunas e filtros" summary="§10.9.1 e §10.9.2: seletor de visão como título; Colunas e Filtros abrem painéis; o título de cada coluna abre o menu (ordenar, Filtrar por…, ocultar); chips dos filtros ativos. Dados de exemplo com 'hoje' = 15/10/2026.">
-      <ViewBar view={view} columns={OCORRENCIA_DEFS} filters={{ fields: OCORRENCIA_FILTROS, search: buscarCliente }}>
+      <ViewBar view={view} columns={OCORRENCIA_DEFS} catalog={catalogoExemplo} filters={{ fields: OCORRENCIA_FILTROS, search: buscarCliente }}>
         <SearchBox placeholder="Filtrar por palavra-chave" aria-label="Filtrar por palavra-chave" value={busca} onChange={setBusca} />
         <Button icon={<Plus size={16} />}>Nova ocorrência</Button>
       </ViewBar>
@@ -613,7 +630,7 @@ function TableViewShowcase() {
         rows={rows}
         rowKey={(row) => row.id}
         columns={OCORRENCIA_COLUNAS}
-        view={{ config: view.config, onChange: view.setConfig }}
+        view={{ config: view.config, onChange: view.setConfig, extraCell: (id, key) => valorExtra(OCORRENCIAS_FILTRO.find((r) => r.id === id)!, key) }}
         quickFilters={quickFilters}
         severity={(row) => ({ tone: row.gravidade, label: row.gravidadeLabel })}
         empty={<EmptyState icon={<SearchX />} title="Nenhum registro com estes filtros" action={<Button variant="secondary" onClick={() => view.setConfig((c) => ({ ...c, filters: {} }))}>Limpar filtros</Button>} />}

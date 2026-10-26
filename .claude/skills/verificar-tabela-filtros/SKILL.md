@@ -22,7 +22,12 @@ description: "Verifica a Table com visão e filtros do @betinhos-executive-servi
 7. Clique no texto do chip → o painel reabre na coluna com "Filtro ativo: Status: Atrasado"; o painel "Filtros" (drawer) continua fechado. "Limpar" → chip some, `is-filtered` some, foco volta ao título.
 8. Esc com o painel aberto fecha sem aplicar; "Ordenar Z→A" no menu de "Prazo" inverte a seta; "Ocultar coluna" tira a coluna (desabilitado quando só resta uma).
 
+9. Painel "Colunas" → "Adicionar coluna": trilha "Esta lista", seções "Campos" e "Tabelas relacionadas". Abra Cliente › Gestor da conta, adicione "Telefone" (vira ✓ desabilitado), volte pela trilha a "Cliente", adicione "Cidade", "Concluir" → as duas no fim com "Adicionada" e ✕.
+10. Arraste "Cliente › Cidade" pela alça até a 2ª posição (borda azul, vizinhas deslizam). Foco na alça de "Status" (JS `.focus()`), teclas `space Down Down space` → `.bt-columns__live` anuncia "Status solta na posição 5 de 9" e o foco continua na alça.
+11. "Aplicar" → `.bt-colhead[data-col]` inclui "Cliente › Cidade" e "Cliente › Gestor da conta › Telefone" com valores nas linhas (`view.extraCell`).
+
 ## Casos de borda
+- Coluna `x:` removida (✕) leva junto a ordenação por ela; campo já visível não pode ser adicionado de novo; relações só até 3 níveis.
 - Coluna sem campo em `quickFilters.fields` (ou `advancedOnly`) não mostra "Filtrar por…".
 - Mobile (≤ 820 px): o cabeçalho some nas listas em cartão e o chip abre o painel "Filtros" na aba "Por coluna".
 - Arrastar o título para reordenar não abre o menu ao soltar (`suppressClick`).

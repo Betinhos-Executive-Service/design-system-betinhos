@@ -1,8 +1,34 @@
 /* Painel de colunas e barra de visão (Design System §10.9.1). */
 .bt-columns { display: grid; gap: var(--bt-space-0-5); margin: 0; padding: 0; list-style: none; }
 .bt-columns__item { display: grid; grid-template-columns: 24px minmax(0, 1fr) auto; align-items: center; gap: var(--bt-space-2); min-height: 44px; padding: 0 var(--bt-space-1); border-radius: var(--bt-radius-sm); transition: background-color var(--bt-duration-fast) ease; }
-.bt-columns__item.is-dragging { background-color: var(--bt-color-surface-neutral); box-shadow: inset 0 0 0 1px var(--bt-focus-border); }
-.bt-columns__handle { display: grid; place-items: center; width: 24px; height: 32px; color: var(--bt-color-text-secondary); cursor: grab; touch-action: none; }
+.bt-columns__item { position: relative; transition: background-color var(--bt-duration-fast) ease, transform 150ms ease-out; }
+.bt-columns__item.is-dragging { z-index: 1; background-color: var(--bt-color-surface-neutral); box-shadow: inset 0 0 0 2px var(--bt-focus-border); transition: background-color var(--bt-duration-fast) ease; }
+.bt-columns.is-sorting .bt-columns__item:not(.is-dragging) { opacity: .72; }
+.bt-columns.is-sorting .bt-columns__move { visibility: hidden; }
+body.bt-columns-grabbing, body.bt-columns-grabbing * { cursor: grabbing !important; user-select: none; }
+.bt-columns__handle:focus-visible { outline: 2px solid var(--bt-focus-border); outline-offset: 1px; border-radius: var(--bt-radius-sm); }
+.bt-columns__handle[aria-pressed="true"] { color: var(--bt-color-action); }
+.bt-columns__add { width: 100%; justify-content: center; margin-bottom: var(--bt-space-2); }
+.bt-columns__hint { margin: 0 0 var(--bt-space-2); color: var(--bt-color-text-secondary); font-size: 12px; line-height: 16px; }
+.bt-columns__live { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.bt-columns-add { display: grid; gap: var(--bt-space-3); }
+.bt-columns-add__trail { display: flex; align-items: center; gap: var(--bt-space-1); min-width: 0; }
+.bt-columns-add__trail ol { display: flex; flex-wrap: wrap; align-items: center; gap: var(--bt-space-1); margin: 0; padding: 0; list-style: none; min-width: 0; }
+.bt-columns-add__trail li { display: inline-flex; align-items: center; gap: var(--bt-space-1); color: var(--bt-color-text-secondary); }
+.bt-columns-add__crumb { border: 0; background: none; padding: 2px 4px; border-radius: var(--bt-radius-sm); color: var(--bt-color-action); font: inherit; cursor: pointer; }
+.bt-columns-add__crumb[aria-current] { color: var(--bt-color-text-primary); font-weight: 600; cursor: default; }
+.bt-columns-add__crumb:focus-visible, .bt-columns-add__entry:focus-visible { outline: 2px solid var(--bt-focus-border); outline-offset: 1px; }
+.bt-columns-add__state { display: flex; flex-wrap: wrap; align-items: center; gap: var(--bt-space-2); padding: var(--bt-space-3) 0; color: var(--bt-color-text-secondary); }
+.bt-columns-add__section { display: grid; gap: var(--bt-space-1); }
+.bt-columns-add__group { margin: 0; color: var(--bt-color-text-secondary); font-size: 12px; font-weight: 600; line-height: 16px; text-transform: uppercase; letter-spacing: .04em; }
+.bt-columns-add__list { display: grid; gap: var(--bt-space-0-5); margin: 0; padding: 0; list-style: none; }
+.bt-columns-add__entry { display: flex; align-items: center; justify-content: space-between; gap: var(--bt-space-2); width: 100%; min-height: 44px; padding: 0 var(--bt-space-2); border: 0; border-radius: var(--bt-radius-sm); background: none; color: var(--bt-color-text-primary); font: inherit; text-align: left; cursor: pointer; }
+.bt-columns-add__entry:disabled { color: var(--bt-color-text-secondary); cursor: default; }
+.bt-columns-add__label { display: grid; min-width: 0; }
+.bt-columns-add__label small { color: var(--bt-color-text-secondary); font-size: 12px; line-height: 16px; }
+.bt-columns-add__icon { display: inline-grid; place-items: center; color: var(--bt-color-action); }
+.bt-columns-add__entry:disabled .bt-columns-add__icon { color: var(--bt-color-success); }
+.bt-columns__handle { padding: 0; border: 0; border-radius: var(--bt-radius-sm); background: none; display: grid; place-items: center; width: 24px; height: 32px; color: var(--bt-color-text-secondary); cursor: grab; touch-action: none; }
 .bt-columns__item.is-dragging .bt-columns__handle { cursor: grabbing; color: var(--bt-color-action); }
 .bt-columns__handle--fixed { cursor: default; }
 .bt-columns__check { min-width: 0; }

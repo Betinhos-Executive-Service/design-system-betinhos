@@ -180,3 +180,37 @@ it('sortBy ordena pela coluna na direção pedida, sem alternar', async () => {
   expect(sortBy(config, 'b', 'desc').sort).toEqual({ key: 'b', dir: 'desc' })
   expect(sortBy(sortBy(config, 'b', 'desc'), 'b', 'desc').sort).toEqual({ key: 'b', dir: 'desc' })
 })
+
+describe('colunas adicionadas (x:)', () => {
+  it('addColumn entra visível no fim com o rótulo; repetir só torna visível', async () => {
+    const { addColumn } = await import('./config')
+    const config = addColumn(defaultConfig(defs), 'x:motorista/telefone', 'Motorista › Telefone')
+    expect(config.columns.at(-1)).toEqual({ key: 'x:motorista/telefone', visible: true, label: 'Motorista › Telefone' })
+    const hidden = { ...config, columns: config.columns.map((c) => (c.key.startsWith('x:') ? { ...c, visible: false } : c)) }
+    expect(addColumn(hidden, 'x:motorista/telefone', 'Outro').columns.filter((c) => c.key.startsWith('x:'))).toEqual([{ key: 'x:motorista/telefone', visible: true, label: 'Motorista › Telefone' }])
+    expect(addColumn(config, 'status', 'Status')).toBe(config)
+  })
+
+  it('normalizeConfig mantém coluna x: com rótulo, largura e ordenação; descarta x: sem rótulo', () => {
+    const raw = { v: 1, columns: [{ key: 'nome', visible: true }, { key: 'x:a/b', visible: true, width: 200, label: 'A › B' }, { key: 'x:sem', visible: true }], sort: { key: 'x:a/b', dir: 'desc' }, filters: {} }
+    const config = normalizeConfig(raw, defs)
+    expect(config.columns[1]).toEqual({ key: 'x:a/b', visible: true, width: 200, label: 'A › B' })
+    expect(keys(config)).not.toContain('x:sem')
+    expect(config.sort).toEqual({ key: 'x:a/b', dir: 'desc' })
+  })
+
+  it('removeColumn tira só coluna x: e limpa a ordenação por ela', async () => {
+    const { addColumn, removeColumn } = await import('./config')
+    const config = { ...addColumn(defaultConfig(defs), 'x:a', 'A'), sort: { key: 'x:a', dir: 'asc' as const } }
+    const next = removeColumn(config, 'x:a')
+    expect(keys(next)).toEqual(['nome', 'cliente', 'status', 'obs'])
+    expect(next.sort).toBeNull()
+    expect(removeColumn(config, 'status')).toBe(config)
+  })
+
+  it('resizeColumn preserva o rótulo', async () => {
+    const { addColumn } = await import('./config')
+    const config = resizeColumn(addColumn(defaultConfig(defs), 'x:a', 'A'), 'x:a', 300)
+    expect(config.columns.at(-1)).toEqual({ key: 'x:a', visible: true, width: 300, label: 'A' })
+  })
+})

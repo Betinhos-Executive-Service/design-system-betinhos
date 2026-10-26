@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type HTMLAttributes, type KeyboardEvent, type PointerEvent, type ReactNode } from 'react'
-import { moveVisibleColumn, resizeColumn, sortBy, toggleColumn, visibleColumns, type ViewColumnDef, type ViewConfig } from '../tableView/config'
+import { isExtraColumn, moveVisibleColumn, resizeColumn, sortBy, toggleColumn, visibleColumns, type ViewColumnDef, type ViewConfig } from '../tableView/config'
 import { ColumnFilter } from '../tableView/ColumnFilter'
 import { COLUMN_FILTER_EVENT, ColumnMenu } from '../tableView/ColumnMenu'
 import type { LookupSearch } from '../tableView/FilterEditors'
@@ -27,8 +27,15 @@ export type TableColumn<Row> = {
   sortable?: boolean
 }
 
-/** Liga a tabela a uma visão (§10.9.1): ordem, visibilidade, largura e ordenação vêm de `config`. */
-export type TableView = { config: ViewConfig; onChange: (update: (config: ViewConfig) => ViewConfig) => void }
+/**
+ * Liga a tabela a uma visão (§10.9.1): ordem, visibilidade, largura e ordenação vêm de `config`.
+ * `extraCell` desenha as colunas adicionadas pelo usuário (`x:`), recebendo o `rowKey` da linha; sem ele elas não aparecem.
+ */
+export type TableView = {
+  config: ViewConfig
+  onChange: (update: (config: ViewConfig) => ViewConfig) => void
+  extraCell?: (rowKey: string, key: string) => ReactNode
+}
 
 /** Filtro por coluna (§10.9.2): "Filtrar por…" no menu do título abre o painel ancorado ao cabeçalho. Exige `view`. */
 export type TableQuickFilters = {
@@ -77,6 +84,15 @@ export const columnDefaultWidth = <Row,>(column: TableColumn<Row>, index: number
 
 type Placed<Row> = { column: TableColumn<Row>; width: number; label: string }
 
+/** Colunas do código mais as adicionadas pelo usuário na visão (`x:`), com o rótulo guardado na visão. */
+export function withExtraColumns<Row>(columns: TableColumn<Row>[], config: ViewConfig, cell: (row: Row, key: string) => ReactNode): TableColumn<Row>[] {
+  const known = new Set(columns.map((c) => c.key))
+  const extras = config.columns.filter((c) => isExtraColumn(c.key) && !known.has(c.key)).map((c): TableColumn<Row> => ({
+    key: c.key, header: c.label ?? c.key, label: c.label ?? c.key, sortable: true, cell: (row) => cell(row, c.key),
+  }))
+  return extras.length ? [...columns, ...extras] : columns
+}
+
 /** Colunas visíveis da visão, na ordem e com a largura em px; a última trilha estica até a borda. */
 export function viewLayout<Row>(columns: TableColumn<Row>[], config: ViewConfig, chevron: boolean) {
   const defs = tableViewColumns(columns)
@@ -94,7 +110,9 @@ const DRAG_THRESHOLD = 4
 const reducedMotion = () => typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
 /** Lista operacional em linhas: cabeçalho off-white, barra de gravidade, linha clicável e cabeçalho que some no mobile. */
-export function Table<Row>({ columns, rows, rowKey, onRowClick, severity, empty, footer, loading = false, view, quickFilters, rowActions, className, style, ...rest }: TableProps<Row>) {
+export function Table<Row>({ columns: own, rows, rowKey, onRowClick, severity, empty, footer, loading = false, view, quickFilters, rowActions, className, style, ...rest }: TableProps<Row>) {
+  const extraCell = view?.extraCell
+  const columns = view && extraCell ? withExtraColumns(own, view.config, (row: Row, key) => extraCell(rowKey(row), key)) : own
   const context = useContextMenu()
   const actionsOf = rowActions ?? (onRowClick ? (row: Row) => [{ id: 'abrir', label: 'Abrir', icon: icons.open, onSelect: () => onRowClick(row) }] : null)
   const chevron = Boolean(onRowClick)

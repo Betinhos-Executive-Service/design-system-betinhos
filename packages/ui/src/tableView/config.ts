@@ -13,7 +13,15 @@ export type ViewColumnDef = {
   defaultHidden?: boolean
 }
 
-export type ViewColumnState = { key: string; visible: boolean; width?: number }
+/**
+ * `label` só nas colunas adicionadas pelo usuário (chave `x:`), que não estão no código da tela:
+ * a visão guarda o rótulo para mostrar a coluna antes de a metadata chegar.
+ */
+export type ViewColumnState = { key: string; visible: boolean; width?: number; label?: string }
+
+/** Prefixo das colunas adicionadas pelo painel ("Adicionar coluna"): `x:` + caminho de navegação até o campo. */
+export const EXTRA_COLUMN_PREFIX = 'x:'
+export const isExtraColumn = (key: string) => key.startsWith(EXTRA_COLUMN_PREFIX)
 export type SortDir = 'asc' | 'desc'
 export type ViewSort = { key: string; dir: SortDir } | null
 export type ViewFilters = Record<string, unknown>
@@ -27,7 +35,9 @@ export function cleanWidth(value: unknown): number | undefined {
   return typeof value === 'number' && Number.isFinite(value) && value >= MIN_COLUMN_WIDTH && value <= MAX_COLUMN_WIDTH ? Math.round(value) : undefined
 }
 
-const column = (key: string, visible: boolean, width?: number): ViewColumnState => (width === undefined ? { key, visible } : { key, visible, width })
+const column = (key: string, visible: boolean, width?: number, label?: string): ViewColumnState => ({
+  key, visible, ...(width === undefined ? {} : { width }), ...(label === undefined ? {} : { label }),
+})
 
 /** Visão padrão da tela: colunas na ordem do código, sem larguras salvas. */
 export function defaultConfig(defs: ViewColumnDef[], sort: ViewSort = null, filters: ViewFilters = {}): ViewConfig {
@@ -54,12 +64,14 @@ export function normalizeConfig(raw: unknown, defs: ViewColumnDef[], fallback: V
   const seen = new Set<string>()
   const columns: ViewColumnState[] = []
   for (const item of raw.columns) {
-    if (!isObject(item) || typeof item.key !== 'string' || !known.has(item.key) || seen.has(item.key)) continue
+    if (!isObject(item) || typeof item.key !== 'string' || seen.has(item.key)) continue
+    const extra = isExtraColumn(item.key) && typeof item.label === 'string' && item.label.trim() !== ''
+    if (!known.has(item.key) && !extra) continue
     seen.add(item.key)
-    columns.push(column(item.key, item.visible !== false, cleanWidth(item.width)))
+    columns.push(column(item.key, item.visible !== false, cleanWidth(item.width), extra ? String(item.label) : undefined))
   }
   for (const def of defs) if (!seen.has(def.key)) columns.push(column(def.key, !def.defaultHidden))
-  const sort: ViewSort = isObject(raw.sort) && typeof raw.sort.key === 'string' && known.has(raw.sort.key) && (raw.sort.dir === 'asc' || raw.sort.dir === 'desc')
+  const sort: ViewSort = isObject(raw.sort) && typeof raw.sort.key === 'string' && (known.has(raw.sort.key) || seen.has(raw.sort.key)) && (raw.sort.dir === 'asc' || raw.sort.dir === 'desc')
     ? { key: raw.sort.key, dir: raw.sort.dir }
     : raw.sort === null ? null : fallback.sort
   const filters = isObject(raw.filters) ? raw.filters : fallback.filters
@@ -122,7 +134,7 @@ export function toggleColumn(config: ViewConfig, defs: ViewColumnDef[], key: str
 /** Ajusta a largura, presa entre 90 e 1200 px; `null` volta à largura da tabela. */
 export function resizeColumn(config: ViewConfig, key: string, width: number | null): ViewConfig {
   const next = width === null ? undefined : Math.round(Math.min(Math.max(width, MIN_COLUMN_WIDTH), MAX_COLUMN_WIDTH))
-  return { ...config, columns: config.columns.map((c) => (c.key === key ? column(c.key, c.visible, next) : c)) }
+  return { ...config, columns: config.columns.map((c) => (c.key === key ? column(c.key, c.visible, next, c.label) : c)) }
 }
 
 /** Clique no cabeçalho: outra coluna começa crescente; a mesma alterna o sentido. */
@@ -135,3 +147,18 @@ export function toggleSort(config: ViewConfig, key: string): ViewConfig {
 }
 
 export const setFilters = (config: ViewConfig, filters: ViewFilters): ViewConfig => ({ ...config, filters })
+
+/** Adiciona uma coluna do usuário (`x:`) visível no fim; se já estiver na visão, só a torna visível. */
+export function addColumn(config: ViewConfig, key: string, label: string): ViewConfig {
+  if (!isExtraColumn(key)) return config
+  if (config.columns.some((c) => c.key === key)) return { ...config, columns: config.columns.map((c) => (c.key === key ? { ...c, visible: true } : c)) }
+  return { ...config, columns: [...config.columns, column(key, true, undefined, label)] }
+}
+
+/** Tira da visão uma coluna adicionada pelo usuário; a ordenação por ela sai junto (filtro em campo que a tela não conhece é ignorado). */
+export function removeColumn(config: ViewConfig, key: string): ViewConfig {
+  if (!isExtraColumn(key)) return config
+  const columns = config.columns.filter((c) => c.key !== key)
+  if (!columns.some((c) => c.visible)) return config
+  return { ...config, columns, sort: config.sort?.key === key ? null : config.sort }
+}

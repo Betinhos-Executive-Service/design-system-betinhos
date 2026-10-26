@@ -26,5 +26,11 @@ export const icons = {
   filterX: icon(<><path d="M13.013 3H2l8 9.46V19l4 2v-8.54l.9-1.055" /><path d="m22 3-5 5" /><path d="m17 3 5 5" /></>),
   eyeOff: icon(<><path d="M10.733 5.076a10.744 10.744 0 0 1 11.205 6.575 1 1 0 0 1 0 .696 10.747 10.747 0 0 1-1.444 2.49" /><path d="M14.084 14.158a3 3 0 0 1-4.242-4.242" /><path d="M17.479 17.499a10.75 10.75 0 0 1-15.417-5.151 1 1 0 0 1 0-.696 10.75 10.75 0 0 1 4.446-5.143" /><path d="m2 2 20 20" /></>),
   open: icon(<><path d="M15 3h6v6" /><path d="M10 14 21 3" /><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" /></>),
+  plus: icon(<><path d="M5 12h14" /><path d="M12 5v14" /></>),
+  close: icon(<><path d="M18 6 6 18" /><path d="m6 6 12 12" /></>, 14),
+  check: icon(<path d="M20 6 9 17l-5-5" />),
+  back: icon(<><path d="m12 19-7-7 7-7" /><path d="M19 12H5" /></>),
+  chevronRight: icon(<path d="m9 18 6-6-6-6" />),
+  lock: icon(<><rect width="18" height="11" x="3" y="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></>, 14),
   reset: icon(<><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" /><path d="M3 3v5h5" /></>),
 }
