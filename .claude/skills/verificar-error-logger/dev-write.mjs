@@ -1,7 +1,9 @@
 // Grava 1 log real em new_appmotoristaslog pelo dist/error-logger.js (sem Xrm, via GetGlobalContext + fetch) e imprime status e OData-EntityId.
-// Uso: DV_TOKEN=$(az account get-access-token --resource <url> --query accessToken -o tsv) node dev-write.mjs <file:///.../packages/ui/dist/error-logger.js>
+// Uso: DV_URL=<url do DEV> DV_TOKEN=$(az account get-access-token --resource <url> --query accessToken -o tsv) node dev-write.mjs <file:///.../packages/ui/dist/error-logger.js>
 // Só DEV. Apague a linha criada depois (ver SKILL.md).
-const U = 'https://org23b93544.crm2.dynamics.com'
+// URL do ambiente DEV vem de fora do repo (ex.: DV_URL=https://<org>.crm2.dynamics.com).
+const U = process.env.DV_URL
+if (!U) throw new Error('Defina DV_URL com a URL do Dataverse DEV.')
 const token = process.env.DV_TOKEN
 const realFetch = globalThis.fetch
 const results = []

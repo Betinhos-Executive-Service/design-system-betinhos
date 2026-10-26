@@ -34,14 +34,14 @@ function makeWindow(xrm?: unknown): FakeWindow {
   return target
 }
 
-function makeXrm(createRecord = vi.fn(async () => ({ id: 'x' })), userSettings: unknown = { userId: `{${USER_ID.toUpperCase()}}`, userName: 'Renan' }) {
+function makeXrm(createRecord = vi.fn(async () => ({ id: 'x' })), userSettings: unknown = { userId: `{${USER_ID.toUpperCase()}}`, userName: 'Usuário' }) {
   return { createRecord, xrm: { Utility: { getGlobalContext: () => ({ getClientUrl: () => `${CLIENT}/`, userSettings }) }, WebApi: { createRecord } } }
 }
 
 function systemUserFetch() {
   return vi.fn(async (url: string, _init?: RequestInit) => {
     if (url.includes('/WhoAmI')) return new Response(JSON.stringify({ UserId: USER_ID }), { status: 200 })
-    if (url.includes('/systemusers(')) return new Response(JSON.stringify({ fullname: 'Renan Santos', internalemailaddress: 'renan@betinhos.com.br', domainname: 'renan@betinhos.com.br' }), { status: 200 })
+    if (url.includes('/systemusers(')) return new Response(JSON.stringify({ fullname: 'Usuário Teste', internalemailaddress: 'usuario@example.com', domainname: 'usuario@example.com' }), { status: 200 })
     return new Response(null, { status: 204 })
   })
 }
@@ -81,8 +81,8 @@ describe('logAppError', () => {
     expect(record.new_action).toBe('salvar')
     expect(record.new_errorcode).toBe('500')
     expect(record.new_userid).toBe(USER_ID)
-    expect(record.new_username).toBe('Renan Santos')
-    expect(record.new_useremail).toBe('renan@betinhos.com.br')
+    expect(record.new_username).toBe('Usuário Teste')
+    expect(record.new_useremail).toBe('usuario@example.com')
     expect(record.new_clienturl).toBe(CLIENT)
     expect(record.new_message).toHaveLength(20_000)
     expect(record.new_name.length).toBeLessThanOrEqual(160)
@@ -95,11 +95,11 @@ describe('logAppError', () => {
     const { xrm, createRecord } = makeXrm()
     vi.stubGlobal('window', makeWindow(xrm))
     uninstall = installErrorLogger({ appName: 'A', appVersion: 'v1', getScreen: () => 'Lista' })
-    setErrorLogContext({ screen: 'Detalhe', userEmail: 'outro@betinhos.com.br' })
+    setErrorLogContext({ screen: 'Detalhe', userEmail: 'outro@example.com' })
     await logAppError('falhou')
     const record = (createRecord.mock.calls[0] as unknown as [string, Record<string, string>])[1]
     expect(record.new_screen).toBe('Detalhe')
-    expect(record.new_useremail).toBe('outro@betinhos.com.br')
+    expect(record.new_useremail).toBe('outro@example.com')
   })
 
   it('shim do shell sem userSettings: busca id pelo WhoAmI e nome/e-mail no systemuser', async () => {
@@ -112,7 +112,7 @@ describe('logAppError', () => {
     await logAppError(new Error('no iframe'))
     const record = (createRecord.mock.calls[0] as unknown as [string, Record<string, string>])[1]
     expect(record.new_userid).toBe(USER_ID)
-    expect(record.new_useremail).toBe('renan@betinhos.com.br')
+    expect(record.new_useremail).toBe('usuario@example.com')
     expect(vi.mocked(fetch).mock.calls.map(([url]) => String(url))).toContain(`${CLIENT}/api/data/v9.2/WhoAmI`)
   })
 
