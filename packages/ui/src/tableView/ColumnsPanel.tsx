@@ -65,6 +65,9 @@ export function ColumnsPanel({ open, onClose, columns, config, defaults, onApply
   const [grabbed, setGrabbed] = useState<string | null>(null)
   const [announce, setAnnounce] = useState('')
   const [adding, setAdding] = useState(false)
+  // Busca única do painel: filtra as colunas da lista e oferece os campos desta tabela para adicionar ali mesmo.
+  const [query, setQuery] = useState('')
+  const [rootFields, setRootFields] = useState<ColumnCatalogEntry[] | null>(null)
   const listRef = useRef<HTMLUListElement>(null)
   const drag = useRef<{ key: string; y: number; frame: number } | null>(null)
   const tops = useRef(new Map<string, number>())
@@ -76,13 +79,22 @@ export function ColumnsPanel({ open, onClose, columns, config, defaults, onApply
   // Cada abertura começa do que está na tela.
   if (open !== wasOpen) {
     setWasOpen(open)
-    if (open) { setDraft(config); setAdding(false); setGrabbed(null) }
+    if (open) { setDraft(config); setAdding(false); setGrabbed(null); setQuery('') }
   }
 
   const labels = new Map(columns.map((c) => [c.key, c.label]))
   const labelOf = (key: string) => labels.get(key) ?? draft.columns.find((c) => c.key === key)?.label ?? key
   const first = columns[0]?.key
   const changed = !sameConfig(draft, config)
+  const words = fold(query).split(/\s+/).filter(Boolean)
+  const matches = (text: string) => words.every((w) => fold(text).includes(w))
+  // Campos desta tabela para a busca: carregados uma vez, na primeira busca.
+  useEffect(() => {
+    if (!catalog || !words.length || rootFields) return
+    let live = true
+    catalog.load([]).then((entries) => { if (live) setRootFields(entries) }).catch(() => { if (live) setRootFields([]) })
+    return () => { live = false }
+  }, [catalog, words.length, rootFields])
   const visibleCount = visibleColumns(draft).length
   const total = draft.columns.length
 
@@ -133,7 +145,8 @@ export function ColumnsPanel({ open, onClose, columns, config, defaults, onApply
 
   // O item muda de lugar no DOM ao reordenar e perde a captura do ponteiro: o arraste ouve a janela.
   function onHandlePointerDown(event: PointerEvent<HTMLElement>, key: string) {
-    if (event.button !== 0) return
+    // Com a lista filtrada pela busca a posição não corresponde à ordem real: reordenar só sem busca.
+    if (event.button !== 0 || words.length) return
     event.preventDefault()
     const pointerId = event.pointerId
     const scroller = scrollParent(listRef.current)
@@ -224,12 +237,27 @@ export function ColumnsPanel({ open, onClose, columns, config, defaults, onApply
     </div>
   )
 
+  const searching = words.length > 0
+  const addable = searching && rootFields
+    ? rootFields.filter((e) => !e.relation && matches(e.label) && !draft.columns.some((c) => c.key === `${EXTRA_COLUMN_PREFIX}${e.id}` && c.visible))
+    : []
+  const shown = draft.columns.filter((c) => !searching || matches(labelOf(c.key)))
+  const showAll = () => setDraft((d) => ({ ...d, columns: d.columns.map((c) => ({ ...c, visible: true })) }))
+
   const list = (
     <>
-      {catalog ? <Button className="bt-columns__add" variant="secondary" icon={icons.plus} onClick={() => setAdding(true)}>Adicionar coluna</Button> : null}
-      <p id="bt-columns-hint" className="bt-columns__hint">Arraste pela alça ou, com foco nela, Espaço e as setas.</p>
-      <ul ref={listRef} className={['bt-columns', dragging && 'is-sorting'].filter(Boolean).join(' ')} aria-label="Colunas">
-        {draft.columns.map((state, index) => {
+      <div className="bt-columns__top">
+        <SearchBox value={query} onChange={setQuery} placeholder={catalog ? 'Buscar ou adicionar coluna' : 'Buscar coluna'} aria-label={catalog ? 'Buscar ou adicionar coluna' : 'Buscar coluna'} />
+        <div className="bt-columns__summary">
+          <span><strong>{visibleCount}</strong> de {total} visíveis</span>
+          {visibleCount < total ? <button type="button" className="bt-columns__link" onClick={showAll}>Mostrar todas</button> : null}
+        </div>
+      </div>
+      <p id="bt-columns-hint" className="bt-columns__live">Arraste pela alça ou, com foco nela, use Espaço e as setas.</p>
+      {searching && !shown.length && !addable.length ? <div className="bt-columns-add__state">Nenhuma coluna com “{query.trim()}”.</div> : null}
+      <ul ref={listRef} className={['bt-columns', dragging && 'is-sorting', searching && 'is-filtered'].filter(Boolean).join(' ')} aria-label="Colunas">
+        {shown.map((state) => {
+          const index = draft.columns.indexOf(state)
           const label = labelOf(state.key)
           const fixed = state.key === first
           const extra = isExtraColumn(state.key)
@@ -267,11 +295,33 @@ export function ColumnsPanel({ open, onClose, columns, config, defaults, onApply
           )
         })}
       </ul>
+      {addable.length ? (
+        <section className="bt-columns-add__section" aria-label="Adicionar desta tabela">
+          <h3 className="bt-columns-add__group">Adicionar desta tabela</h3>
+          <ul className="bt-columns-add__list">
+            {addable.slice(0, 8).map((e) => (
+              <li key={e.id}>
+                <button type="button" className="bt-columns-add__entry" aria-label={`Adicionar ${e.label}`} onClick={() => add(`${EXTRA_COLUMN_PREFIX}${e.id}`, e.label)}>
+                  <span className="bt-columns-add__label">{e.label}</span>
+                  <span className="bt-columns-add__icon" aria-hidden="true">{icons.plus}</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+      {catalog ? (
+        <button type="button" className="bt-columns__more" onClick={() => setAdding(true)}>
+          <span className="bt-columns-add__icon" aria-hidden="true">{icons.plus}</span>
+          <span>{searching ? `Buscar “${query.trim()}” em tabelas relacionadas` : 'Adicionar coluna de outra tabela'}</span>
+          <span className="bt-columns-add__icon" aria-hidden="true">{icons.chevronRight}</span>
+        </button>
+      ) : null}
     </>
   )
 
   const content = adding && catalog
-    ? <AddColumn catalog={catalog} has={(key) => draft.columns.some((c) => c.key === key && c.visible)} onAdd={add} onBack={() => setAdding(false)} />
+    ? <AddColumn catalog={catalog} initialQuery={query} has={(key) => draft.columns.some((c) => c.key === key && c.visible)} onAdd={add} onBack={() => setAdding(false)} />
     : list
   const title = adding ? 'Adicionar coluna' : 'Colunas'
 
@@ -302,13 +352,15 @@ type AddColumnProps = {
   has: (key: string) => boolean
   onAdd: (key: string, label: string) => void
   onBack: () => void
+  /** Texto já digitado na busca do painel. */
+  initialQuery?: string
 }
 
 /** Catálogo de campos: trilha das relações abertas, busca no nível atual e "+" para adicionar. */
-function AddColumn({ catalog, has, onAdd, onBack }: AddColumnProps) {
+function AddColumn({ catalog, has, onAdd, onBack, initialQuery = '' }: AddColumnProps) {
   const maxDepth = catalog.maxDepth ?? 3
   const [trail, setTrail] = useState<Crumb[]>([])
-  const [query, setQuery] = useState('')
+  const [query, setQuery] = useState(initialQuery)
   const [level, setLevel] = useState<Level>({ status: 'loading' })
   const [attempt, setAttempt] = useState(0)
   const path = trail.map((c) => c.id)
@@ -328,7 +380,7 @@ function AddColumn({ catalog, has, onAdd, onBack }: AddColumnProps) {
   const entries = level.status === 'ready'
     ? level.entries
       .filter((e) => !e.relation || trail.length < maxDepth)
-      .filter((e) => words.every((w) => fold(`${e.label} ${e.description ?? ''}`).includes(w)))
+      .filter((e) => e.relation || words.every((w) => fold(`${e.label} ${e.description ?? ''}`).includes(w)))
     : []
   const fields = entries.filter((e) => !e.relation)
   const relations = entries.filter((e) => e.relation)
