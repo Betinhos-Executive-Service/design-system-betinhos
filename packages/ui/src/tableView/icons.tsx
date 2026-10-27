@@ -32,5 +32,10 @@ export const icons = {
   back: icon(<><path d="m12 19-7-7 7-7" /><path d="M19 12H5" /></>),
   chevronRight: icon(<path d="m9 18 6-6-6-6" />),
   lock: icon(<><rect width="18" height="11" x="3" y="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></>, 14),
+  typeText: icon(<><path d="M4 7V4h16v3" /><path d="M9 20h6" /><path d="M12 4v16" /></>, 14),
+  typeNumber: icon(<><path d="M4 9h16" /><path d="M4 15h16" /><path d="M10 3 8 21" /><path d="m16 3-2 18" /></>, 14),
+  typeDate: icon(<><rect width="18" height="18" x="3" y="4" rx="2" /><path d="M16 2v4" /><path d="M8 2v4" /><path d="M3 10h18" /></>, 14),
+  typeChoice: icon(<><path d="M8 6h13" /><path d="M8 12h13" /><path d="M8 18h13" /><path d="M3 6h.01" /><path d="M3 12h.01" /><path d="M3 18h.01" /></>, 14),
+  typeLookup: icon(<><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" /><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" /></>, 14),
   reset: icon(<><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" /><path d="M3 3v5h5" /></>),
 }

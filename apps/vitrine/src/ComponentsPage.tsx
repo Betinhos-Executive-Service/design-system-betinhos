@@ -586,12 +586,12 @@ const buscarCliente = async (_field: FilterField, text: string): Promise<FilterO
 
 // Catálogo de exemplo para "Adicionar coluna": campos da ocorrência e das relações N:1 (Cliente › Gestor).
 const CATALOGO: Record<string, ColumnCatalogEntry[]> = {
-  '': [{ id: 'criadoem', label: 'Criado em' }, { id: 'valor', label: 'Valor' }, { id: 'cliente', label: 'Cliente', relation: true, description: 'Clientes' }],
-  cliente: [{ id: 'cidade', label: 'Cidade' }, { id: 'segmento', label: 'Segmento' }, { id: 'gestor', label: 'Gestor da conta', relation: true, description: 'Funcionários' }],
-  'cliente/gestor': [{ id: 'nome', label: 'Nome' }, { id: 'telefone', label: 'Telefone' }, { id: 'cargo', label: 'Cargo', relation: true, description: 'Cargos' }],
-  'cliente/gestor/cargo': [{ id: 'nome', label: 'Nome' }],
+  '': [{ id: 'criadoem', label: 'Criado em', type: 'date' }, { id: 'valor', label: 'Valor', type: 'number' }, { id: 'cliente', label: 'Cliente', relation: true, description: 'Clientes' }],
+  cliente: [{ id: 'cidade', label: 'Cidade', type: 'text' }, { id: 'segmento', label: 'Segmento', type: 'choice' }, { id: 'gestor', label: 'Gestor da conta', relation: true, description: 'Funcionários' }],
+  'cliente/gestor': [{ id: 'nome', label: 'Nome', type: 'text' }, { id: 'telefone', label: 'Telefone', type: 'text' }, { id: 'cargo', label: 'Cargo', relation: true, description: 'Cargos' }],
+  'cliente/gestor/cargo': [{ id: 'nome', label: 'Nome', type: 'text' }],
 }
-const catalogoExemplo: ColumnCatalog = { load: async (path) => { await new Promise((r) => setTimeout(r, 250)); return CATALOGO[path.join('/')] ?? [] } }
+const catalogoExemplo: ColumnCatalog = { label: 'Ocorrências', load: async (path) => { await new Promise((r) => setTimeout(r, 250)); return CATALOGO[path.join('/')] ?? [] } }
 const valorExtra = (row: OcorrenciaFiltro, key: string) => {
   const path = key.slice(2)
   if (path === 'valor') return row.valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
