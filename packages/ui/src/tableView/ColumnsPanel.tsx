@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent, type PointerEvent } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent, type PointerEvent, type ReactNode } from 'react'
 import { Button } from '../components/Button'
 import { Checkbox } from '../components/Choice'
 import { Dialog } from '../components/Dialog'
@@ -10,8 +10,14 @@ import { useMediaQuery } from '../useMediaQuery'
 import { addColumn, EXTRA_COLUMN_PREFIX, isExtraColumn, moveVisibleColumn, removeColumn, sameConfig, toggleColumn, visibleColumns, type ViewColumnDef, type ViewConfig } from './config'
 import { icons } from './icons'
 
-/** Um item do catálogo: campo que vira coluna ou relação (N:1) que abre os campos da tabela ligada. */
-export type ColumnCatalogEntry = { id: string; label: string; relation?: boolean; description?: string }
+/** Tipo do campo, para o ícone do catálogo (texto, número, data, escolha, vínculo). */
+export type ColumnCatalogType = 'text' | 'number' | 'date' | 'choice' | 'lookup'
+
+/**
+ * Um item do catálogo: campo que vira coluna ou relação (N:1) que abre a tabela ligada.
+ * Na relação, `description` é o nome da tabela de destino ("Funcionários").
+ */
+export type ColumnCatalogEntry = { id: string; label: string; relation?: boolean; description?: string; type?: ColumnCatalogType }
 
 /**
  * Campos que o usuário pode adicionar como coluna (§10.9.1). `load([])` lista a tabela da tela; `load(['nav'])` lista a
@@ -19,6 +25,8 @@ export type ColumnCatalogEntry = { id: string; label: string; relation?: boolean
  */
 export type ColumnCatalog = {
   load: (path: string[]) => Promise<ColumnCatalogEntry[]>
+  /** Nome da tabela da lista ("Reservas"), no início da trilha. Padrão: "Esta lista". */
+  label?: string
   /** Quantas relações seguidas o usuário pode abrir. Padrão: 3. */
   maxDepth?: number
 }
@@ -405,9 +413,18 @@ type AddColumnProps = {
   initialQuery?: string
 }
 
-/** Catálogo de campos: trilha das relações abertas, busca no nível atual e "+" para adicionar. */
+const TYPE_ICON: Record<ColumnCatalogType, ReactNode> = {
+  text: icons.typeText, number: icons.typeNumber, date: icons.typeDate, choice: icons.typeChoice, lookup: icons.typeLookup,
+}
+const TYPE_LABEL: Record<ColumnCatalogType, string> = { text: 'texto', number: 'número', date: 'data', choice: 'opção', lookup: 'vínculo' }
+
+/**
+ * Catálogo de colunas de outras tabelas (§10.9.1). Coluna e tabela nunca se confundem: coluna tem ícone do tipo e "+";
+ * tabela tem ícone de tabela em fundo azul-claro, nome em negrito, a tabela de destino e "Abrir". A trilha diz onde se está.
+ */
 function AddColumn({ catalog, has, onAdd, onBack, initialQuery = '' }: AddColumnProps) {
   const maxDepth = catalog.maxDepth ?? 3
+  const root = catalog.label ?? 'Esta lista'
   const [trail, setTrail] = useState<Crumb[]>([])
   const [query, setQuery] = useState(initialQuery)
   const [level, setLevel] = useState<Level>({ status: 'loading' })
@@ -426,41 +443,42 @@ function AddColumn({ catalog, has, onAdd, onBack, initialQuery = '' }: AddColumn
 
   const go = (next: Crumb[]) => { setTrail(next); setQuery('') }
   const words = fold(query).split(/\s+/).filter(Boolean)
-  const entries = level.status === 'ready'
-    ? level.entries
-      .filter((e) => !e.relation || trail.length < maxDepth)
-      .filter((e) => e.relation || words.every((w) => fold(`${e.label} ${e.description ?? ''}`).includes(w)))
-    : []
-  const fields = entries.filter((e) => !e.relation)
-  const relations = entries.filter((e) => e.relation)
-  const here = trail.length ? trail[trail.length - 1].label : null
+  const hit = (e: ColumnCatalogEntry) => words.every((w) => fold(`${e.label} ${e.description ?? ''}`).includes(w))
+  const all = level.status === 'ready' ? level.entries : []
+  const fields = all.filter((e) => !e.relation && hit(e))
+  const atLimit = trail.length >= maxDepth
+  const relations = atLimit ? [] : all.filter((e) => e.relation && hit(e))
+  const here = trail.length ? trail[trail.length - 1].label : root
 
   return (
     <div className="bt-columns-add">
-      <nav className="bt-columns-add__trail" aria-label="Caminho">
-        <Button variant="ghost" size="compact" icon={icons.back} aria-label={trail.length ? 'Voltar um nível' : 'Voltar às colunas'} onClick={trail.length ? () => go(trail.slice(0, -1)) : onBack} />
+      <nav className="bt-columns-add__trail" aria-label="Você está em">
+        <Button variant="ghost" size="compact" icon={icons.back} aria-label={trail.length ? 'Voltar uma tabela' : 'Voltar às colunas'} onClick={trail.length ? () => go(trail.slice(0, -1)) : onBack} />
         <ol>
-          <li><button type="button" className="bt-columns-add__crumb" aria-current={trail.length ? undefined : 'location'} onClick={() => go([])}>Esta lista</button></li>
-          {trail.map((c, i) => (
-            <li key={c.id}>
-              <span aria-hidden="true">›</span>
-              <button type="button" className="bt-columns-add__crumb" aria-current={i === trail.length - 1 ? 'location' : undefined} onClick={() => go(trail.slice(0, i + 1))}>{c.label}</button>
+          {[{ id: '', label: root }, ...trail].map((c, i, list) => (
+            <li key={c.id || 'raiz'}>
+              {i ? <span className="bt-columns-add__sep" aria-hidden="true">›</span> : null}
+              <button type="button" className="bt-columns-add__crumb" aria-current={i === list.length - 1 ? 'location' : undefined} onClick={() => go(trail.slice(0, i))}>
+                <span className="bt-columns-add__crumb-icon" aria-hidden="true">{icons.table}</span>{c.label}
+              </button>
             </li>
           ))}
         </ol>
       </nav>
-      <SearchBox value={query} onChange={setQuery} placeholder={here ? `Buscar em ${here}` : 'Buscar campo'} aria-label="Buscar campo" />
-      {level.status === 'loading' ? <div className="bt-columns-add__state"><Spinner label="Carregando campos" /></div> : null}
+      <p className="bt-columns-add__hint">Clique numa <strong>coluna</strong> para adicionar. Abra uma <strong>tabela</strong> ligada para ver as colunas dela.</p>
+      <SearchBox value={query} onChange={setQuery} placeholder={`Buscar em ${here}`} aria-label={`Buscar em ${here}`} />
+      {level.status === 'loading' ? <div className="bt-columns-add__state"><Spinner size={16} label="Carregando" /> Carregando {here}…</div> : null}
       {level.status === 'error' ? (
         <div className="bt-columns-add__state">
-          <span>Não foi possível carregar os campos.</span>
+          <span>Não foi possível carregar {here}.</span>
           <Button variant="secondary" size="compact" onClick={() => setAttempt((n) => n + 1)}>Tentar de novo</Button>
         </div>
       ) : null}
-      {level.status === 'ready' && !entries.length ? <div className="bt-columns-add__state">Nenhum campo encontrado.</div> : null}
+      {level.status === 'ready' && !fields.length && !relations.length ? <div className="bt-columns-add__state">Nada encontrado em {here}.</div> : null}
+
       {fields.length ? (
-        <section className="bt-columns-add__section" aria-label="Campos">
-          <h3 className="bt-columns-add__group">{here ? `Campos de ${here}` : 'Campos'}</h3>
+        <section className="bt-columns__section" aria-label={`Colunas de ${here}`}>
+          <h3 className="bt-columns__heading">Colunas de {here} <span>{fields.length}</span></h3>
           <ul className="bt-columns-add__list">
             {fields.map((e) => {
               const key = `${EXTRA_COLUMN_PREFIX}${[...path, e.id].join('/')}`
@@ -468,9 +486,10 @@ function AddColumn({ catalog, has, onAdd, onBack, initialQuery = '' }: AddColumn
               const added = has(key)
               return (
                 <li key={e.id}>
-                  <button type="button" className="bt-columns-add__entry" disabled={added} aria-label={added ? `${label}: já está nas colunas` : `Adicionar ${label}`} onClick={() => onAdd(key, label)}>
-                    <span className="bt-columns-add__label">{e.label}{e.description ? <small>{e.description}</small> : null}</span>
-                    <span className="bt-columns-add__icon" aria-hidden="true">{added ? icons.check : icons.plus}</span>
+                  <button type="button" className="bt-columns-add__entry bt-columns-add__entry--field" disabled={added} aria-label={added ? `${label}: já está na tabela` : `Adicionar a coluna ${label}`} onClick={() => onAdd(key, label)}>
+                    <span className="bt-columns-add__type" title={e.type ? TYPE_LABEL[e.type] : undefined} aria-hidden="true">{e.type ? TYPE_ICON[e.type] : icons.typeText}</span>
+                    <span className="bt-columns-add__label">{e.label}</span>
+                    <span className="bt-columns-add__action" aria-hidden="true">{added ? <>{icons.check}Na tabela</> : icons.plus}</span>
                   </button>
                 </li>
               )
@@ -478,21 +497,24 @@ function AddColumn({ catalog, has, onAdd, onBack, initialQuery = '' }: AddColumn
           </ul>
         </section>
       ) : null}
+
       {relations.length ? (
-        <section className="bt-columns-add__section" aria-label="Tabelas relacionadas">
-          <h3 className="bt-columns-add__group">Tabelas relacionadas</h3>
+        <section className="bt-columns__section" aria-label={`Tabelas ligadas a ${here}`}>
+          <h3 className="bt-columns__heading">Tabelas ligadas a {here} <span>{relations.length}</span></h3>
           <ul className="bt-columns-add__list">
             {relations.map((e) => (
               <li key={e.id}>
-                <button type="button" className="bt-columns-add__entry" aria-label={`Abrir campos de ${e.label}`} onClick={() => go([...trail, { id: e.id, label: e.label }])}>
-                  <span className="bt-columns-add__label">{e.label}{e.description ? <small>{e.description}</small> : null}</span>
-                  <span className="bt-columns-add__icon" aria-hidden="true">{icons.chevronRight}</span>
+                <button type="button" className="bt-columns-add__entry bt-columns-add__entry--table" aria-label={`Abrir a tabela ${e.label}`} onClick={() => go([...trail, { id: e.id, label: e.label }])}>
+                  <span className="bt-columns-add__table-icon" aria-hidden="true">{icons.table}</span>
+                  <span className="bt-columns-add__label"><strong>{e.label}</strong>{e.description && e.description !== e.label ? <small>tabela {e.description}</small> : null}</span>
+                  <span className="bt-columns-add__open" aria-hidden="true">Abrir{icons.chevronRight}</span>
                 </button>
               </li>
             ))}
           </ul>
         </section>
       ) : null}
+      {atLimit && level.status === 'ready' ? <p className="bt-columns-add__hint">Limite de {maxDepth} tabelas seguidas. Volte pela trilha para abrir outra.</p> : null}
     </div>
   )
 }

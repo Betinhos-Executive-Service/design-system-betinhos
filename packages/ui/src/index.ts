@@ -41,7 +41,7 @@ export {
   type StoredView, type TableViewEntry, type ViewScope, type ViewStore,
 } from './tableView/store'
 export { useTableView, type TableViewState, type UseTableViewOptions } from './tableView/useTableView'
-export { ColumnsPanel, type ColumnCatalog, type ColumnCatalogEntry, type ColumnsPanelProps } from './tableView/ColumnsPanel'
+export { ColumnsPanel, type ColumnCatalog, type ColumnCatalogEntry, type ColumnCatalogType, type ColumnsPanelProps } from './tableView/ColumnsPanel'
 export { ViewBar, VIEW_NAME_MAX, type ViewBarProps } from './tableView/ViewBar'
 export { useMediaQuery } from './useMediaQuery'
 export {
