@@ -735,7 +735,7 @@ Painel de colunas:
 - **Denso:** linhas de 32 px no desktop (44 px no toque), sem espaço entre itens; "Coluna fixa" e "Adicionada" viram selo na mesma linha do nome.
 - **Duas seções:** "Na tabela" (visíveis, na ordem da tabela, arrastáveis) e "Ocultas" (com "Mostrar todas"), cada uma com a contagem. Desmarcar leva a coluna para "Ocultas"; marcar a devolve ao fim de "Na tabela".
 - **Busca única no topo** ("Buscar ou adicionar coluna"): filtra as duas seções e, com catálogo, abre acima delas a seção "Adicionar" com os campos desta tabela e das relações de 1º nível que casam ("Cliente › Cidade"); um clique adiciona. "Procurar … em todas as tabelas" abre o catálogo completo com o texto. Com busca ativa não se arrasta (a ordem filtrada não é a real). Coluna oculta fica esmaecida; ↑/↓/✕ aparecem ao passar o mouse ou focar a linha (sempre visíveis no toque). Itens clicáveis respondem com `scale(0.98)` em 160 ms.
-- **Dentro de uma tabela ligada:** quadro em `action-soft` no topo diz de onde vêm as colunas ("Colunas do registro ligado pelo campo **Passageiro 4** (tabela Pessoas). Entram na lista como **Passageiro 4 › coluna**.") e o título da seção leva a tabela ("Colunas de Passageiro 4 · Pessoas"). Abrir uma tabela ou voltar pela trilha leva a lista ao topo.
+- **Dentro de uma tabela ligada:** sem quadro explicativo; a trilha e o título da seção dizem de onde vêm as colunas ("Colunas de Passageiro 4 · Pessoas"). Abrir uma tabela ou voltar pela trilha leva a lista ao topo.
 - **Coluna × tabela no catálogo:** coluna tem ícone do tipo (texto, número, data, opção, vínculo) num quadro com borda e "+" (já na tabela: "✓ Na tabela"); tabela ligada tem ícone de tabela em `action-soft`, nome em negrito, "tabela <destino>" e "Abrir ›". A trilha começa pelo nome da tabela da lista ("Ocorrências › Cliente") com ícone de tabela; seções "Colunas de <tabela>" e "Tabelas ligadas a <tabela>" com contagem; dica de uma linha no topo. `ColumnCatalog.label` dá o nome da tabela da lista e `ColumnCatalogEntry.type` o tipo.
 - **Adicionar coluna** (quando a tela oferece o catálogo): botão tracejado no fim da lista ("Adicionar coluna de outra tabela"), que troca o conteúdo por "Adicionar coluna" com trilha ("Esta lista › Cliente › Gestor"), busca e duas seções: "Campos" (clique adiciona, ícone `+`; campo já visível aparece com ✓ e desabilitado) e "Tabelas relacionadas" (só relações N:1 e 1:1, com chevron, abrem os campos da tabela ligada). Até 3 relações seguidas. Relações 1:N (ex.: passageiros de um serviço) não entram. "Concluir" volta à lista; a coluna nova entra visível no fim, com o rótulo do caminho ("Cliente › Cidade"), a descrição "Adicionada" e o botão ✕ para remover. Coluna adicionada pode ser ordenada e filtrada como as do código e fica salva na visão (chave `x:` + caminho).
 
@@ -1493,7 +1493,7 @@ O padrão de mercado não é apenas um PDF de marca. É um produto versionado: t
 
 ### 1.15.2 — 27/10/2026
 
-- §10.9.1 catálogo: abrir tabela ligada ou voltar pela trilha rola a lista ao topo; quadro de contexto diz o campo de vínculo, a tabela e como a coluna vai se chamar.
+- §10.9.1 catálogo: abrir tabela ligada ou voltar pela trilha rola a lista ao topo; o título da seção leva a tabela de destino ("Colunas de Passageiro 4 · Pessoas").
 
 ### 1.15.1 — 27/10/2026
 

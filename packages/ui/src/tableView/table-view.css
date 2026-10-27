@@ -148,11 +148,6 @@ body.bt-columns-grabbing, body.bt-columns-grabbing * { cursor: grabbing !importa
 .bt-columns-add__entry--table strong { font-weight: 600; }
 .bt-columns-add__open { display: inline-flex; align-items: center; gap: 2px; color: var(--bt-color-action); font-size: 12px; font-weight: 600; }
 
-.bt-columns-add__context { display: flex; align-items: flex-start; gap: var(--bt-space-2); padding: var(--bt-space-2); border-radius: var(--bt-radius-sm); background: var(--bt-color-action-soft); }
-.bt-columns-add__context p { margin: 0; color: var(--bt-color-text-primary); font-size: 12px; line-height: 17px; }
-.bt-columns-add__context em { font-style: normal; color: var(--bt-color-text-secondary); }
-.bt-columns-add__context .bt-columns-add__table-icon { background: var(--bt-color-surface); }
-
 /* Painel de colunas denso (§10.9.1): linhas de 32 px no desktop; no toque voltam a 44 px. Descrição vira selo na mesma linha. */
 .bt-columns { gap: 0; }
 .bt-columns__item { min-height: 32px; gap: var(--bt-space-1-5); }

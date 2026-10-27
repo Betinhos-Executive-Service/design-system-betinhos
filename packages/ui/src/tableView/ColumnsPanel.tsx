@@ -473,17 +473,7 @@ function AddColumn({ catalog, has, onAdd, onBack, initialQuery = '' }: AddColumn
           ))}
         </ol>
       </nav>
-      {last ? (
-        <div className="bt-columns-add__context">
-          <span className="bt-columns-add__table-icon" aria-hidden="true">{icons.table}</span>
-          <p>
-            Colunas do registro ligado pelo campo <strong>{last.label}</strong>{last.table && last.table !== last.label ? <> (tabela {last.table})</> : null}.
-            Entram na lista como <strong>{trail.map((c) => c.label).join(' › ')} › <em>coluna</em></strong>.
-          </p>
-        </div>
-      ) : (
-        <p className="bt-columns-add__hint">Clique numa <strong>coluna</strong> para adicionar. Abra uma <strong>tabela</strong> ligada para ver as colunas dela.</p>
-      )}
+      {last ? null : <p className="bt-columns-add__hint">Clique numa <strong>coluna</strong> para adicionar. Abra uma <strong>tabela</strong> ligada para ver as colunas dela.</p>}
       <SearchBox value={query} onChange={setQuery} placeholder={`Buscar em ${here}`} aria-label={`Buscar em ${here}`} />
       {level.status === 'loading' ? <div className="bt-columns-add__state"><Spinner size={16} label="Carregando" /> Carregando {here}…</div> : null}
       {level.status === 'error' ? (
