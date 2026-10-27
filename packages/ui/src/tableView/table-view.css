@@ -125,3 +125,22 @@ body.bt-columns-grabbing, body.bt-columns-grabbing * { cursor: grabbing !importa
   .bt-filters__row-controls { grid-template-columns: 1fr auto; }
   .bt-filters__row-controls > :nth-child(2), .bt-filters__row-controls > :nth-child(3) { grid-column: 1 / 2; }
 }
+
+/* Painel de colunas denso (§10.9.1): linhas de 32 px no desktop; no toque voltam a 44 px. Descrição vira selo na mesma linha. */
+.bt-columns { gap: 0; }
+.bt-columns__item { min-height: 32px; gap: var(--bt-space-1-5); }
+.bt-columns__handle { height: 28px; }
+.bt-columns__check { align-items: center; min-height: 0; }
+.bt-columns__check .bt-choice__text { display: flex; align-items: baseline; gap: var(--bt-space-1-5); padding-top: 0; }
+.bt-columns__check .bt-choice__label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bt-columns__check .bt-choice__description { flex: none; padding: 0 6px; border-radius: 999px; background: var(--bt-color-surface-neutral); box-shadow: inset 0 0 0 1px var(--bt-color-border); font-size: 11px; line-height: 16px; }
+.bt-columns__section { gap: 2px; margin-top: var(--bt-space-2); }
+.bt-columns__heading { min-height: 24px; }
+.bt-columns__heading > span { box-shadow: inset 0 0 0 1px var(--bt-color-border); }
+.bt-columns-add__entry { min-height: 32px; }
+.bt-columns__more { min-height: 36px; margin-top: var(--bt-space-2); }
+.bt-columns__top { margin-bottom: var(--bt-space-1); }
+@media (pointer: coarse) {
+  .bt-columns__item, .bt-columns-add__entry, .bt-columns__more { min-height: 44px; }
+  .bt-columns__handle { height: 40px; }
+}
