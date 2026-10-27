@@ -732,7 +732,8 @@ Painel de colunas:
 - As mudanças só valem em "Aplicar". Fechar com alteração pendente abre "Descartar alterações?" com "Continuar editando" e "Descartar".
 - A primeira coluna (título do registro) não pode ser ocultada nem sair da primeira posição; leva cadeado no lugar da alça. Sempre fica ao menos uma coluna visível.
 - **Arrastar:** a alça é um botão (cursor `grab`/`grabbing`). O item arrastado fica com fundo `#FCFCFB` e borda de foco azul de 2 px, sem sombra; os demais esmaecem e deslizam até o novo lugar em 150 ms ease-out (sem deslizar com `prefers-reduced-motion`). Perto da borda do painel, a lista rola sozinha. Teclado: com foco na alça, Espaço/Enter pega, ↑/↓ move, Espaço solta e Esc devolve ao lugar de origem. Cada movimento é anunciado em `aria-live` ("Coluna Cliente na posição 3 de 8").
-- **Busca única no topo** ("Buscar ou adicionar coluna") com a contagem "6 de 8 visíveis" e "Mostrar todas": filtra as colunas da lista e, com catálogo, oferece logo abaixo "Adicionar desta tabela" (clique adiciona) e "Buscar em tabelas relacionadas". Com busca ativa não se arrasta (a ordem filtrada não é a real). Coluna oculta fica esmaecida; ↑/↓/✕ aparecem ao passar o mouse ou focar a linha (sempre visíveis no toque). Itens clicáveis respondem com `scale(0.98)` em 160 ms.
+- **Duas seções:** "Na tabela" (visíveis, na ordem da tabela, arrastáveis) e "Ocultas" (com "Mostrar todas"), cada uma com a contagem. Desmarcar leva a coluna para "Ocultas"; marcar a devolve ao fim de "Na tabela".
+- **Busca única no topo** ("Buscar ou adicionar coluna"): filtra as duas seções e, com catálogo, abre acima delas a seção "Adicionar" com os campos desta tabela e das relações de 1º nível que casam ("Cliente › Cidade"); um clique adiciona. "Procurar … em todas as tabelas" abre o catálogo completo com o texto. Com busca ativa não se arrasta (a ordem filtrada não é a real). Coluna oculta fica esmaecida; ↑/↓/✕ aparecem ao passar o mouse ou focar a linha (sempre visíveis no toque). Itens clicáveis respondem com `scale(0.98)` em 160 ms.
 - **Adicionar coluna** (quando a tela oferece o catálogo): botão tracejado no fim da lista ("Adicionar coluna de outra tabela"), que troca o conteúdo por "Adicionar coluna" com trilha ("Esta lista › Cliente › Gestor"), busca e duas seções: "Campos" (clique adiciona, ícone `+`; campo já visível aparece com ✓ e desabilitado) e "Tabelas relacionadas" (só relações N:1 e 1:1, com chevron, abrem os campos da tabela ligada). Até 3 relações seguidas. Relações 1:N (ex.: passageiros de um serviço) não entram. "Concluir" volta à lista; a coluna nova entra visível no fim, com o rótulo do caminho ("Cliente › Cidade"), a descrição "Adicionada" e o botão ✕ para remover. Coluna adicionada pode ser ordenada e filtrada como as do código e fica salva na visão (chave `x:` + caminho).
 
 Direto no cabeçalho da tabela (apenas pointer fino):
@@ -1489,7 +1490,7 @@ O padrão de mercado não é apenas um PDF de marca. É um produto versionado: t
 
 ### 1.15.1 — 27/10/2026
 
-- §10.9.1 painel de colunas mais direto: busca única que filtra e adiciona, contagem de visíveis com "Mostrar todas", ações da linha só no hover/foco, coluna oculta esmaecida, atalho tracejado para tabelas relacionadas levando o texto buscado.
+- §10.9.1 painel de colunas mais direto: seções "Na tabela" e "Ocultas", busca única que filtra e adiciona (inclusive campos das tabelas relacionadas), "Mostrar todas", ações da linha só no hover/foco, coluna oculta esmaecida, atalho tracejado para tabelas relacionadas levando o texto buscado.
 
 ### 1.15.0 — 26/10/2026
 

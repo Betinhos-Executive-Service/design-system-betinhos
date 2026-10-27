@@ -7,7 +7,7 @@ import { Spinner } from '../components/Misc'
 import { SearchBox } from '../components/SearchBox'
 import { Sheet } from '../components/Sheet'
 import { useMediaQuery } from '../useMediaQuery'
-import { addColumn, EXTRA_COLUMN_PREFIX, isExtraColumn, moveColumn, removeColumn, sameConfig, toggleColumn, visibleColumns, type ViewColumnDef, type ViewConfig } from './config'
+import { addColumn, EXTRA_COLUMN_PREFIX, isExtraColumn, moveVisibleColumn, removeColumn, sameConfig, toggleColumn, visibleColumns, type ViewColumnDef, type ViewConfig } from './config'
 import { icons } from './icons'
 
 /** Um item do catálogo: campo que vira coluna ou relação (N:1) que abre os campos da tabela ligada. */
@@ -68,6 +68,8 @@ export function ColumnsPanel({ open, onClose, columns, config, defaults, onApply
   // Busca única do painel: filtra as colunas da lista e oferece os campos desta tabela para adicionar ali mesmo.
   const [query, setQuery] = useState('')
   const [rootFields, setRootFields] = useState<ColumnCatalogEntry[] | null>(null)
+  // Campos das tabelas relacionadas (1 nível), para a busca achar "Motorista › Telefone" sem abrir o catálogo.
+  const [related, setRelated] = useState<{ key: string; label: string }[] | null>(null)
   const listRef = useRef<HTMLUListElement>(null)
   const drag = useRef<{ key: string; y: number; frame: number } | null>(null)
   const tops = useRef(new Map<string, number>())
@@ -95,8 +97,18 @@ export function ColumnsPanel({ open, onClose, columns, config, defaults, onApply
     catalog.load([]).then((entries) => { if (live) setRootFields(entries) }).catch(() => { if (live) setRootFields([]) })
     return () => { live = false }
   }, [catalog, words.length, rootFields])
-  const visibleCount = visibleColumns(draft).length
-  const total = draft.columns.length
+  useEffect(() => {
+    if (!catalog || !rootFields || related || fold(query).trim().length < 2) return
+    let live = true
+    const relations = rootFields.filter((e) => e.relation)
+    void Promise.all(relations.map((rel) => catalog.load([rel.id])
+      .then((fields) => fields.filter((f) => !f.relation).map((f) => ({ key: `${EXTRA_COLUMN_PREFIX}${rel.id}/${f.id}`, label: `${rel.label} › ${f.label}` })))
+      .catch(() => [])))
+      .then((groups) => { if (live) setRelated(groups.flat()) })
+    return () => { live = false }
+  }, [catalog, rootFields, related, query])
+  const visible = visibleColumns(draft)
+  const visibleCount = visible.length
 
   // Vizinhas deslizam até o novo lugar (FLIP, 150 ms); com movimento reduzido trocam de lugar direto.
   useLayoutEffect(() => {
@@ -135,12 +147,14 @@ export function ColumnsPanel({ open, onClose, columns, config, defaults, onApply
     onClose()
   }
   function move(key: string, to: number) {
+    // `to` é a posição entre as visíveis ("Na tabela"); as ocultas não contam.
     const base = current.current
-    const next = moveColumn(base, columns, key, to)
+    const next = moveVisibleColumn(base, columns, key, Math.max(1, to))
     if (next === base) return
     current.current = next
     setDraft(next)
-    setAnnounce(`Coluna ${labelOf(key)} na posição ${next.columns.findIndex((c) => c.key === key) + 1} de ${total}`)
+    const shown = visibleColumns(next)
+    setAnnounce(`Coluna ${labelOf(key)} na posição ${shown.findIndex((c) => c.key === key) + 1} de ${shown.length}`)
   }
 
   // O item muda de lugar no DOM ao reordenar e perde a captura do ponteiro: o arraste ouve a janela.
@@ -190,7 +204,7 @@ export function ColumnsPanel({ open, onClose, columns, config, defaults, onApply
     // Posição final: quantos itens (fora o arrastado) têm o meio acima do ponteiro; o primeiro é fixo.
     const items = Array.from(list.querySelectorAll<HTMLElement>('[data-col]')).filter((el) => el.dataset.col !== state.key)
     const target = Math.max(1, items.filter((el) => { const r = el.getBoundingClientRect(); return r.top + r.height / 2 < clientY }).length)
-    if (current.current.columns.findIndex((c) => c.key === state.key) !== target) move(state.key, target)
+    if (visibleColumns(current.current).findIndex((c) => c.key === state.key) !== target) move(state.key, target)
   }
 
   // Teclado na alça: Espaço/Enter pega e solta, ↑/↓ move, Esc devolve ao lugar de origem.
@@ -199,7 +213,7 @@ export function ColumnsPanel({ open, onClose, columns, config, defaults, onApply
       event.preventDefault()
       if (grabbed === key) {
         setGrabbed(null)
-        setAnnounce(`${labelOf(key)} solta na posição ${index + 1} de ${total}`)
+        setAnnounce(`${labelOf(key)} solta na posição ${index + 1} de ${visibleCount}`)
       } else {
         origin.current = index
         setGrabbed(key)
@@ -220,6 +234,14 @@ export function ColumnsPanel({ open, onClose, columns, config, defaults, onApply
     setDraft((d) => addColumn(d, key, label))
     setAnnounce(`Coluna ${label} adicionada no fim`)
   }
+  // Ocultar leva a coluna para "Ocultas"; mostrar a devolve ao fim de "Na tabela".
+  function toggle(key: string, show: boolean) {
+    setDraft((d) => {
+      const next = toggleColumn(d, columns, key)
+      return show ? moveVisibleColumn(next, columns, key, visibleColumns(next).length) : next
+    })
+    setAnnounce(show ? `Coluna ${labelOf(key)} mostrada no fim` : `Coluna ${labelOf(key)} oculta`)
+  }
 
   const footer = adding ? (
     <div className="bt-columns__footer">
@@ -238,82 +260,109 @@ export function ColumnsPanel({ open, onClose, columns, config, defaults, onApply
   )
 
   const searching = words.length > 0
-  const addable = searching && rootFields
-    ? rootFields.filter((e) => !e.relation && matches(e.label) && !draft.columns.some((c) => c.key === `${EXTRA_COLUMN_PREFIX}${e.id}` && c.visible))
+  const isShown = (key: string) => draft.columns.some((c) => c.key === key && c.visible)
+  const addable = searching
+    ? [
+      ...(rootFields ?? []).filter((e) => !e.relation).map((e) => ({ key: `${EXTRA_COLUMN_PREFIX}${e.id}`, label: e.label })),
+      ...(related ?? []),
+    ].filter((e) => matches(e.label) && !isShown(e.key) && !draft.columns.some((c) => c.key === e.key && !c.visible))
     : []
-  const shown = draft.columns.filter((c) => !searching || matches(labelOf(c.key)))
-  const showAll = () => setDraft((d) => ({ ...d, columns: d.columns.map((c) => ({ ...c, visible: true })) }))
+  const onTable = visible.filter((c) => !searching || matches(labelOf(c.key)))
+  const hidden = draft.columns.filter((c) => !c.visible && (!searching || matches(labelOf(c.key))))
+  const loadingDeep = searching && catalog && (!rootFields || (fold(query).trim().length >= 2 && !related))
+
+  const row = (state: ViewConfig['columns'][number], index: number) => {
+    const label = labelOf(state.key)
+    const fixed = state.key === first
+    const extra = isExtraColumn(state.key)
+    const onTableRow = state.visible
+    return (
+      <li key={state.key} data-col={onTableRow ? state.key : undefined} className={['bt-columns__item', !onTableRow && 'is-hidden', (dragging === state.key || grabbed === state.key) && 'is-dragging'].filter(Boolean).join(' ')}>
+        {fixed ? <span className="bt-columns__handle bt-columns__handle--fixed" aria-hidden="true" title="Coluna fixa">{icons.lock}</span> : onTableRow ? (
+          <button
+            type="button"
+            className="bt-columns__handle"
+            aria-label={`Mover ${label}, posição ${index + 1} de ${visibleCount}`}
+            aria-pressed={grabbed === state.key}
+            aria-describedby="bt-columns-hint"
+            title="Arraste para mudar a ordem"
+            onPointerDown={(event) => onHandlePointerDown(event, state.key)}
+            onKeyDown={(event) => onHandleKeyDown(event, state.key, index)}
+            onBlur={() => { if (grabbed === state.key) setGrabbed(null) }}
+          >{icons.grip}</button>
+        ) : <span className="bt-columns__handle bt-columns__handle--fixed" aria-hidden="true" />}
+        <Checkbox
+          className="bt-columns__check"
+          label={label}
+          description={fixed ? 'Coluna fixa' : extra ? 'Adicionada' : undefined}
+          checked={state.visible}
+          disabled={fixed || (state.visible && visibleCount === 1)}
+          onChange={() => toggle(state.key, !state.visible)}
+        />
+        {fixed ? null : (
+          <span className="bt-columns__move">
+            {onTableRow ? <>
+              <Button variant="ghost" size="compact" icon={icons.up} aria-label={`Mover ${label} para cima`} disabled={index <= 1} onClick={() => move(state.key, index - 1)} />
+              <Button variant="ghost" size="compact" icon={icons.down} aria-label={`Mover ${label} para baixo`} disabled={index === visibleCount - 1} onClick={() => move(state.key, index + 1)} />
+            </> : null}
+            {extra ? <Button variant="ghost" size="compact" icon={icons.close} aria-label={`Remover ${label}`} onClick={() => setDraft((d) => removeColumn(d, state.key))} /> : null}
+          </span>
+        )}
+      </li>
+    )
+  }
 
   const list = (
     <>
       <div className="bt-columns__top">
         <SearchBox value={query} onChange={setQuery} placeholder={catalog ? 'Buscar ou adicionar coluna' : 'Buscar coluna'} aria-label={catalog ? 'Buscar ou adicionar coluna' : 'Buscar coluna'} />
-        <div className="bt-columns__summary">
-          <span><strong>{visibleCount}</strong> de {total} visíveis</span>
-          {visibleCount < total ? <button type="button" className="bt-columns__link" onClick={showAll}>Mostrar todas</button> : null}
-        </div>
       </div>
       <p id="bt-columns-hint" className="bt-columns__live">Arraste pela alça ou, com foco nela, use Espaço e as setas.</p>
-      {searching && !shown.length && !addable.length ? <div className="bt-columns-add__state">Nenhuma coluna com “{query.trim()}”.</div> : null}
-      <ul ref={listRef} className={['bt-columns', dragging && 'is-sorting', searching && 'is-filtered'].filter(Boolean).join(' ')} aria-label="Colunas">
-        {shown.map((state) => {
-          const index = draft.columns.indexOf(state)
-          const label = labelOf(state.key)
-          const fixed = state.key === first
-          const extra = isExtraColumn(state.key)
-          return (
-            <li key={state.key} data-col={state.key} className={['bt-columns__item', (dragging === state.key || grabbed === state.key) && 'is-dragging'].filter(Boolean).join(' ')}>
-              {fixed ? <span className="bt-columns__handle bt-columns__handle--fixed" aria-hidden="true" title="Coluna fixa">{icons.lock}</span> : (
-                <button
-                  type="button"
-                  className="bt-columns__handle"
-                  aria-label={`Mover ${label}, posição ${index + 1} de ${total}`}
-                  aria-pressed={grabbed === state.key}
-                  aria-describedby="bt-columns-hint"
-                  title="Arraste para mudar a ordem"
-                  onPointerDown={(event) => onHandlePointerDown(event, state.key)}
-                  onKeyDown={(event) => onHandleKeyDown(event, state.key, index)}
-                  onBlur={() => { if (grabbed === state.key) setGrabbed(null) }}
-                >{icons.grip}</button>
-              )}
-              <Checkbox
-                className="bt-columns__check"
-                label={label}
-                description={fixed ? 'Coluna fixa' : extra ? 'Adicionada' : undefined}
-                checked={state.visible}
-                disabled={fixed || (state.visible && visibleCount === 1)}
-                onChange={() => setDraft((d) => toggleColumn(d, columns, state.key))}
-              />
-              {fixed ? null : (
-                <span className="bt-columns__move">
-                  <Button variant="ghost" size="compact" icon={icons.up} aria-label={`Mover ${label} para cima`} disabled={index <= 1} onClick={() => move(state.key, index - 1)} />
-                  <Button variant="ghost" size="compact" icon={icons.down} aria-label={`Mover ${label} para baixo`} disabled={index === total - 1} onClick={() => move(state.key, index + 1)} />
-                  {extra ? <Button variant="ghost" size="compact" icon={icons.close} aria-label={`Remover ${label}`} onClick={() => setDraft((d) => removeColumn(d, state.key))} /> : null}
-                </span>
-              )}
-            </li>
-          )
-        })}
-      </ul>
-      {addable.length ? (
-        <section className="bt-columns-add__section" aria-label="Adicionar desta tabela">
-          <h3 className="bt-columns-add__group">Adicionar desta tabela</h3>
+
+      {addable.length || loadingDeep ? (
+        <section className="bt-columns__section bt-columns__section--add" aria-label="Adicionar">
+          <h3 className="bt-columns__heading">Adicionar</h3>
           <ul className="bt-columns-add__list">
-            {addable.slice(0, 8).map((e) => (
-              <li key={e.id}>
-                <button type="button" className="bt-columns-add__entry" aria-label={`Adicionar ${e.label}`} onClick={() => add(`${EXTRA_COLUMN_PREFIX}${e.id}`, e.label)}>
+            {addable.slice(0, 10).map((e) => (
+              <li key={e.key}>
+                <button type="button" className="bt-columns-add__entry" aria-label={`Adicionar ${e.label}`} onClick={() => add(e.key, e.label)}>
                   <span className="bt-columns-add__label">{e.label}</span>
                   <span className="bt-columns-add__icon" aria-hidden="true">{icons.plus}</span>
                 </button>
               </li>
             ))}
           </ul>
+          {loadingDeep ? <div className="bt-columns-add__state"><Spinner size={16} label="Buscando nas tabelas relacionadas" /> Buscando nas tabelas relacionadas…</div> : null}
         </section>
       ) : null}
+
+      {searching && !onTable.length && !hidden.length && !addable.length && !loadingDeep ? <div className="bt-columns-add__state">Nenhuma coluna com “{query.trim()}”.</div> : null}
+
+      {onTable.length ? (
+        <section className="bt-columns__section" aria-label="Na tabela">
+          <h3 className="bt-columns__heading">Na tabela <span>{visibleCount}</span></h3>
+          <ul ref={listRef} className={['bt-columns', dragging && 'is-sorting', searching && 'is-filtered'].filter(Boolean).join(' ')} aria-label="Colunas na tabela">
+            {onTable.map((state) => row(state, visible.indexOf(state)))}
+          </ul>
+        </section>
+      ) : null}
+
+      {hidden.length ? (
+        <section className="bt-columns__section" aria-label="Ocultas">
+          <h3 className="bt-columns__heading">
+            Ocultas <span>{hidden.length}</span>
+            {!searching ? <button type="button" className="bt-columns__link" onClick={() => setDraft((d) => ({ ...d, columns: [...visibleColumns(d), ...d.columns.filter((c) => !c.visible).map((c) => ({ ...c, visible: true }))] }))}>Mostrar todas</button> : null}
+          </h3>
+          <ul className="bt-columns" aria-label="Colunas ocultas">
+            {hidden.map((state) => row(state, -1))}
+          </ul>
+        </section>
+      ) : null}
+
       {catalog ? (
         <button type="button" className="bt-columns__more" onClick={() => setAdding(true)}>
           <span className="bt-columns-add__icon" aria-hidden="true">{icons.plus}</span>
-          <span>{searching ? `Buscar “${query.trim()}” em tabelas relacionadas` : 'Adicionar coluna de outra tabela'}</span>
+          <span>{searching ? `Procurar “${query.trim()}” em todas as tabelas` : 'Adicionar coluna de outra tabela'}</span>
           <span className="bt-columns-add__icon" aria-hidden="true">{icons.chevronRight}</span>
         </button>
       ) : null}
