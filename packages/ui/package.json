@@ -1,6 +1,6 @@
 {
   "name": "@betinhos-executive-service/ui",
-  "version": "1.15.1",
+  "version": "1.15.2",
   "description": "Componentes React do Design System Betinhos.",
   "type": "module",
   "exports": {

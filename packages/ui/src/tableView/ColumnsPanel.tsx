@@ -45,7 +45,8 @@ export type ColumnsPanelProps = {
   catalog?: ColumnCatalog
 }
 
-type Crumb = { id: string; label: string }
+/** Passo da trilha: relação aberta (`label` = campo de vínculo, `table` = tabela de destino). */
+type Crumb = { id: string; label: string; table?: string }
 type Level = { status: 'loading' } | { status: 'error' } | { status: 'ready'; entries: ColumnCatalogEntry[] }
 
 const EDGE = 48
@@ -442,6 +443,13 @@ function AddColumn({ catalog, has, onAdd, onBack, initialQuery = '' }: AddColumn
   }, [catalog, pathKey, attempt])
 
   const go = (next: Crumb[]) => { setTrail(next); setQuery('') }
+  // Cada tabela aberta começa do topo: a rolagem da anterior não vale para a nova lista.
+  const boxRef = useRef<HTMLDivElement>(null)
+  useLayoutEffect(() => {
+    const scroller = scrollParent(boxRef.current) ?? boxRef.current?.parentElement
+    if (scroller) scroller.scrollTop = 0
+  }, [pathKey])
+  const last = trail[trail.length - 1]
   const words = fold(query).split(/\s+/).filter(Boolean)
   const hit = (e: ColumnCatalogEntry) => words.every((w) => fold(`${e.label} ${e.description ?? ''}`).includes(w))
   const all = level.status === 'ready' ? level.entries : []
@@ -451,7 +459,7 @@ function AddColumn({ catalog, has, onAdd, onBack, initialQuery = '' }: AddColumn
   const here = trail.length ? trail[trail.length - 1].label : root
 
   return (
-    <div className="bt-columns-add">
+    <div ref={boxRef} className="bt-columns-add">
       <nav className="bt-columns-add__trail" aria-label="Você está em">
         <Button variant="ghost" size="compact" icon={icons.back} aria-label={trail.length ? 'Voltar uma tabela' : 'Voltar às colunas'} onClick={trail.length ? () => go(trail.slice(0, -1)) : onBack} />
         <ol>
@@ -465,7 +473,7 @@ function AddColumn({ catalog, has, onAdd, onBack, initialQuery = '' }: AddColumn
           ))}
         </ol>
       </nav>
-      <p className="bt-columns-add__hint">Clique numa <strong>coluna</strong> para adicionar. Abra uma <strong>tabela</strong> ligada para ver as colunas dela.</p>
+      {last ? null : <p className="bt-columns-add__hint">Clique numa <strong>coluna</strong> para adicionar. Abra uma <strong>tabela</strong> ligada para ver as colunas dela.</p>}
       <SearchBox value={query} onChange={setQuery} placeholder={`Buscar em ${here}`} aria-label={`Buscar em ${here}`} />
       {level.status === 'loading' ? <div className="bt-columns-add__state"><Spinner size={16} label="Carregando" /> Carregando {here}…</div> : null}
       {level.status === 'error' ? (
@@ -478,7 +486,7 @@ function AddColumn({ catalog, has, onAdd, onBack, initialQuery = '' }: AddColumn
 
       {fields.length ? (
         <section className="bt-columns__section" aria-label={`Colunas de ${here}`}>
-          <h3 className="bt-columns__heading">Colunas de {here} <span>{fields.length}</span></h3>
+          <h3 className="bt-columns__heading">{last ? <>Colunas de {here}{last.table && last.table !== last.label ? ` · ${last.table}` : ''}</> : <>Colunas de {here}</>} <span>{fields.length}</span></h3>
           <ul className="bt-columns-add__list">
             {fields.map((e) => {
               const key = `${EXTRA_COLUMN_PREFIX}${[...path, e.id].join('/')}`
@@ -504,7 +512,7 @@ function AddColumn({ catalog, has, onAdd, onBack, initialQuery = '' }: AddColumn
           <ul className="bt-columns-add__list">
             {relations.map((e) => (
               <li key={e.id}>
-                <button type="button" className="bt-columns-add__entry bt-columns-add__entry--table" aria-label={`Abrir a tabela ${e.label}`} onClick={() => go([...trail, { id: e.id, label: e.label }])}>
+                <button type="button" className="bt-columns-add__entry bt-columns-add__entry--table" aria-label={`Abrir a tabela ${e.label}`} onClick={() => go([...trail, { id: e.id, label: e.label, table: e.description }])}>
                   <span className="bt-columns-add__table-icon" aria-hidden="true">{icons.table}</span>
                   <span className="bt-columns-add__label"><strong>{e.label}</strong>{e.description && e.description !== e.label ? <small>tabela {e.description}</small> : null}</span>
                   <span className="bt-columns-add__open" aria-hidden="true">Abrir{icons.chevronRight}</span>
