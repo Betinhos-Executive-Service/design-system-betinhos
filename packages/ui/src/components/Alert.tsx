@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useLayoutEffect, useMemo, useRef, useState, type HTMLAttributes, type ReactNode } from 'react'
+import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState, type HTMLAttributes, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 
 export type AlertTone = 'info' | 'success' | 'warning' | 'danger'
@@ -65,6 +65,17 @@ export function topModalDialog(doc: Document = document): HTMLDialogElement | nu
   return open.at(-1) ?? null
 }
 
+/** Timers dos toasts que somem sozinhos. `clear` cancela os pendentes: sem isso o timer dispara depois do unmount. */
+export function toastTimers(remove: (id: number) => void) {
+  const pending = new Map<number, ReturnType<typeof setTimeout>>()
+  const dismiss = (id: number) => { clearTimeout(pending.get(id)); pending.delete(id); remove(id) }
+  return {
+    start(id: number, ms: number) { pending.set(id, setTimeout(() => dismiss(id), ms)) },
+    dismiss,
+    clear() { for (const timer of pending.values()) clearTimeout(timer); pending.clear() },
+  }
+}
+
 /** Envolve o app uma vez; os toasts aparecem no topo, centralizados, um sobre o outro. */
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<ToastItem[]>([])
@@ -83,13 +94,15 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     }
   }, [showing, items])
   const seq = useRef(0)
-  const dismiss = useCallback((id: number) => setItems((list) => list.filter((item) => item.id !== id)), [])
+  const [timers] = useState(() => toastTimers((id) => setItems((list) => list.filter((item) => item.id !== id))))
+  useEffect(() => () => timers.clear(), [timers])
+  const { dismiss } = timers
   const toast = useCallback((options: ToastOptions) => {
     const item: ToastItem = { tone: 'info', ...options, id: ++seq.current }
     setItems((list) => [...list, item])
     const duration = item.duration ?? (item.tone === 'danger' ? 0 : 4000)
-    if (duration > 0) setTimeout(() => dismiss(item.id), duration)
-  }, [dismiss])
+    if (duration > 0) timers.start(item.id, duration)
+  }, [timers])
 
   const region = (
     <div className="bt-toast-region">
