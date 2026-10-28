@@ -3,7 +3,9 @@
   --bt-sheet-height: 92dvh;
   --bt-sheet-offset: 37dvh; /* metade: mostra ~55% da tela */
   position: fixed; inset: 0; width: 100%; max-width: none; height: 100%; max-height: none;
-  margin: 0; padding: 0; border: 0; background: transparent; overflow: hidden;
+  margin: 0; padding: 0; border: 0; background: transparent;
+  /* clip, não hidden: hidden ainda rola por programa, e o showModal focava o "Fechar" com o painel fora da tela (rodapé ia para o meio). */
+  overflow: clip;
 }
 .bt-sheet[data-level='full'] { --bt-sheet-offset: 0px; }
 .bt-sheet::backdrop {
