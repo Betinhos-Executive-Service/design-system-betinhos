@@ -1,6 +1,6 @@
 # Betinhos Design System
 
-**Versão:** 1.17.0
+**Versão:** 1.18.0
 
 **Status:** fonte oficial inicial
 
@@ -1503,6 +1503,10 @@ O padrão de mercado não é apenas um PDF de marca. É um produto versionado: t
 ---
 
 ## 20. Changelog
+
+### 1.18.0 — 30/10/2026
+
+- Feedback ao toque (`active`) em todos os componentes, inclusive no mobile: escala de 97% em botões e controles compactos, fundo `color.surface.soft` em linhas, itens e opções, fundo `color.border` e 94% em botões de ícone; sem flash cinza e sem atraso de duplo toque (`touch-feedback.css`).
 
 ### 1.17.0 — 30/10/2026
 
