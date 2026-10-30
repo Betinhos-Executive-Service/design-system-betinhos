@@ -410,6 +410,7 @@ Alvo de ponteiro deve ter no mínimo 24 × 24 px com espaçamento conforme WCAG 
 
 - Padrão: `1px solid #E2E8F0`.
 - Hover: escurecer para `#C7D2E2` sem aumentar espessura.
+- Proibido destacar card, citação, aviso ou bloco de texto com faixa lateral grossa (`border-left` de 2 px ou mais, em cor de marca ou de status). A caixa usa a borda padrão nos quatro lados; destaque vem de título, ícone, `Badge` ou de um `Alert`/`Banner` do DS. Exceção: indicador de item ativo na navegação.
 - Foco: borda `#6C91E8` + anel azul de 3 px com alpha 11%.
 - Erro: borda `#F2C2CC` + mensagem `#A32840`.
 - Atraso: borda `#F2C6CF` + fundo `#FFFAFB`.
@@ -1178,6 +1179,7 @@ Em equipe pequena, uma pessoa pode acumular papéis, mas a revisão continua exp
 - Não crie nova cor porque “combina”.
 - Não use gradiente em nenhuma hipótese: fundos, botões, cards, gráficos, overlays, textos ou imagens.
 - Não use glassmorphism como linguagem principal.
+- Não use faixa lateral grossa (`border-left` colorido) para destacar card ou texto (§6.2).
 - Não use mais de uma ação primária por bloco.
 - Não esconda label em placeholder.
 - Não use texto abaixo de 11 px em produto.
