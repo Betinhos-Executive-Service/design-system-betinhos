@@ -1,5 +1,9 @@
 export { AppShell, type AppShellProps, type NavGroup, type NavItem } from './components/AppShell'
 export { Alert, ToastProvider, topModalDialog, useOptionalToast, useToast, type AlertProps, type AlertTone, type ToastOptions } from './components/Alert'
+export {
+  AuditButton, AuditPanel, EMPTY_AUDIT_FILTERS, auditDayLabel, auditFacets, filterAuditEvents, groupAuditByDay,
+  type AuditButtonProps, type AuditChange, type AuditEvent, type AuditFilters, type AuditOperation, type AuditPanelProps, type AuditStatus,
+} from './components/Audit'
 export { BuildBadge, formatBuild } from './BuildBadge'
 export { Button, buttonClassName, type ButtonProps, type ButtonSize, type ButtonVariant } from './components/Button'
 export { Checkbox, ChoiceGroup, Radio, Switch, type ChoiceProps } from './components/Choice'
