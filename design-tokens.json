@@ -3,7 +3,7 @@
   "$description": "Betinhos Design System 1.16.0. Identidade operacional premium extraída do Módulo Qualidade.",
   "$extensions": {
     "com.betinhos.design-system": {
-      "version": "1.17.0",
+      "version": "1.18.0",
       "updated": "2026-10-19",
       "source": "Módulo Qualidade",
       "theme": "light-only",

@@ -60,6 +60,7 @@ Ao criar ou alterar qualquer interface Betinhos, siga esta ordem:
 6. Não redesenhe a marca ou o logo sem um arquivo oficial e autorização explícita.
 7. Se faltar um padrão, componha com os tokens existentes e documente a nova decisão; não crie uma estética paralela.
 8. Entregue estados `default`, `hover`, `active`, `focus-visible`, `disabled`, `loading`, `error` e `empty` quando aplicáveis.
+   - Feedback ao toque (`active`) é obrigatório em todo controle e vale também no mobile: botões e controles compactos encolhem para 97% (cheios também escurecem), linhas, itens e opções ganham fundo `color.surface.soft`, botões de ícone ganham fundo `color.border` e encolhem para 94%. Resposta em 60 ms, sem flash cinza do navegador (`-webkit-tap-highlight-color: transparent`) e sem atraso de duplo toque (`touch-action: manipulation`). Hover só em `(hover: hover) and (pointer: fine)`. Com `prefers-reduced-motion`, sem escala. Implementação: `packages/ui/src/components/touch-feedback.css`.
 9. Valide visualmente desktop e mobile. Execute testes/build disponíveis antes de declarar conclusão.
 10. Ao divergir deste sistema, explique a necessidade e peça aprovação.
 11. Nunca use gradiente, em nenhum canal ou componente.

@@ -1,0 +1,57 @@
+/* Feedback ao toque (estado "pressionado") em todos os controles do DS.
+   Padrão de mercado: resposta imediata ao encostar (Material "pressed state layer" / iOS highlight),
+   sem o flash cinza do navegador e sem o atraso de 300 ms do duplo toque. O hover continua só em
+   dispositivos com mouse; aqui é :active, que vale para toque e clique. */
+
+:where(
+  .bt-button, .bt-segmented__item, .bt-tabs__tab, .bt-choice, .bt-select__trigger, .bt-select-option, .bt-select-panel__actions button,
+  .bt-menu__item, .bt-pagination__button, .bt-bottom-nav__item, .bt-upload__button, .bt-upload__remove,
+  .bt-alert__close, .bt-dialog__close, .bt-drawer__close, .bt-sheet__close, .bt-sheet__expand, .bt-search__clear, .bt-select__clear,
+  .bt-shell__nav button, .bt-shell__rail button, .bt-shell__icon-button, .bt-shell__brand-link, .bt-shell__item, .bt-shell__popover-item,
+  button.bt-table__row, .bt-colhead, .bt-audit__record, .bt-audit__more,
+  .bt-viewbar__trigger, .bt-columns__more, .bt-columns__link, .bt-columns-add__crumb, .bt-columns-add__entry, .bt-chip__text, .bt-chip__remove
+) {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  -webkit-user-select: none;
+  user-select: none;
+  transition-property: background-color, color, transform, filter, box-shadow;
+  transition-duration: 150ms;
+  transition-timing-function: ease-out;
+}
+
+/* Botões e controles compactos: leve redução de escala ao pressionar. */
+:is(.bt-button, .bt-segmented__item, .bt-pagination__button, .bt-upload__button, .bt-select-panel__actions button,
+  .bt-viewbar__trigger, .bt-chip__text, .bt-bottom-nav__item, .bt-shell__brand-link):active:not(:disabled) {
+  transform: scale(.97);
+  transition-duration: 60ms;
+}
+
+/* Botões cheios: escurecem um pouco (camada de estado). */
+:is(.bt-button--primary, .bt-button--action, .bt-button--danger):active:not(:disabled) { filter: brightness(.88); }
+:is(.bt-button--secondary, .bt-button--ghost):active:not(:disabled) { background-color: var(--bt-color-surface-soft); }
+
+/* Linhas, itens de lista, opções e abas: fundo suave ao pressionar (sem escala, como listas nativas). */
+:is(.bt-select-option, .bt-menu__item, button.bt-table__row, .bt-columns__more, .bt-columns-add__entry, .bt-shell__popover-item,
+  .bt-tabs__tab, .bt-audit__record, .bt-audit__more, .bt-columns__link, .bt-columns-add__crumb, .bt-colhead):active:not(:disabled) {
+  background-color: var(--bt-color-surface-soft);
+  transition-duration: 60ms;
+}
+/* Select: a caixa inteira reage ao toque no gatilho. */
+.bt-control--combobox:not(.is-disabled):has(.bt-select__trigger:active) { background-color: var(--bt-color-surface-soft); }
+.bt-menu__item--danger:active:not(:disabled) { background-color: var(--bt-color-danger-soft); }
+
+/* Botões de ícone (fechar, limpar, remover): fundo circular ao pressionar. */
+:is(.bt-alert__close, .bt-dialog__close, .bt-drawer__close, .bt-sheet__close, .bt-sheet__expand, .bt-search__clear,
+  .bt-select__clear, .bt-chip__remove, .bt-shell__icon-button):active {
+  background-color: var(--bt-color-border);
+  transform: scale(.94);
+  transition-duration: 60ms;
+}
+.bt-upload__remove:active { background-color: var(--bt-color-danger-soft); color: var(--bt-color-danger); transform: scale(.94); }
+
+@media (prefers-reduced-motion: reduce) {
+  :is(.bt-button, .bt-segmented__item, .bt-pagination__button, .bt-upload__button, .bt-select-panel__actions button, .bt-viewbar__trigger,
+    .bt-chip__text, .bt-bottom-nav__item, .bt-shell__brand-link, .bt-alert__close, .bt-dialog__close, .bt-drawer__close, .bt-sheet__close,
+    .bt-sheet__expand, .bt-search__clear, .bt-select__clear, .bt-chip__remove, .bt-shell__icon-button, .bt-upload__remove):active { transform: none; }
+}
