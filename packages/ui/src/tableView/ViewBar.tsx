@@ -1,5 +1,6 @@
 import { useRef, useState, type ReactNode } from 'react'
 import { useOptionalToast } from '../components/Alert'
+import { AuditButton } from '../components/Audit'
 import { Button } from '../components/Button'
 import { Dialog } from '../components/Dialog'
 import { Field, Input } from '../components/Field'
@@ -30,6 +31,8 @@ export type ViewBarProps = {
   catalog?: ColumnCatalog
   /** Comandos à direita, depois de "Colunas": Filtros, busca e a ação primária, nessa ordem. */
   children?: ReactNode
+  /** Liga o botão "Auditoria" (§10.9.4), depois de "Filtros": abre as alterações recentes da tabela (ou da seleção). */
+  onAudit?: () => void
   /** Erro ao gravar; sem isso usa o toast do `ToastProvider`. */
   onError?: (message: string) => void
   /** Filtros da lista (§10.9.2): mostra "Filtros", "Filtro rápido", o painel e os chips. Os filtros moram em `view.config.filters`. */
@@ -51,7 +54,7 @@ const messageOf = (error: unknown) => (error instanceof Error && error.message ?
  * Linha de comando da lista (§10.9.1): o seletor de visão é o título da página; à direita, "Colunas" e os comandos da tela.
  * Gravar, renomear, excluir e publicar abrem diálogo e avisam por toast.
  */
-export function ViewBar({ view, columns, catalog, children, onError, filters }: ViewBarProps) {
+export function ViewBar({ view, columns, catalog, children, onError, filters, onAudit }: ViewBarProps) {
   const mobile = useMediaQuery('(max-width: 820px)')
   const toast = useOptionalToast()
   const [mode, setMode] = useState<Mode>(null)
@@ -156,6 +159,7 @@ export function ViewBar({ view, columns, catalog, children, onError, filters }: 
             </Button>
           </>
         ) : null}
+        {onAudit ? <AuditButton iconOnly={mobile} size={mobile ? 'touch' : 'default'} onClick={onAudit} /> : null}
         {children}
       </div>
 
