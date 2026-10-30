@@ -21,6 +21,8 @@ export type NavGroup = {
   /** Ícone Lucide de 20px; obrigatório para o grupo aparecer no trilho recolhido. */
   icon?: ReactNode
   items: NavItem[]
+  /** Grupo-link: sem acordeão nem itens, o próprio grupo leva a `href` (ex.: Página inicial). Fica ativo quando `activeId` é o id do grupo. */
+  href?: string
   /** Grupo técnico: fica na seção "Administração", separada e fechada por padrão. */
   admin?: boolean
 }
@@ -114,6 +116,18 @@ const NavGroups = memo(function NavGroups({ groups, openGroups, filtering, activ
         const open = filtering || openGroups.has(group.id)
         const panelId = `${navId}-${group.id}`
         const firstAdmin = group.admin && !groups[index - 1]?.admin
+        if (group.href != null) {
+          const active = group.id === activeId
+          return (
+            <section key={group.id} className="bt-shell__group">
+              {firstAdmin ? <p className="bt-shell__section-label">Administração</p> : null}
+              <a className="bt-shell__group-toggle" href={group.href} aria-current={active ? 'page' : undefined} data-active={active || undefined}>
+                {group.icon != null ? <span className="bt-shell__group-icon" aria-hidden="true">{group.icon}</span> : null}
+                <span className="bt-shell__group-label">{group.label}</span>
+              </a>
+            </section>
+          )
+        }
         return (
           <section key={group.id} className="bt-shell__group" data-open={open || undefined}>
             {firstAdmin ? <p className="bt-shell__section-label">Administração</p> : null}
@@ -217,7 +231,7 @@ export function AppShell({ brand, groups, activeId, title, headerActions, status
     if (!q) return groups
     return groups
       .map((group) => ({ ...group, items: group.items.filter((item) => normalizeSearch(`${group.label} ${item.label}`).includes(q)) }))
-      .filter((group) => group.items.length)
+      .filter((group) => group.items.length || (group.href != null && normalizeSearch(group.label).includes(q)))
   }, [groups, query])
   const filtering = query.trim() !== ''
   const popoverGroup = popover ? groups.find((group) => group.id === popover.id) ?? null : null
@@ -258,7 +272,9 @@ export function AppShell({ brand, groups, activeId, title, headerActions, status
           {groups.map((group) => group.icon == null ? null : (
             <div key={group.id} className="bt-shell__rail-slot">
               {group.admin ? <span className="bt-shell__rail-divider" aria-hidden="true" /> : null}
-              <button
+              {group.href != null ? (
+                <a className="bt-shell__rail-button" href={group.href} aria-label={group.label} title={group.label} aria-current={group.id === activeId ? 'true' : undefined}>{group.icon}</a>
+              ) : <button
                 type="button"
                 className="bt-shell__rail-button"
                 aria-label={group.label}
@@ -271,7 +287,7 @@ export function AppShell({ brand, groups, activeId, title, headerActions, status
                 onMouseLeave={hidePopover}
               >
                 {group.icon}
-              </button>
+              </button>}
             </div>
           ))}
           <span className="bt-shell__rail-spacer" />
