@@ -12,7 +12,7 @@ const columns: TableColumn<Row>[] = [
   { key: 'acao', header: 'Ação', cell: (r) => <button type="button">Editar {r.id}</button> },
 ]
 
-function Harness({ open = vi.fn(), withView = false, initial = [] as string[], list = rows }: { open?: (row: Row) => void; withView?: boolean; initial?: string[]; list?: Row[] }) {
+function Harness({ open = vi.fn(), withView = false, initial = [] as string[], list = rows, all }: { open?: (row: Row) => void; withView?: boolean; initial?: string[]; list?: Row[]; all?: Row[] }) {
   const [selected, setSelected] = useState<Set<string>>(new Set(initial))
   const [config, setConfig] = useState(() => defaultConfig(tableViewColumns(columns)))
   return (
@@ -20,7 +20,7 @@ function Harness({ open = vi.fn(), withView = false, initial = [] as string[], l
       <output data-testid="sel">{[...selected].sort().join(',')}</output>
       <Table columns={columns} rows={list} rowKey={(r) => r.id} onRowClick={open}
         view={withView ? { config, onChange: (fn) => setConfig(fn) } : undefined}
-        selection={{ selected, onChange: setSelected, label: (r) => `Selecionar ${r.nome}` }} />
+        selection={{ selected, onChange: setSelected, label: (r) => `Selecionar ${r.nome}`, all }} />
     </>
   )
 }
@@ -208,4 +208,16 @@ it('scrollRef inline não é chamado de novo a cada render', () => {
   rerender(table())
   expect(calls).toHaveLength(1)
   expect(calls[0]?.className).toBe('bt-table__scroll')
+})
+
+it('lista virtualizada: "selecionar todas" e Shift usam selection.all, não só a janela desenhada', () => {
+  const { rerender } = render(<Harness list={rows.slice(0, 2)} all={rows} />)
+  fireEvent.click(screen.getByRole('checkbox', { name: 'Selecionar linhas carregadas' }))
+  expect(sel()).toBe('a,b,c,d')
+  fireEvent.click(screen.getByRole('checkbox', { name: 'Selecionar linhas carregadas' }))
+  expect(sel()).toBe('')
+  fireEvent.click(rowOf('a'))
+  rerender(<Harness list={rows.slice(2)} all={rows} />)
+  fireEvent.click(rowOf('d'), { shiftKey: true })
+  expect(sel()).toBe('a,b,c,d')
 })
