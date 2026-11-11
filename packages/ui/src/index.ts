@@ -36,7 +36,7 @@ export { StatusBadge, statusBadgeClassName, type StatusBadgeProps, type StatusTo
 export { Select, filterOptions, normalizeSearch, type SelectOption, type SelectProps } from './components/Select'
 export { Cluster, Grid, Split, Stack } from './primitives'
 export {
-  CONFIG_VERSION, EXTRA_COLUMN_PREFIX, MAX_COLUMN_WIDTH, addColumn, isExtraColumn, removeColumn, MIN_COLUMN_WIDTH, cleanWidth, defaultConfig, moveColumn, moveVisibleColumn, normalizeConfig, parseConfig, resizeColumn,
+  CONFIG_VERSION, EXTRA_COLUMN_PREFIX, MAX_COLUMN_WIDTH, addColumn, isExtraColumn, removeColumn, MIN_COLUMN_WIDTH, cleanWidth, defaultConfig, moveColumn, moveVisibleColumn, normalizeConfig, parseConfig, pinColumn, pinnedColumns, resizeColumn, unpinColumn,
   sameConfig, serializeConfig, setFilters, toggleColumn, sortBy, toggleSort, visibleColumns,
   type SortDir, type ViewColumnDef, type ViewColumnState, type ViewConfig, type ViewFilters, type ViewSort,
 } from './tableView/config'

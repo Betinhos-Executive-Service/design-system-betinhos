@@ -23,6 +23,8 @@ export type TableColumn<Row> = {
   defaultWidth?: number
   /** Começa oculta na visão padrão. */
   defaultHidden?: boolean
+  /** Começa fixa na visão padrão (só com `view`). */
+  defaultPinned?: boolean
   /** Com `view`, o menu do título oferece "Ordenar A→Z" e "Z→A"; a tela ordena as linhas por `config.sort`. */
   sortable?: boolean
 }
@@ -77,7 +79,7 @@ export function tableTemplates<Row>(columns: TableColumn<Row>[], chevron: boolea
 
 /** Colunas da tabela no formato do modelo de visão (`useTableView`, `ColumnsPanel`). */
 export function tableViewColumns<Row>(columns: TableColumn<Row>[]): ViewColumnDef[] {
-  return columns.map((c) => ({ key: c.key, label: c.label ?? (typeof c.header === 'string' ? c.header : c.key), defaultHidden: c.defaultHidden }))
+  return columns.map((c) => ({ key: c.key, label: c.label ?? (typeof c.header === 'string' ? c.header : c.key), defaultHidden: c.defaultHidden, defaultPinned: c.defaultPinned }))
 }
 
 export const columnDefaultWidth = <Row,>(column: TableColumn<Row>, index: number) => column.defaultWidth ?? (index === 0 ? 240 : 160)
