@@ -1,6 +1,6 @@
 # Betinhos Design System
 
-**Versão:** 1.18.0
+**Versão:** 1.19.0
 
 **Status:** fonte oficial inicial
 
@@ -707,6 +707,17 @@ Rótulos começam com verbo: “Registrar erro”, “Salvar alterações”, �
 - Hover apenas em pointer fino.
 - Linha inteira clicável usa elemento interativo real.
 - Em mobile, converter para duas colunas/card e manter título + status + dado essencial.
+- Rolagem infinita: `scrollRef` aponta para o contêiner de rolagem (`.bt-table__scroll`), raiz do observador que carrega mais linhas, e `afterRows` entra logo depois da última linha, dentro da rolagem (o sentinela de "carregar mais"). A virtualização fica na tela; as colunas fixas funcionam com espaçadores antes e depois das linhas.
+
+**Seleção de linhas** (prop `selection`, só em listas com ação em lote definida):
+
+- Estado controlado pela tela: `selected` (chaves de `rowKey`), `onChange` e `label(row)` para o checkbox (padrão "Selecionar linha"). O `Table` não tira da seleção as linhas que somem ao filtrar ou recarregar; a tela decide.
+- Coluna de checkbox de 40 px na extrema esquerda, sempre fixa; não é coluna de dados, não aparece no painel e não conta para o limite das fixas.
+- Checkbox do cabeçalho ("Selecionar linhas carregadas"): marcado com todas as linhas carregadas selecionadas, parcial com algumas; alterna entre todas e nenhuma. Vale para as linhas carregadas, não para o total do servidor.
+- Clique na linha (fora de link, botão, campo e menu): sozinho substitui a seleção; Ctrl/⌘ alterna a linha; Shift seleciona o intervalo desde a âncora (último clique sem Shift), na ordem da lista. Esc com o foco na tabela limpa.
+- Abrir o registro passa para duplo clique, Enter com a linha focada, o chevron (botão "Abrir") e o item "Abrir" do menu. Sem `selection`, o clique simples continua abrindo.
+- Acessibilidade: a tabela vira `role="grid"` com `aria-multiselectable`, cada linha leva `aria-selected` e a classe `is-selected` (fundo `action-soft`, também nas células fixas).
+- A barra de ações em lote é da tela; o DS entrega só a seleção.
 
 ### 10.9.1 Visões e colunas (obrigatório em listas de registros)
 
@@ -733,7 +744,7 @@ Painel de colunas:
 - `Drawer` à direita no desktop e `Sheet` no mobile, título "Colunas".
 - Cada item: alça de arraste, checkbox com o rótulo da coluna e botões ↑/↓. Rodapé: "Restaurar colunas" (ghost), "Cancelar" e "Aplicar".
 - As mudanças só valem em "Aplicar". Fechar com alteração pendente abre "Descartar alterações?" com "Continuar editando" e "Descartar".
-- A primeira coluna (título do registro) não pode ser ocultada nem sair da primeira posição; leva cadeado no lugar da alça. Sempre fica ao menos uma coluna visível.
+- A primeira coluna (título do registro) não pode ser ocultada e é sempre a primeira do seu bloco (das fixas, se estiver fixa; das que rolam, se não); leva cadeado no lugar da alça. Sempre fica ao menos uma coluna visível.
 - **Arrastar:** a alça é um botão (cursor `grab`/`grabbing`). O item arrastado fica com fundo `#FCFCFB` e borda de foco azul de 2 px, sem sombra; os demais esmaecem e deslizam até o novo lugar em 150 ms ease-out (sem deslizar com `prefers-reduced-motion`). Perto da borda do painel, a lista rola sozinha. Teclado: com foco na alça, Espaço/Enter pega, ↑/↓ move, Espaço solta e Esc devolve ao lugar de origem. Cada movimento é anunciado em `aria-live` ("Coluna Cliente na posição 3 de 8").
 - **Denso:** linhas de 32 px no desktop (44 px no toque), sem espaço entre itens; "Coluna fixa" e "Adicionada" viram selo na mesma linha do nome.
 - **Duas seções:** "Na tabela" (visíveis, na ordem da tabela, arrastáveis) e "Ocultas" (com "Mostrar todas"), cada uma com a contagem. Desmarcar leva a coluna para "Ocultas"; marcar a devolve ao fim de "Na tabela".
@@ -749,6 +760,15 @@ Direto no cabeçalho da tabela (apenas pointer fino):
 - **Teclado:** `Alt+←/→` move a coluna em foco; com foco na alça, `←/→` ajusta 16 px. Cada movimento é anunciado em `aria-live` (ex.: "Coluna Cliente na posição 3 de 8").
 - **Ordenação:** clique no cabeçalho alterna crescente/decrescente; a seta indica o sentido e `aria-sort` acompanha.
 - Em pointer grosso e no mobile, reordenar e ocultar só pelo painel; largura não se ajusta.
+
+**Colunas fixas** (`view.pinnable` no `Table`, `pinnable` no `ViewBar`/`ColumnsPanel`):
+
+- Nenhuma coluna é fixa por padrão; o usuário escolhe pelo menu do título ("Fixar coluna"/"Desafixar coluna", ícones pin/pin-off, entre "Limpar filtro" e "Ocultar coluna") ou pelo alfinete de cada linha do painel. A escolha fica na visão (`pinned: true`), como larguras e ordem. A tela pode declarar `defaultPinned`, que vale na visão padrão e em "Restaurar colunas". Sem `view.pinnable`, nenhuma coluna gruda, mesmo com `pinned` salvo ou `defaultPinned`, porque o usuário não teria como soltá-la.
+- As fixas formam um bloco contínuo à esquerda: fixar leva a coluna ao fim do bloco; desafixar leva para logo depois dele. Arrastar e `Alt+←/→` só reordenam dentro do bloco. Coluna oculta perde o `pinned`.
+- No painel, a seção "Fixas" fica no topo de "Na tabela"; o alfinete tem `aria-pressed` e o rótulo "Fixar X"/"Desafixar X". Cada mudança é anunciada em `aria-live` ("Coluna X fixada" / "Coluna X solta").
+- Limite: as fixas ocupam no máximo 50% da largura visível. No menu do título, "Fixar coluna" fica desabilitado com a dica "As colunas fixas já ocupam metade da tabela"; o painel não bloqueia e mostra a regra como dica. Se a janela encolher, as fixas da direita deixam de grudar até caber de novo, sem mudar a visão salva.
+- Coluna fixa usa largura em px (a salva ou a padrão). Visual: fundo de superfície (também no hover e na linha selecionada), cabeçalho fixo acima das demais e sombra à direita da última fixa só quando a tabela rolou na horizontal.
+- Até 820 px não há colunas fixas; a visão salva não muda.
 
 Mobile (até 820 px): a lista vira card (§10.9) e o card usa as três primeiras colunas visíveis da visão.
 
@@ -810,7 +830,7 @@ Comportamento:
 
 Toda lista de registros abre um menu de contexto no clique direito da linha, com as mesmas ações da linha de comando (botão "Ações" ou botões de seleção). O menu de contexto é um atalho: nenhuma ação existe só nele.
 
-- Componente: `ContextMenu`/`useContextMenu` (mesmo painel, itens, grupos, ícones e teclado do `Menu`). Na `Table`, a prop `rowActions(row)`; sem ela, linha com `onRowClick` oferece "Abrir". `rowActions` retornando `[]` desliga.
+- Componente: `ContextMenu`/`useContextMenu` (mesmo painel, itens, grupos, ícones e teclado do `Menu`). Na `Table`, a prop `rowActions(row, selection)`; sem ela, linha com `onRowClick` oferece "Abrir". `rowActions` retornando `[]` desliga (e não mexe na seleção). `selection` traz as linhas sobre as quais o menu age: com a seleção ligada, as selecionadas que estão na lista; sem ela, sempre `[row]`. A assinatura de um argumento continua valendo.
 - Seleção: clique direito numa linha já selecionada age sobre toda a seleção; numa linha fora da seleção, a seleção passa a ser só essa linha (padrão do Explorador do Windows).
 - Itens que exigem um registro ficam desabilitados com vários selecionados, com a mesma dica (`title`) da linha de comando.
 - Abre no ponto do clique, sempre dentro da tela; fecha com Esc (foco volta para onde estava), clique fora, rolagem ou redimensionamento.
@@ -1211,7 +1231,7 @@ Este bloco permite implementação mesmo quando os arquivos auxiliares não acom
 
 <!-- GENERATED:TOKENS_CSS:START -->
 ```css
-/* Betinhos Design System 1.18.0.
+/* Betinhos Design System 1.19.0.
  * GENERATED from design-tokens.json. Do not edit this file manually.
  */
 :root {
@@ -1503,6 +1523,14 @@ O padrão de mercado não é apenas um PDF de marca. É um produto versionado: t
 ---
 
 ## 20. Changelog
+
+### 1.19.0 — 11/11/2026
+
+- §10.9 **Seleção de linhas** no `Table` (prop `selection`): checkbox de 40 px fixo à esquerda, cabeçalho em três estados, clique sozinho/Ctrl/⌘/Shift, Esc limpa; com seleção, abrir vai para duplo clique, Enter e o chevron; `role="grid"`, `aria-multiselectable` e `aria-selected`.
+- §10.9.1 **Colunas fixas** escolhidas pelo usuário (`view.pinnable`; `pinnable` no `ViewBar`/`ColumnsPanel`): bloco contínuo à esquerda, item no menu do título e seção "Fixas" no painel, limite de 50% da largura, sem fixas até 820 px. A visão guarda `pinned: true`; `defaultPinned` na definição da coluna. Funções puras novas `pinColumn`, `unpinColumn` e `pinnedColumns`. A coluna-título passa a ser a primeira do seu bloco.
+- §10.9.3: `rowActions(row, selection)` age sobre a seleção (linha fora da seleção vira a seleção).
+- `scrollRef` e `afterRows` no `Table`, para rolagem infinita.
+- Tudo opcional: sem as props novas, nada muda. `CONFIG_VERSION` continua 1; visões salvas antigas abrem sem fixas.
 
 ### 1.18.0 — 30/10/2026
 

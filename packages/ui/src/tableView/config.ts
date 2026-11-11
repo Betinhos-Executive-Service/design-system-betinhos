@@ -11,13 +11,16 @@ export type ViewColumnDef = {
   label: string
   /** Começa oculta na visão padrão e quando aparece como coluna nova numa visão salva. */
   defaultHidden?: boolean
+  /** Começa fixa na visão padrão (e no "Restaurar colunas"). */
+  defaultPinned?: boolean
 }
 
 /**
  * `label` só nas colunas adicionadas pelo usuário (chave `x:`), que não estão no código da tela:
  * a visão guarda o rótulo para mostrar a coluna antes de a metadata chegar.
+ * `pinned` marca a coluna fixa na rolagem horizontal; as fixas formam um bloco contínuo no início da lista.
  */
-export type ViewColumnState = { key: string; visible: boolean; width?: number; label?: string }
+export type ViewColumnState = { key: string; visible: boolean; width?: number; label?: string; pinned?: true }
 
 /** Prefixo das colunas adicionadas pelo painel ("Adicionar coluna"): `x:` + caminho de navegação até o campo. */
 export const EXTRA_COLUMN_PREFIX = 'x:'
@@ -35,22 +38,34 @@ export function cleanWidth(value: unknown): number | undefined {
   return typeof value === 'number' && Number.isFinite(value) && value >= MIN_COLUMN_WIDTH && value <= MAX_COLUMN_WIDTH ? Math.round(value) : undefined
 }
 
-const column = (key: string, visible: boolean, width?: number, label?: string): ViewColumnState => ({
-  key, visible, ...(width === undefined ? {} : { width }), ...(label === undefined ? {} : { label }),
+const column = (key: string, visible: boolean, width?: number, label?: string, pinned?: boolean): ViewColumnState => ({
+  key, visible, ...(width === undefined ? {} : { width }), ...(label === undefined ? {} : { label }), ...(pinned && visible ? { pinned: true as const } : {}),
 })
 
-/** Visão padrão da tela: colunas na ordem do código, sem larguras salvas. */
+const unpinned = (c: ViewColumnState) => column(c.key, c.visible, c.width, c.label)
+
+/** Visão padrão da tela: colunas na ordem do código, sem larguras salvas; as `defaultPinned` visíveis começam fixas. */
 export function defaultConfig(defs: ViewColumnDef[], sort: ViewSort = null, filters: ViewFilters = {}): ViewConfig {
-  return enforce({ v: CONFIG_VERSION, columns: defs.map((d) => column(d.key, !d.defaultHidden)), sort, filters }, defs)
+  return enforce({ v: CONFIG_VERSION, columns: defs.map((d) => column(d.key, !d.defaultHidden, undefined, undefined, d.defaultPinned)), sort, filters }, defs)
 }
 
-/** Primeira coluna do código sempre visível e em primeiro; ao menos uma coluna visível. */
+/** Fixas primeiro (bloco contínuo), depois as que rolam; o título (`first`) abre o bloco em que estiver. Oculta não fica fixa. */
+function blocks(columns: ViewColumnState[], first: string | undefined): ViewColumnState[] {
+  const clean = columns.map((c) => (c.pinned && !c.visible ? unpinned(c) : c))
+  const lead = (list: ViewColumnState[]) => {
+    const at = list.findIndex((c) => c.key === first)
+    return at <= 0 ? list : [list[at], ...list.slice(0, at), ...list.slice(at + 1)]
+  }
+  return [...lead(clean.filter((c) => c.pinned)), ...lead(clean.filter((c) => !c.pinned))]
+}
+
+/** Primeira coluna do código sempre visível e em primeiro do seu bloco (fixas ou que rolam); ao menos uma coluna visível. */
 function enforce(config: ViewConfig, defs: ViewColumnDef[]): ViewConfig {
   const first = defs[0]?.key
   if (!first) return config
   const head = config.columns.find((c) => c.key === first) ?? column(first, true)
   const columns = [{ ...head, visible: true }, ...config.columns.filter((c) => c.key !== first)]
-  return { ...config, columns }
+  return { ...config, columns: blocks(columns, first) }
 }
 
 /**
@@ -68,7 +83,7 @@ export function normalizeConfig(raw: unknown, defs: ViewColumnDef[], fallback: V
     const extra = isExtraColumn(item.key) && typeof item.label === 'string' && item.label.trim() !== ''
     if (!known.has(item.key) && !extra) continue
     seen.add(item.key)
-    columns.push(column(item.key, item.visible !== false, cleanWidth(item.width), extra ? String(item.label) : undefined))
+    columns.push(column(item.key, item.visible !== false, cleanWidth(item.width), extra ? String(item.label) : undefined, item.pinned === true))
   }
   for (const def of defs) if (!seen.has(def.key)) columns.push(column(def.key, !def.defaultHidden))
   const sort: ViewSort = isObject(raw.sort) && typeof raw.sort.key === 'string' && (known.has(raw.sort.key) || seen.has(raw.sort.key)) && (raw.sort.dir === 'asc' || raw.sort.dir === 'desc')
@@ -99,15 +114,20 @@ export const sameConfig = (a: ViewConfig, b: ViewConfig) => stable(a) === stable
 /** Colunas visíveis, na ordem da visão. */
 export const visibleColumns = (config: ViewConfig) => config.columns.filter((c) => c.visible)
 
-/** Move a coluna para a posição `to` (0 = primeira); a primeira coluna do código não sai do lugar e nada passa à frente dela. */
+/**
+ * Move a coluna para a posição `to` (0 = primeira), sem sair do seu bloco (fixas ou que rolam):
+ * a primeira coluna do código não sai do lugar e nada passa à frente dela no bloco.
+ */
 export function moveColumn(config: ViewConfig, defs: ViewColumnDef[], key: string, to: number): ViewConfig {
   const first = defs[0]?.key
   const from = config.columns.findIndex((c) => c.key === key)
   if (from < 0 || key === first) return config
   const columns = [...config.columns]
   const [moved] = columns.splice(from, 1)
-  const min = first ? 1 : 0
-  columns.splice(Math.min(Math.max(to, min), columns.length), 0, moved)
+  const fixed = columns.filter((c) => c.pinned).length
+  const [start, end] = moved.pinned ? [0, fixed] : [fixed, columns.length]
+  const min = start + (columns[start]?.key === first ? 1 : 0)
+  columns.splice(Math.min(Math.max(to, min), end), 0, moved)
   return { ...config, columns }
 }
 
@@ -123,18 +143,41 @@ export function moveVisibleColumn(config: ViewConfig, defs: ViewColumnDef[], key
   return moveColumn(config, defs, key, to)
 }
 
-/** Mostra ou oculta; a primeira coluna e a última visível não podem ser ocultadas. */
+/** Mostra ou oculta; a primeira coluna e a última visível não podem ser ocultadas. Ocultar solta a coluna fixa. */
 export function toggleColumn(config: ViewConfig, defs: ViewColumnDef[], key: string): ViewConfig {
   const target = config.columns.find((c) => c.key === key)
   if (!target || key === defs[0]?.key) return config
   if (target.visible && visibleColumns(config).length <= 1) return config
-  return { ...config, columns: config.columns.map((c) => (c.key === key ? { ...c, visible: !c.visible } : c)) }
+  return { ...config, columns: blocks(config.columns.map((c) => (c.key === key ? { ...c, visible: !c.visible } : c)), defs[0]?.key) }
+}
+
+/** Colunas fixas visíveis, na ordem da visão. */
+export const pinnedColumns = (config: ViewConfig) => config.columns.filter((c) => c.visible && c.pinned)
+
+/** Leva a coluna para o fim do bloco fixo (`pinned`) ou para logo depois dele; o título abre o bloco em que estiver. */
+function placePin(config: ViewConfig, defs: ViewColumnDef[], target: ViewColumnState, pinned: boolean): ViewConfig {
+  const rest = config.columns.filter((c) => c.key !== target.key)
+  const at = rest.filter((c) => c.pinned).length
+  const moved = pinned ? { ...target, pinned: true as const } : unpinned(target)
+  return { ...config, columns: blocks([...rest.slice(0, at), moved, ...rest.slice(at)], defs[0]?.key) }
+}
+
+/** Fixa a coluna visível e a leva para o fim do bloco fixo. */
+export function pinColumn(config: ViewConfig, defs: ViewColumnDef[], key: string): ViewConfig {
+  const target = config.columns.find((c) => c.key === key)
+  return target?.visible && !target.pinned ? placePin(config, defs, target, true) : config
+}
+
+/** Solta a coluna e a leva para logo depois do bloco fixo (depois do título, se ele rola). */
+export function unpinColumn(config: ViewConfig, defs: ViewColumnDef[], key: string): ViewConfig {
+  const target = config.columns.find((c) => c.key === key)
+  return target?.pinned ? placePin(config, defs, target, false) : config
 }
 
 /** Ajusta a largura, presa entre 90 e 1200 px; `null` volta à largura da tabela. */
 export function resizeColumn(config: ViewConfig, key: string, width: number | null): ViewConfig {
   const next = width === null ? undefined : Math.round(Math.min(Math.max(width, MIN_COLUMN_WIDTH), MAX_COLUMN_WIDTH))
-  return { ...config, columns: config.columns.map((c) => (c.key === key ? column(c.key, c.visible, next, c.label) : c)) }
+  return { ...config, columns: config.columns.map((c) => (c.key === key ? column(c.key, c.visible, next, c.label, c.pinned) : c)) }
 }
 
 /** Clique no cabeçalho: outra coluna começa crescente; a mesma alterna o sentido. */

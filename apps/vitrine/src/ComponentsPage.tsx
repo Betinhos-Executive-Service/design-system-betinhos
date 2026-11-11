@@ -602,7 +602,9 @@ const valorExtra = (row: OcorrenciaFiltro, key: string) => {
 }
 
 function TableViewShowcase() {
+  const toast = useToast()
   const [gestor, setGestor] = useState(false)
+  const [selected, setSelected] = useState<Set<string>>(new Set())
   const [busca, setBusca] = useState('')
   // Uma pública já existente; o store recomeça ao trocar o perfil.
   const store = useMemo(() => createMemoryViewStore([
@@ -621,8 +623,8 @@ function TableViewShowcase() {
     return [...filtered].sort((a, b) => value(a).localeCompare(value(b), 'pt-BR') * (sort.dir === 'asc' ? 1 : -1))
   }, [sort, filters, busca])
   return (
-    <Section name="Visões, colunas e filtros" summary="§10.9.1 e §10.9.2: seletor de visão como título; Colunas e Filtros abrem painéis; o título de cada coluna abre o menu (ordenar, Filtrar por…, ocultar); chips dos filtros ativos. Dados de exemplo com 'hoje' = 15/10/2026.">
-      <ViewBar view={view} columns={OCORRENCIA_DEFS} catalog={catalogoExemplo} filters={{ fields: OCORRENCIA_FILTROS, search: buscarCliente }}>
+    <Section name="Visões, colunas e filtros" summary="§10.9.1 e §10.9.2: seletor de visão como título; Colunas e Filtros abrem painéis; o título de cada coluna abre o menu (ordenar, Filtrar por…, fixar, ocultar); chips dos filtros ativos. Seleção de linhas (clique, Ctrl/⌘, Shift, Esc) e clique direito sobre a seleção. Dados de exemplo com 'hoje' = 15/10/2026.">
+      <ViewBar view={view} columns={OCORRENCIA_DEFS} pinnable catalog={catalogoExemplo} filters={{ fields: OCORRENCIA_FILTROS, search: buscarCliente }}>
         <SearchBox placeholder="Filtrar por palavra-chave" aria-label="Filtrar por palavra-chave" value={busca} onChange={setBusca} />
         <Button icon={<Plus size={16} />}>Nova ocorrência</Button>
       </ViewBar>
@@ -630,11 +632,16 @@ function TableViewShowcase() {
         rows={rows}
         rowKey={(row) => row.id}
         columns={OCORRENCIA_COLUNAS}
-        view={{ config: view.config, onChange: view.setConfig, extraCell: (id, key) => valorExtra(OCORRENCIAS_FILTRO.find((r) => r.id === id)!, key) }}
+        view={{ config: view.config, onChange: view.setConfig, pinnable: true, extraCell: (id, key) => valorExtra(OCORRENCIAS_FILTRO.find((r) => r.id === id)!, key) }}
         quickFilters={quickFilters}
-        severity={(row) => ({ tone: row.gravidade, label: row.gravidadeLabel })}
+        selection={{ selected, onChange: setSelected, label: (row) => `Selecionar ${row.id}` }}
+        onRowClick={(row) => toast({ tone: 'info', message: `Abrir ${row.id}: ${row.titulo}` })}
+        rowActions={(row, selecao) => [
+          { id: 'abrir', label: 'Abrir', icon: <Pencil />, disabled: selecao.length > 1, title: selecao.length > 1 ? 'Selecione só uma ocorrência' : undefined, onSelect: () => toast({ tone: 'info', message: `Abrir ${row.id}: ${row.titulo}` }) },
+          { id: 'copiar', label: selecao.length > 1 ? `Copiar ${selecao.length} ocorrências` : 'Copiar', icon: <Copy />, onSelect: () => toast({ message: `Copiadas: ${selecao.map((r) => r.id).join(', ')}` }) },
+        ]}
         empty={<EmptyState icon={<SearchX />} title="Nenhum registro com estes filtros" action={<Button variant="secondary" onClick={() => view.setConfig((c) => ({ ...c, filters: {} }))}>Limpar filtros</Button>} />}
-        footer={<span>Linhas: {rows.length}</span>}
+        footer={<span>Linhas: {rows.length}{selected.size ? ` · ${selected.size} selecionada(s)` : ''}</span>}
       />
       <details className="showcase__fetch">
         <summary>FetchXML gerado para o Dataverse</summary>

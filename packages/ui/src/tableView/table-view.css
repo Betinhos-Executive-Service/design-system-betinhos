@@ -14,6 +14,7 @@ body.bt-columns-grabbing, body.bt-columns-grabbing * { cursor: grabbing !importa
 .bt-columns__heading { display: flex; align-items: center; gap: var(--bt-space-1-5); margin: 0; padding: 0 var(--bt-space-1); color: var(--bt-color-text-secondary); font-size: 12px; font-weight: 600; line-height: 16px; text-transform: uppercase; letter-spacing: .04em; }
 .bt-columns__heading > span { min-width: 20px; padding: 0 6px; border-radius: 999px; background: var(--bt-color-surface-neutral); color: var(--bt-color-text-primary); font-size: 11px; line-height: 18px; text-align: center; letter-spacing: 0; }
 .bt-columns__heading .bt-columns__link { margin-left: auto; text-transform: none; letter-spacing: 0; font-size: 12px; }
+.bt-columns__note { margin: 0; padding: 0 var(--bt-space-1); color: var(--bt-color-text-secondary); font-size: var(--bt-font-size-12); line-height: 16px; }
 .bt-columns__section--add { padding: var(--bt-space-2); border-radius: var(--bt-radius-sm); background: var(--bt-color-surface-neutral); }
 .bt-columns__item.is-hidden .bt-columns__check { opacity: .7; }
 .bt-columns__link { border: 0; background: none; padding: 2px 4px; border-radius: var(--bt-radius-sm); color: var(--bt-color-action); font: inherit; font-weight: 600; cursor: pointer; }
