@@ -204,6 +204,8 @@ export function nextSelection(selected: ReadonlySet<string>, keys: string[], key
   return new Set(keys.slice(Math.min(from, to), Math.max(from, to) + 1))
 }
 
+const chevronIcon = <svg className="bt-table__chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg>
+
 const RESIZE_STEP = 16
 const DRAG_THRESHOLD = 4
 const reducedMotion = () => typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
@@ -257,6 +259,15 @@ export function Table<Row>({ columns: own, rows, rowKey, onRowClick, severity, e
     column.align === 'end' && 'bt-table__cell--end',
     pinClass(placed[index]?.pin)].filter(Boolean).join(' ')
   const RowTag = onRowClick ? 'button' : 'div'
+  const cells = (row: Row, role: 'cell' | 'gridcell') => {
+    const mark = severity?.(row)
+    return placed.map(({ column, pin }, index) => (
+    <span key={column.key} role={role} className={cellClass(column, index)} style={pinStyle(pin)}>
+      {index === 0 && mark ? <i className={`bt-table__severity bt-table__severity--${mark.tone}`} role="img" aria-label={mark.label} /> : null}
+      {column.cell(row)}
+    </span>
+    ))
+  }
 
   const body = (
     <>
@@ -275,7 +286,6 @@ export function Table<Row>({ columns: own, rows, rowKey, onRowClick, severity, e
       )) : null}
       {!loading && rows.length === 0 ? <div className="bt-table__empty">{empty}</div> : null}
       {!loading ? rows.map((row) => {
-        const mark = severity?.(row)
         if (selection) {
           const key = rowKey(row)
           const checked = selection.selected.has(key)
@@ -301,15 +311,10 @@ export function Table<Row>({ columns: own, rows, rowKey, onRowClick, severity, e
               } : undefined}
             >
               {leadCell(<Checkbox className="bt-table__check" label={selection.label?.(row) ?? 'Selecionar linha'} checked={checked} onChange={() => select(key, 'toggle')} />, 'gridcell')}
-              {placed.map(({ column, pin }, index) => (
-                <span key={column.key} role="gridcell" className={cellClass(column, index)} style={pinStyle(pin)}>
-                  {index === 0 && mark ? <i className={`bt-table__severity bt-table__severity--${mark.tone}`} role="img" aria-label={mark.label} /> : null}
-                  {column.cell(row)}
-                </span>
-              ))}
+              {cells(row, 'gridcell')}
               {onRowClick ? (
                 <button type="button" className="bt-table__open" aria-label="Abrir" title="Abrir" onClick={() => onRowClick(row)}>
-                  <svg className="bt-table__chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg>
+                  {chevronIcon}
                 </button>
               ) : null}
             </div>
@@ -324,15 +329,8 @@ export function Table<Row>({ columns: own, rows, rowKey, onRowClick, severity, e
             onClick={onRowClick ? () => onRowClick(row) : undefined}
             onContextMenu={actionsOf ? (event) => { context.onContextMenu(event, actionsOf(row, [row])) } : undefined}
           >
-            {placed.map(({ column, pin }, index) => (
-              <span key={column.key} role="cell" className={cellClass(column, index)} style={pinStyle(pin)}>
-                {index === 0 && mark ? <i className={`bt-table__severity bt-table__severity--${mark.tone}`} role="img" aria-label={mark.label} /> : null}
-                {column.cell(row)}
-              </span>
-            ))}
-            {onRowClick ? (
-              <svg className="bt-table__chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg>
-            ) : null}
+            {cells(row, 'cell')}
+            {onRowClick ? chevronIcon : null}
           </RowTag>
         )
       }) : null}

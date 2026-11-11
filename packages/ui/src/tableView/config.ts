@@ -154,22 +154,24 @@ export function toggleColumn(config: ViewConfig, defs: ViewColumnDef[], key: str
 /** Colunas fixas visíveis, na ordem da visão. */
 export const pinnedColumns = (config: ViewConfig) => config.columns.filter((c) => c.visible && c.pinned)
 
-/** Fixa a coluna visível e a leva para o fim do bloco fixo (o título, se fixado, abre o bloco). */
+/** Leva a coluna para o fim do bloco fixo (`pinned`) ou para logo depois dele; o título abre o bloco em que estiver. */
+function placePin(config: ViewConfig, defs: ViewColumnDef[], target: ViewColumnState, pinned: boolean): ViewConfig {
+  const rest = config.columns.filter((c) => c.key !== target.key)
+  const at = rest.filter((c) => c.pinned).length
+  const moved = pinned ? { ...target, pinned: true as const } : unpinned(target)
+  return { ...config, columns: blocks([...rest.slice(0, at), moved, ...rest.slice(at)], defs[0]?.key) }
+}
+
+/** Fixa a coluna visível e a leva para o fim do bloco fixo. */
 export function pinColumn(config: ViewConfig, defs: ViewColumnDef[], key: string): ViewConfig {
   const target = config.columns.find((c) => c.key === key)
-  if (!target?.visible || target.pinned) return config
-  const rest = config.columns.filter((c) => c.key !== key)
-  const at = rest.filter((c) => c.pinned).length
-  return { ...config, columns: blocks([...rest.slice(0, at), { ...target, pinned: true }, ...rest.slice(at)], defs[0]?.key) }
+  return target?.visible && !target.pinned ? placePin(config, defs, target, true) : config
 }
 
 /** Solta a coluna e a leva para logo depois do bloco fixo (depois do título, se ele rola). */
 export function unpinColumn(config: ViewConfig, defs: ViewColumnDef[], key: string): ViewConfig {
   const target = config.columns.find((c) => c.key === key)
-  if (!target?.pinned) return config
-  const rest = config.columns.filter((c) => c.key !== key)
-  const at = rest.filter((c) => c.pinned).length
-  return { ...config, columns: blocks([...rest.slice(0, at), unpinned(target), ...rest.slice(at)], defs[0]?.key) }
+  return target?.pinned ? placePin(config, defs, target, false) : config
 }
 
 /** Ajusta a largura, presa entre 90 e 1200 px; `null` volta à largura da tabela. */
