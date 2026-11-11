@@ -77,3 +77,8 @@ it('painel: seção Fixas, alfinete e Restaurar volta às defaultPinned', () => 
   fireEvent.click(screen.getByRole('button', { name: 'Aplicar' }))
   expect(onApply.mock.calls[0][0].columns).toEqual(defaults.columns)
 })
+
+it('sem pinnable, a coluna fixa salva na visão não gruda', () => {
+  render(<Harness pinnable={false} initial={pinColumn(defaultConfig(defs), defs, 'status')} />)
+  expect(screen.getAllByRole('columnheader').some((c) => c.className.includes('bt-table__cell--pinned'))).toBe(false)
+})

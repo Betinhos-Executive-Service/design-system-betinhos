@@ -763,7 +763,7 @@ Direto no cabeçalho da tabela (apenas pointer fino):
 
 **Colunas fixas** (`view.pinnable` no `Table`, `pinnable` no `ViewBar`/`ColumnsPanel`):
 
-- Nenhuma coluna é fixa por padrão; o usuário escolhe pelo menu do título ("Fixar coluna"/"Desafixar coluna", ícones pin/pin-off, entre "Limpar filtro" e "Ocultar coluna") ou pelo alfinete de cada linha do painel. A escolha fica na visão (`pinned: true`), como larguras e ordem. A tela pode declarar `defaultPinned`, que vale na visão padrão e em "Restaurar colunas".
+- Nenhuma coluna é fixa por padrão; o usuário escolhe pelo menu do título ("Fixar coluna"/"Desafixar coluna", ícones pin/pin-off, entre "Limpar filtro" e "Ocultar coluna") ou pelo alfinete de cada linha do painel. A escolha fica na visão (`pinned: true`), como larguras e ordem. A tela pode declarar `defaultPinned`, que vale na visão padrão e em "Restaurar colunas". Sem `view.pinnable`, nenhuma coluna gruda, mesmo com `pinned` salvo ou `defaultPinned`, porque o usuário não teria como soltá-la.
 - As fixas formam um bloco contínuo à esquerda: fixar leva a coluna ao fim do bloco; desafixar leva para logo depois dele. Arrastar e `Alt+←/→` só reordenam dentro do bloco. Coluna oculta perde o `pinned`.
 - No painel, a seção "Fixas" fica no topo de "Na tabela"; o alfinete tem `aria-pressed` e o rótulo "Fixar X"/"Desafixar X". Cada mudança é anunciada em `aria-live` ("Coluna X fixada" / "Coluna X solta").
 - Limite: as fixas ocupam no máximo 50% da largura visível. No menu do título, "Fixar coluna" fica desabilitado com a dica "As colunas fixas já ocupam metade da tabela"; o painel não bloqueia e mostra a regra como dica. Se a janela encolher, as fixas da direita deixam de grudar até caber de novo, sem mudar a visão salva.

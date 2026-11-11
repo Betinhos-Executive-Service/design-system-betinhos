@@ -218,14 +218,19 @@ export function Table<Row>({ columns: own, rows, rowKey, onRowClick, severity, e
   const actionsOf = rowActions ?? (onRowClick ? (row: Row, _selection: Row[]) => [{ id: 'abrir', label: 'Abrir', icon: icons.open, onSelect: () => onRowClick(row) }] : null)
   const chevron = Boolean(onRowClick)
   const scrollRef = useRef<HTMLDivElement | null>(null)
+  // O ref da tela vai num ref interno para o callback ficar estável mesmo com `scrollRef` inline.
+  const outerRef = useRef(outerScrollRef)
+  outerRef.current = outerScrollRef
   const setScrollNode = useCallback((node: HTMLDivElement | null) => {
     scrollRef.current = node
-    if (typeof outerScrollRef === 'function') outerScrollRef(node)
-    else if (outerScrollRef) (outerScrollRef as { current: HTMLDivElement | null }).current = node
-  }, [outerScrollRef])
+    const outer = outerRef.current
+    if (typeof outer === 'function') outer(node)
+    else if (outer) (outer as { current: HTMLDivElement | null }).current = node
+  }, [])
   const viewport = useViewportWidth(scrollRef, Boolean(view))
   const [scrolled, setScrolled] = useState(false)
-  const maxPinned = viewport > 0 ? viewport * PINNED_MAX_RATIO : undefined
+  // Sem `pinnable`, nenhuma coluna gruda: o usuário não teria como soltá-la.
+  const maxPinned = !view?.pinnable ? 0 : viewport > 0 ? viewport * PINNED_MAX_RATIO : undefined
   const lead = selection ? SELECT_COLUMN_WIDTH : 0
   const layout = view ? viewLayout(columns, view.config, chevron, { lead, maxPinned }) : null
   const placed: Placed<Row>[] = layout ? layout.placed : columns.map((column, index) => ({ column, width: 0, label: tableViewColumns(columns)[index].label, pinned: false }))
@@ -238,7 +243,7 @@ export function Table<Row>({ columns: own, rows, rowKey, onRowClick, severity, e
   const select = (key: string, mode: 'only' | 'toggle' | 'range') => {
     if (!selection) return
     selection.onChange(nextSelection(selection.selected, keys, key, anchor.current, mode))
-    if (mode !== 'range' || anchor.current === null) anchor.current = key
+    if (mode !== 'range' || anchor.current === null || !keys.includes(anchor.current)) anchor.current = key
   }
   const leadPin: TablePin = { left: 0, gaps: 0, last: !placed.some((p) => p.pin) }
   const leadCell = (content: ReactNode, role: string) => (

@@ -12,13 +12,13 @@ const columns: TableColumn<Row>[] = [
   { key: 'acao', header: 'Ação', cell: (r) => <button type="button">Editar {r.id}</button> },
 ]
 
-function Harness({ open = vi.fn(), withView = false, initial = [] as string[] }: { open?: (row: Row) => void; withView?: boolean; initial?: string[] }) {
+function Harness({ open = vi.fn(), withView = false, initial = [] as string[], list = rows }: { open?: (row: Row) => void; withView?: boolean; initial?: string[]; list?: Row[] }) {
   const [selected, setSelected] = useState<Set<string>>(new Set(initial))
   const [config, setConfig] = useState(() => defaultConfig(tableViewColumns(columns)))
   return (
     <>
       <output data-testid="sel">{[...selected].sort().join(',')}</output>
-      <Table columns={columns} rows={rows} rowKey={(r) => r.id} onRowClick={open}
+      <Table columns={columns} rows={list} rowKey={(r) => r.id} onRowClick={open}
         view={withView ? { config, onChange: (fn) => setConfig(fn) } : undefined}
         selection={{ selected, onChange: setSelected, label: (r) => `Selecionar ${r.nome}` }} />
     </>
@@ -189,4 +189,23 @@ it('rowActions antigo, de um argumento, continua funcionando (com e sem seleçã
   render(<MenuHarness actions={old} />)
   fireEvent.contextMenu(rowOf('c'))
   expect(screen.getByRole('menuitem', { name: 'Ação c', hidden: true })).toBeTruthy()
+})
+
+it('Shift com âncora que saiu das linhas recomeça a âncora no clique', () => {
+  const { rerender } = render(<Harness />)
+  fireEvent.click(rowOf('a'))
+  rerender(<Harness list={rows.slice(1)} />)
+  fireEvent.click(rowOf('c'), { shiftKey: true })
+  expect(sel()).toBe('c')
+  fireEvent.click(rowOf('d'), { shiftKey: true })
+  expect(sel()).toBe('c,d')
+})
+
+it('scrollRef inline não é chamado de novo a cada render', () => {
+  const calls: (HTMLDivElement | null)[] = []
+  const table = () => <Table columns={columns} rows={rows} rowKey={(r) => r.id} scrollRef={(node) => { calls.push(node) }} />
+  const { rerender } = render(table())
+  rerender(table())
+  expect(calls).toHaveLength(1)
+  expect(calls[0]?.className).toBe('bt-table__scroll')
 })
