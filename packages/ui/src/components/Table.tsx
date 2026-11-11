@@ -5,6 +5,7 @@ import { COLUMN_FILTER_EVENT, ColumnMenu } from '../tableView/ColumnMenu'
 import type { LookupSearch } from '../tableView/FilterEditors'
 import type { FilterCondition, FilterField } from '../tableView/filters'
 import { icons } from '../tableView/icons'
+import { Checkbox } from './Choice'
 import { useContextMenu, type MenuAction } from './Menu'
 
 export type TableColumn<Row> = {
@@ -51,12 +52,26 @@ export type TableQuickFilters = {
   filtered?: string[]
 }
 
+/** Seleção de linhas (§10.9.3): estado controlado pela tela, pelas chaves de `rowKey`. */
+export type TableSelection<Row> = {
+  /** Chaves (`rowKey`) selecionadas. */
+  selected: ReadonlySet<string>
+  onChange: (next: Set<string>) => void
+  /** Texto do checkbox para leitor de tela. Padrão: "Selecionar linha". */
+  label?: (row: Row) => string
+}
+
 export type TableProps<Row> = Omit<HTMLAttributes<HTMLDivElement>, 'children'> & {
   columns: TableColumn<Row>[]
   rows: Row[]
   rowKey: (row: Row) => string
-  /** Linha inteira clicável: vira um `button` com seta à direita. */
+  /** Linha inteira clicável: vira um `button` com seta à direita. Com `selection`, abre no duplo clique, no Enter, na seta e em "Abrir". */
   onRowClick?: (row: Row) => void
+  /**
+   * Liga a seleção: checkbox fixo à esquerda e no cabeçalho (linhas carregadas); clique sozinho substitui, Ctrl/Cmd alterna,
+   * Shift seleciona o intervalo desde o último clique; Esc limpa. O Table não poda a seleção quando as linhas mudam.
+   */
+  selection?: TableSelection<Row>
   /** Cor da barra de gravidade à esquerda da linha, com o rótulo acessível. */
   severity?: (row: Row) => { tone: 'success' | 'warning' | 'danger'; label: string } | null
   /** Mostrado quando `rows` está vazio (um `EmptyState`). */
@@ -73,9 +88,12 @@ export type TableProps<Row> = Omit<HTMLAttributes<HTMLDivElement>, 'children'> &
   rowActions?: (row: Row) => MenuAction[]
 }
 
+/** Largura da coluna de seleção (checkbox), sempre fixa e fora do limite das fixas. */
+export const SELECT_COLUMN_WIDTH = 40
+
 /** Trilhas do grid: `full` com todas as colunas e `compact` (até 1120px) sem as colunas `hideBelow: 'compact'`. */
-export function tableTemplates<Row>(columns: TableColumn<Row>[], chevron: boolean) {
-  const build = (visible: TableColumn<Row>[]) => [...visible.map((column) => column.width ?? 'minmax(0, 1fr)'), chevron ? '24px' : null].filter(Boolean).join(' ')
+export function tableTemplates<Row>(columns: TableColumn<Row>[], chevron: boolean, selection = false) {
+  const build = (visible: TableColumn<Row>[]) => [selection ? `${SELECT_COLUMN_WIDTH}px` : null, ...visible.map((column) => column.width ?? 'minmax(0, 1fr)'), chevron ? '24px' : null].filter(Boolean).join(' ')
   return { full: build(columns), compact: build(columns.filter((column) => column.hideBelow !== 'compact')) }
 }
 
@@ -157,12 +175,33 @@ function useViewportWidth(ref: { current: HTMLElement | null }, active: boolean)
 /** Fixas ocupam no máximo metade da largura visível da tabela. */
 export const PINNED_MAX_RATIO = 0.5
 
+/** Cliques nestes elementos dentro da linha não mexem na seleção nem abrem o registro. */
+const INTERACTIVE = 'button, input, select, textarea, a, label, [role="listbox"], [role="option"], [role="dialog"], [role="menu"]'
+const fromControl = (event: { target: EventTarget; currentTarget: EventTarget }) => {
+  const hit = (event.target as HTMLElement).closest?.(INTERACTIVE)
+  return Boolean(hit && hit !== event.currentTarget && (event.currentTarget as HTMLElement).contains(hit))
+}
+
+/** Próxima seleção pelo clique: sozinho substitui, Ctrl/Cmd alterna, Shift vai da âncora até a linha (sem âncora, só a linha). */
+export function nextSelection(selected: ReadonlySet<string>, keys: string[], key: string, anchor: string | null, mode: 'only' | 'toggle' | 'range'): Set<string> {
+  if (mode === 'toggle') {
+    const next = new Set(selected)
+    if (next.has(key)) next.delete(key)
+    else next.add(key)
+    return next
+  }
+  const from = mode === 'range' && anchor !== null ? keys.indexOf(anchor) : -1
+  const to = keys.indexOf(key)
+  if (from < 0 || to < 0) return new Set([key])
+  return new Set(keys.slice(Math.min(from, to), Math.max(from, to) + 1))
+}
+
 const RESIZE_STEP = 16
 const DRAG_THRESHOLD = 4
 const reducedMotion = () => typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
 /** Lista operacional em linhas: cabeçalho off-white, barra de gravidade, linha clicável e cabeçalho que some no mobile. */
-export function Table<Row>({ columns: own, rows, rowKey, onRowClick, severity, empty, footer, loading = false, view, quickFilters, rowActions, className, style, ...rest }: TableProps<Row>) {
+export function Table<Row>({ columns: own, rows, rowKey, onRowClick, severity, empty, footer, loading = false, view, quickFilters, rowActions, selection, className, style, onKeyDown, ...rest }: TableProps<Row>) {
   const extraCell = view?.extraCell
   const columns = view && extraCell ? withExtraColumns(own, view.config, (row: Row, key) => extraCell(rowKey(row), key)) : own
   const context = useContextMenu()
@@ -172,9 +211,33 @@ export function Table<Row>({ columns: own, rows, rowKey, onRowClick, severity, e
   const viewport = useViewportWidth(scrollRef, Boolean(view))
   const [scrolled, setScrolled] = useState(false)
   const maxPinned = viewport > 0 ? viewport * PINNED_MAX_RATIO : undefined
-  const layout = view ? viewLayout(columns, view.config, chevron, { maxPinned }) : null
+  const lead = selection ? SELECT_COLUMN_WIDTH : 0
+  const layout = view ? viewLayout(columns, view.config, chevron, { lead, maxPinned }) : null
   const placed: Placed<Row>[] = layout ? layout.placed : columns.map((column, index) => ({ column, width: 0, label: tableViewColumns(columns)[index].label, pinned: false }))
-  const template = layout ? { full: layout.template, compact: layout.template } : tableTemplates(columns, chevron)
+  const template = layout ? { full: layout.template, compact: layout.template } : tableTemplates(columns, chevron, Boolean(selection))
+  // Âncora do Shift: a última linha clicada sem Shift.
+  const anchor = useRef<string | null>(null)
+  const keys = selection ? rows.map(rowKey) : []
+  const selectedCount = selection ? keys.filter((k) => selection.selected.has(k)).length : 0
+  const allSelected = keys.length > 0 && selectedCount === keys.length
+  const select = (key: string, mode: 'only' | 'toggle' | 'range') => {
+    if (!selection) return
+    selection.onChange(nextSelection(selection.selected, keys, key, anchor.current, mode))
+    if (mode !== 'range' || anchor.current === null) anchor.current = key
+  }
+  const leadPin: TablePin = { left: 0, gaps: 0, last: !placed.some((p) => p.pin) }
+  const leadCell = (content: ReactNode, role: string) => (
+    <span role={role} className={['bt-table__cell', 'bt-table__cell--select', view && pinClass(leadPin)].filter(Boolean).join(' ')} style={view ? pinStyle(leadPin) : undefined}>{content}</span>
+  )
+  const headCheck = selection ? leadCell(
+    <Checkbox
+      className="bt-table__check"
+      label="Selecionar linhas carregadas"
+      checked={allSelected}
+      ref={(node) => { if (node) node.indeterminate = selectedCount > 0 && !allSelected }}
+      disabled={!keys.length}
+      onChange={() => { selection.onChange(allSelected ? new Set() : new Set(keys)); anchor.current = null }}
+    />, 'columnheader') : null
   const cellClass = (column: TableColumn<Row>, index: number) => ['bt-table__cell',
     !view && column.hideBelow && `bt-table__cell--hide-${column.hideBelow}`,
     view && index >= 3 && 'bt-table__cell--extra',
@@ -184,20 +247,54 @@ export function Table<Row>({ columns: own, rows, rowKey, onRowClick, severity, e
 
   const body = (
     <>
-      {view && layout ? <ViewHead placed={placed} defs={layout.defs} view={view} chevron={chevron} cellClass={cellClass} quick={quickFilters} pinRoom={maxPinned === undefined ? Infinity : maxPinned - layout.pinnedWidth} /> : (
+      {view && layout ? <ViewHead placed={placed} defs={layout.defs} view={view} chevron={chevron} cellClass={cellClass} quick={quickFilters} lead={headCheck} pinRoom={maxPinned === undefined ? Infinity : maxPinned - layout.pinnedWidth} /> : (
         <div className="bt-table__head" role="row">
+          {headCheck}
           {placed.map(({ column }, index) => <span key={column.key} role="columnheader" className={cellClass(column, index)}>{column.header}</span>)}
           {chevron ? <span aria-hidden="true" /> : null}
         </div>
       )}
       {loading ? [0, 1, 2].map((index) => (
         <div key={index} className="bt-table__row bt-table__row--loading" role="row" aria-hidden="true">
+          {selection ? leadCell(null, 'gridcell') : null}
           {placed.map(({ column, pin }, i) => <span key={column.key} className={cellClass(column, i)} style={pinStyle(pin)}><span className="bt-table__skeleton" /></span>)}
         </div>
       )) : null}
       {!loading && rows.length === 0 ? <div className="bt-table__empty">{empty}</div> : null}
       {!loading ? rows.map((row) => {
         const mark = severity?.(row)
+        if (selection) {
+          const key = rowKey(row)
+          const checked = selection.selected.has(key)
+          return (
+            <div
+              key={key}
+              className={['bt-table__row', 'bt-table__row--selectable', checked && 'is-selected'].filter(Boolean).join(' ')}
+              role="row"
+              tabIndex={0}
+              aria-selected={checked}
+              // Shift+clique não seleciona texto.
+              onMouseDown={(event) => { if (event.shiftKey && !fromControl(event)) event.preventDefault() }}
+              onClick={(event) => { if (!fromControl(event)) select(key, event.shiftKey ? 'range' : event.ctrlKey || event.metaKey ? 'toggle' : 'only') }}
+              onDoubleClick={onRowClick ? (event) => { if (!fromControl(event)) onRowClick(row) } : undefined}
+              onKeyDown={onRowClick ? (event) => { if (event.key === 'Enter' && event.target === event.currentTarget) { event.preventDefault(); onRowClick(row) } } : undefined}
+              onContextMenu={actionsOf ? (event) => { context.onContextMenu(event, actionsOf(row)) } : undefined}
+            >
+              {leadCell(<Checkbox className="bt-table__check" label={selection.label?.(row) ?? 'Selecionar linha'} checked={checked} onChange={() => select(key, 'toggle')} />, 'gridcell')}
+              {placed.map(({ column, pin }, index) => (
+                <span key={column.key} role="gridcell" className={cellClass(column, index)} style={pinStyle(pin)}>
+                  {index === 0 && mark ? <i className={`bt-table__severity bt-table__severity--${mark.tone}`} role="img" aria-label={mark.label} /> : null}
+                  {column.cell(row)}
+                </span>
+              ))}
+              {onRowClick ? (
+                <button type="button" className="bt-table__open" aria-label="Abrir" title="Abrir" onClick={() => onRowClick(row)}>
+                  <svg className="bt-table__chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg>
+                </button>
+              ) : null}
+            </div>
+          )
+        }
         return (
           <RowTag
             key={rowKey(row)}
@@ -223,7 +320,22 @@ export function Table<Row>({ columns: own, rows, rowKey, onRowClick, severity, e
   )
 
   return (
-    <div className={['bt-table', view && 'bt-table--view', scrolled && 'is-scrolled', className].filter(Boolean).join(' ')} style={{ ...style, ['--bt-table-columns' as string]: template.full, ['--bt-table-columns-compact' as string]: template.compact }} role="table" aria-busy={loading || undefined} {...rest}>
+    <div
+      className={['bt-table', view && 'bt-table--view', selection && 'bt-table--selectable', scrolled && 'is-scrolled', className].filter(Boolean).join(' ')}
+      style={{ ...style, ['--bt-table-columns' as string]: template.full, ['--bt-table-columns-compact' as string]: template.compact }}
+      role={selection ? 'grid' : 'table'}
+      aria-multiselectable={selection ? true : undefined}
+      aria-busy={loading || undefined}
+      onKeyDown={(event) => {
+        onKeyDown?.(event)
+        // Esc com o foco na tabela limpa a seleção (menu, filtro e diálogo tratam o próprio Esc).
+        if (selection && event.key === 'Escape' && !event.defaultPrevented && selection.selected.size && !(event.target as HTMLElement).closest('[role="menu"], [role="dialog"], .bt-colfilter')) {
+          selection.onChange(new Set())
+          anchor.current = null
+        }
+      }}
+      {...rest}
+    >
       {view ? <div ref={scrollRef} className="bt-table__scroll" onScroll={(event) => { const next = event.currentTarget.scrollLeft > 0; if (next !== scrolled) setScrolled(next) }}>{body}</div> : body}
       {footer != null ? <div className="bt-table__footer">{footer}</div> : null}
       {context.menu}
@@ -235,7 +347,7 @@ type Drag = { key: string; pointerId: number; startX: number; grab: number; star
 type Resize = { key: string; pointerId: number; startX: number; startWidth: number }
 
 /** Cabeçalho com visão: o título abre o menu (ordenar, filtrar, ocultar), arrastar reordena, alça de largura e atalhos de teclado, com anúncio em `aria-live`. */
-function ViewHead<Row>({ placed, defs, view, chevron, cellClass, quick, pinRoom }: { placed: Placed<Row>[]; defs: ViewColumnDef[]; view: TableView; chevron: boolean; cellClass: (column: TableColumn<Row>, index: number) => string; quick?: TableQuickFilters; pinRoom: number }) {
+function ViewHead<Row>({ placed, defs, view, chevron, cellClass, quick, pinRoom, lead }: { placed: Placed<Row>[]; defs: ViewColumnDef[]; view: TableView; chevron: boolean; cellClass: (column: TableColumn<Row>, index: number) => string; quick?: TableQuickFilters; pinRoom: number; lead?: ReactNode }) {
   const headRef = useRef<HTMLDivElement>(null)
   const drag = useRef<Drag | null>(null)
   const resize = useRef<Resize | null>(null)
@@ -385,6 +497,7 @@ function ViewHead<Row>({ placed, defs, view, chevron, cellClass, quick, pinRoom 
   return (
     <>
     <div ref={headRef} className="bt-table__head" role="row">
+      {lead}
       {placed.map(({ column, width, label, pin, pinned }, index) => {
         const sorted = sort?.key === column.key ? sort.dir : null
         const movable = column.key !== first
