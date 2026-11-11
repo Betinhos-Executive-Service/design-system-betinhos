@@ -23,14 +23,22 @@ export type ColumnMenuProps = {
   onFilter: () => void
   onClearFilter: () => void
   onHide: () => void
+  /** Coluna fixa na rolagem horizontal: o item vira "Desafixar coluna". */
+  pinned?: boolean
+  /** Liga "Fixar coluna" / "Desafixar coluna"; sem ele o item não aparece. */
+  onTogglePin?: () => void
+  /** `false` desabilita "Fixar coluna" quando as fixas já ocupam metade da tabela. Padrão: `true`. */
+  canPin?: boolean
   /** Clique no gatilho que não deve abrir o menu (ex.: fim de um arraste). */
   suppressClick?: () => boolean
   /** Teclas do cabeçalho além das do menu (Alt+setas movem a coluna). */
   onKeyDown?: (event: KeyboardEvent<HTMLButtonElement>) => void
 }
 
-/** Título da coluna como gatilho de menu (§10.9.2): Ordenar A→Z, Z→A, Filtrar por…, Limpar filtro e Ocultar coluna. O ▾ aparece no hover/foco e sempre que a coluna está filtrada (com ponto de ação). */
-export function ColumnMenu({ label, columnKey, sortIcon, sortable = true, filterable, filtered, canHide, onSort, onFilter, onClearFilter, onHide, suppressClick, onKeyDown }: ColumnMenuProps) {
+export const PIN_LIMIT_HINT = 'As colunas fixas já ocupam metade da tabela'
+
+/** Título da coluna como gatilho de menu (§10.9.2): Ordenar A→Z, Z→A, Filtrar por…, Limpar filtro, Fixar coluna e Ocultar coluna. O ▾ aparece no hover/foco e sempre que a coluna está filtrada (com ponto de ação). */
+export function ColumnMenu({ label, columnKey, sortIcon, sortable = true, filterable, filtered, canHide, onSort, onFilter, onClearFilter, onHide, pinned = false, onTogglePin, canPin = true, suppressClick, onKeyDown }: ColumnMenuProps) {
   const actions: MenuAction[] = [
     ...(sortable && onSort ? [
       { id: 'asc', label: 'Ordenar A→Z', icon: icons.arrowUp, onSelect: () => onSort(false) },
@@ -38,6 +46,9 @@ export function ColumnMenu({ label, columnKey, sortIcon, sortable = true, filter
     ] : []),
     ...(filterable ? [{ id: 'filter', label: 'Filtrar por…', icon: icons.filter, onSelect: onFilter }] : []),
     ...(filterable && filtered ? [{ id: 'clear', label: 'Limpar filtro', icon: icons.filterX, onSelect: onClearFilter }] : []),
+    ...(onTogglePin ? [pinned
+      ? { id: 'unpin', label: 'Desafixar coluna', icon: icons.pinOff, onSelect: onTogglePin }
+      : { id: 'pin', label: 'Fixar coluna', icon: icons.pin, onSelect: onTogglePin, disabled: !canPin, title: canPin ? undefined : PIN_LIMIT_HINT }] : []),
     { id: 'hide', label: 'Ocultar coluna', icon: icons.eyeOff, onSelect: onHide, disabled: !canHide },
   ]
   return (

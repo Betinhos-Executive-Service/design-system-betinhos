@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type HTMLAttributes, type KeyboardEvent, type PointerEvent, type ReactNode } from 'react'
-import { isExtraColumn, moveVisibleColumn, resizeColumn, sortBy, toggleColumn, visibleColumns, type ViewColumnDef, type ViewConfig } from '../tableView/config'
+import { isExtraColumn, moveVisibleColumn, pinColumn, resizeColumn, unpinColumn, sortBy, toggleColumn, visibleColumns, type ViewColumnDef, type ViewConfig } from '../tableView/config'
 import { ColumnFilter } from '../tableView/ColumnFilter'
 import { COLUMN_FILTER_EVENT, ColumnMenu } from '../tableView/ColumnMenu'
 import type { LookupSearch } from '../tableView/FilterEditors'
@@ -37,6 +37,8 @@ export type TableView = {
   config: ViewConfig
   onChange: (update: (config: ViewConfig) => ViewConfig) => void
   extraCell?: (rowKey: string, key: string) => ReactNode
+  /** Liga "Fixar coluna" no menu do título; a escolha vai na visão (`pinned`). Passe o mesmo `pinnable` ao `ViewBar`. */
+  pinnable?: boolean
 }
 
 /** Filtro por coluna (§10.9.2): "Filtrar por…" no menu do título abre o painel ancorado ao cabeçalho. Exige `view`. */
@@ -267,6 +269,10 @@ function ViewHead<Row>({ placed, defs, view, chevron, cellClass, quick, pinRoom 
     const label = defs.find((d) => d.key === key)?.label ?? key
     setMessage(`Coluna ${label} na posição ${visible.findIndex((c) => c.key === key) + 1} de ${visible.length}`)
   }
+  const togglePin = (key: string, label: string, pinned: boolean) => {
+    update((config) => (pinned ? unpinColumn : pinColumn)(config, defs, key))
+    setMessage(pinned ? `Coluna ${label} solta` : `Coluna ${label} fixada`)
+  }
 
   // FLIP só no cabeçalho: as colunas vizinhas deslizam para o novo lugar; a arrastada segue o ponteiro.
   useLayoutEffect(() => {
@@ -379,7 +385,7 @@ function ViewHead<Row>({ placed, defs, view, chevron, cellClass, quick, pinRoom 
   return (
     <>
     <div ref={headRef} className="bt-table__head" role="row">
-      {placed.map(({ column, width, label, pin }, index) => {
+      {placed.map(({ column, width, label, pin, pinned }, index) => {
         const sorted = sort?.key === column.key ? sort.dir : null
         const movable = column.key !== first
         return (
@@ -407,6 +413,9 @@ function ViewHead<Row>({ placed, defs, view, chevron, cellClass, quick, pinRoom 
               onFilter={() => setFilterAt(column.key)}
               onClearFilter={() => quick?.onChange(column.key, null)}
               onHide={() => update((config) => toggleColumn(config, defs, column.key))}
+              pinned={pinned}
+              onTogglePin={view.pinnable ? () => togglePin(column.key, label, pinned) : undefined}
+              canPin={pinned || width <= pinRoom}
             />
             <span
               className="bt-table__resize"

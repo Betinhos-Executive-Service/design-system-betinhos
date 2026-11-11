@@ -7,7 +7,7 @@ import { Spinner } from '../components/Misc'
 import { SearchBox } from '../components/SearchBox'
 import { Sheet } from '../components/Sheet'
 import { useMediaQuery } from '../useMediaQuery'
-import { addColumn, EXTRA_COLUMN_PREFIX, isExtraColumn, moveVisibleColumn, removeColumn, sameConfig, toggleColumn, visibleColumns, type ViewColumnDef, type ViewConfig } from './config'
+import { addColumn, EXTRA_COLUMN_PREFIX, isExtraColumn, moveVisibleColumn, pinColumn, removeColumn, unpinColumn, sameConfig, toggleColumn, visibleColumns, type ViewColumnDef, type ViewConfig } from './config'
 import { icons } from './icons'
 
 /** Tipo do campo, para o ícone do catálogo (texto, número, data, escolha, vínculo). */
@@ -43,6 +43,8 @@ export type ColumnsPanelProps = {
   onApply: (config: ViewConfig) => void
   /** Liga "Adicionar coluna": campos da tabela e das relações N:1. */
   catalog?: ColumnCatalog
+  /** Liga as colunas fixas: seção "Fixas" no topo e alfinete em cada coluna visível. */
+  pinnable?: boolean
 }
 
 /** Passo da trilha: relação aberta (`label` = campo de vínculo, `table` = tabela de destino). */
@@ -65,7 +67,7 @@ function scrollParent(el: HTMLElement | null): HTMLElement | null {
  * Painel de colunas (§10.9.1): mostrar/ocultar, reordenar (arraste, ↑/↓ ou teclado na alça) e adicionar campos da tabela
  * e das relações N:1; só vale em "Aplicar". Drawer no desktop, Sheet no mobile.
  */
-export function ColumnsPanel({ open, onClose, columns, config, defaults, onApply, catalog }: ColumnsPanelProps) {
+export function ColumnsPanel({ open, onClose, columns, config, defaults, onApply, catalog, pinnable = false }: ColumnsPanelProps) {
   const mobile = useMediaQuery('(max-width: 820px)')
   const [draft, setDraft] = useState(config)
   const [confirming, setConfirming] = useState(false)
@@ -79,7 +81,7 @@ export function ColumnsPanel({ open, onClose, columns, config, defaults, onApply
   const [rootFields, setRootFields] = useState<ColumnCatalogEntry[] | null>(null)
   // Campos das tabelas relacionadas (1 nível), para a busca achar "Motorista › Telefone" sem abrir o catálogo.
   const [related, setRelated] = useState<{ key: string; label: string }[] | null>(null)
-  const listRef = useRef<HTMLUListElement>(null)
+  const listRef = useRef<HTMLDivElement>(null)
   const drag = useRef<{ key: string; y: number; frame: number } | null>(null)
   const tops = useRef(new Map<string, number>())
   const origin = useRef(0)
@@ -158,7 +160,7 @@ export function ColumnsPanel({ open, onClose, columns, config, defaults, onApply
   function move(key: string, to: number) {
     // `to` é a posição entre as visíveis ("Na tabela"); as ocultas não contam.
     const base = current.current
-    const next = moveVisibleColumn(base, columns, key, Math.max(1, to))
+    const next = moveVisibleColumn(base, columns, key, Math.max(0, to))
     if (next === base) return
     current.current = next
     setDraft(next)
@@ -212,7 +214,7 @@ export function ColumnsPanel({ open, onClose, columns, config, defaults, onApply
     if (!state || !list) return
     // Posição final: quantos itens (fora o arrastado) têm o meio acima do ponteiro; o primeiro é fixo.
     const items = Array.from(list.querySelectorAll<HTMLElement>('[data-col]')).filter((el) => el.dataset.col !== state.key)
-    const target = Math.max(1, items.filter((el) => { const r = el.getBoundingClientRect(); return r.top + r.height / 2 < clientY }).length)
+    const target = Math.max(0, items.filter((el) => { const r = el.getBoundingClientRect(); return r.top + r.height / 2 < clientY }).length)
     if (visibleColumns(current.current).findIndex((c) => c.key === state.key) !== target) move(state.key, target)
   }
 
@@ -237,6 +239,12 @@ export function ColumnsPanel({ open, onClose, columns, config, defaults, onApply
       move(key, origin.current)
       setGrabbed(null)
     }
+  }
+
+  // Fixar leva ao fim do bloco "Fixas"; desafixar, para o começo de "Na tabela".
+  function togglePin(key: string, pinned: boolean) {
+    setDraft((d) => (pinned ? unpinColumn : pinColumn)(d, columns, key))
+    setAnnounce(pinned ? `Coluna ${labelOf(key)} solta` : `Coluna ${labelOf(key)} fixada`)
   }
 
   function add(key: string, label: string) {
@@ -277,6 +285,12 @@ export function ColumnsPanel({ open, onClose, columns, config, defaults, onApply
     ].filter((e) => matches(e.label) && !isShown(e.key) && !draft.columns.some((c) => c.key === e.key && !c.visible))
     : []
   const onTable = visible.filter((c) => !searching || matches(labelOf(c.key)))
+  const pinnedCount = pinnable ? visible.filter((c) => c.pinned).length : 0
+  // ↑/↓ e o arraste só andam dentro do bloco (fixas ou que rolam); o título não sai do começo do seu bloco.
+  const bounds = (index: number) => {
+    const [start, end] = index < pinnedCount ? [0, pinnedCount - 1] : [pinnedCount, visibleCount - 1]
+    return [start + (visible[start]?.key === first ? 1 : 0), end]
+  }
   const hidden = draft.columns.filter((c) => !c.visible && (!searching || matches(labelOf(c.key))))
   const loadingDeep = searching && catalog && (!rootFields || (fold(query).trim().length >= 2 && !related))
 
@@ -303,16 +317,19 @@ export function ColumnsPanel({ open, onClose, columns, config, defaults, onApply
         <Checkbox
           className="bt-columns__check"
           label={label}
-          description={fixed ? 'Coluna fixa' : extra ? 'Adicionada' : undefined}
+          description={fixed ? (pinnable ? 'Sempre visível' : 'Coluna fixa') : extra ? 'Adicionada' : undefined}
           checked={state.visible}
           disabled={fixed || (state.visible && visibleCount === 1)}
           onChange={() => toggle(state.key, !state.visible)}
         />
-        {fixed ? null : (
+        {fixed && !(pinnable && onTableRow) ? null : (
           <span className="bt-columns__move">
-            {onTableRow ? <>
-              <Button variant="ghost" size="compact" icon={icons.up} aria-label={`Mover ${label} para cima`} disabled={index <= 1} onClick={() => move(state.key, index - 1)} />
-              <Button variant="ghost" size="compact" icon={icons.down} aria-label={`Mover ${label} para baixo`} disabled={index === visibleCount - 1} onClick={() => move(state.key, index + 1)} />
+            {pinnable && onTableRow ? (
+              <Button variant="ghost" size="compact" icon={state.pinned ? icons.pinOff : icons.pin} aria-label={state.pinned ? `Desafixar ${label}` : `Fixar ${label}`} aria-pressed={Boolean(state.pinned)} title={state.pinned ? 'Desafixar coluna' : 'Fixar coluna'} onClick={() => togglePin(state.key, Boolean(state.pinned))} />
+            ) : null}
+            {onTableRow && !fixed ? <>
+              <Button variant="ghost" size="compact" icon={icons.up} aria-label={`Mover ${label} para cima`} disabled={index <= bounds(index)[0]} onClick={() => move(state.key, index - 1)} />
+              <Button variant="ghost" size="compact" icon={icons.down} aria-label={`Mover ${label} para baixo`} disabled={index >= bounds(index)[1]} onClick={() => move(state.key, index + 1)} />
             </> : null}
             {extra ? <Button variant="ghost" size="compact" icon={icons.close} aria-label={`Remover ${label}`} onClick={() => setDraft((d) => removeColumn(d, state.key))} /> : null}
           </span>
@@ -322,7 +339,7 @@ export function ColumnsPanel({ open, onClose, columns, config, defaults, onApply
   }
 
   const list = (
-    <>
+    <div ref={listRef} className="bt-columns__body">
       <div className="bt-columns__top">
         <SearchBox value={query} onChange={setQuery} placeholder={catalog ? 'Buscar ou adicionar coluna' : 'Buscar coluna'} aria-label={catalog ? 'Buscar ou adicionar coluna' : 'Buscar coluna'} />
       </div>
@@ -347,11 +364,23 @@ export function ColumnsPanel({ open, onClose, columns, config, defaults, onApply
 
       {searching && !onTable.length && !hidden.length && !addable.length && !loadingDeep ? <div className="bt-columns-add__state">Nenhuma coluna com “{query.trim()}”.</div> : null}
 
-      {onTable.length ? (
+      {pinnable && (pinnedCount > 0 || !searching) ? (
+        <section className="bt-columns__section" aria-label="Fixas">
+          <h3 className="bt-columns__heading">Fixas <span>{pinnedCount}</span></h3>
+          {pinnedCount ? (
+            <ul className={['bt-columns', dragging && 'is-sorting', searching && 'is-filtered'].filter(Boolean).join(' ')} aria-label="Colunas fixas">
+              {onTable.filter((c) => c.pinned).map((state) => row(state, visible.indexOf(state)))}
+            </ul>
+          ) : <p className="bt-columns__note">Nenhuma coluna fixa. Use o alfinete para manter uma coluna à vista ao rolar para o lado.</p>}
+          {pinnedCount ? <p className="bt-columns__note">As fixas ocupam no máximo metade da tabela; as que passarem disso rolam com as outras.</p> : null}
+        </section>
+      ) : null}
+
+      {onTable.some((c) => !pinnable || !c.pinned) ? (
         <section className="bt-columns__section" aria-label="Na tabela">
-          <h3 className="bt-columns__heading">Na tabela <span>{visibleCount}</span></h3>
-          <ul ref={listRef} className={['bt-columns', dragging && 'is-sorting', searching && 'is-filtered'].filter(Boolean).join(' ')} aria-label="Colunas na tabela">
-            {onTable.map((state) => row(state, visible.indexOf(state)))}
+          <h3 className="bt-columns__heading">Na tabela <span>{visibleCount - pinnedCount}</span></h3>
+          <ul className={['bt-columns', dragging && 'is-sorting', searching && 'is-filtered'].filter(Boolean).join(' ')} aria-label="Colunas na tabela">
+            {onTable.filter((c) => !pinnable || !c.pinned).map((state) => row(state, visible.indexOf(state)))}
           </ul>
         </section>
       ) : null}
@@ -375,7 +404,7 @@ export function ColumnsPanel({ open, onClose, columns, config, defaults, onApply
           <span className="bt-columns-add__icon" aria-hidden="true">{icons.chevronRight}</span>
         </button>
       ) : null}
-    </>
+    </div>
   )
 
   const content = adding && catalog

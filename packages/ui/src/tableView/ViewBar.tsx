@@ -29,6 +29,8 @@ export type ViewBarProps = {
   columns: ViewColumnDef[]
   /** Liga "Adicionar coluna" no painel: campos da tabela e das relações N:1 (§10.9.1). */
   catalog?: ColumnCatalog
+  /** Liga as colunas fixas no painel (seção "Fixas" e alfinete). Passe o mesmo `pinnable` à `view` do `Table`. */
+  pinnable?: boolean
   /** Comandos à direita, depois de "Colunas": Filtros, busca e a ação primária, nessa ordem. */
   children?: ReactNode
   /** Liga o botão "Auditoria" (§10.9.4), depois de "Filtros": abre as alterações recentes da tabela (ou da seleção). */
@@ -54,7 +56,7 @@ const messageOf = (error: unknown) => (error instanceof Error && error.message ?
  * Linha de comando da lista (§10.9.1): o seletor de visão é o título da página; à direita, "Colunas" e os comandos da tela.
  * Gravar, renomear, excluir e publicar abrem diálogo e avisam por toast.
  */
-export function ViewBar({ view, columns, catalog, children, onError, filters, onAudit }: ViewBarProps) {
+export function ViewBar({ view, columns, catalog, pinnable, children, onError, filters, onAudit }: ViewBarProps) {
   const mobile = useMediaQuery('(max-width: 820px)')
   const toast = useOptionalToast()
   const [mode, setMode] = useState<Mode>(null)
@@ -171,6 +173,7 @@ export function ViewBar({ view, columns, catalog, children, onError, filters, on
         defaults={defaults}
         onApply={(next) => view.setConfig(() => next)}
         catalog={catalog}
+        pinnable={pinnable}
       />
 
       <Dialog
