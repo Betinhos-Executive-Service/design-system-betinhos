@@ -43,9 +43,11 @@ button.bt-table__row:focus-visible { outline: 0; box-shadow: inset 0 0 0 2px var
 /* Colunas fixas (§10.9.1): grudam à esquerda na rolagem horizontal, com fundo opaco que cobre o espaço antes delas e o recuo vertical da linha. */
 .bt-table__row { --bt-pin-bg: var(--bt-color-surface); --bt-pin-y: var(--bt-space-2); }
 .bt-table__head { --bt-pin-bg: var(--bt-color-surface-neutral); --bt-pin-y: 0px; }
-.bt-table--view .bt-table__cell--pinned { position: sticky; left: var(--bt-pin-left); z-index: 1; align-self: stretch; background-color: var(--bt-pin-bg); box-shadow: calc(var(--bt-pin-y) - var(--bt-pin-cover, var(--bt-table-gap))) 0 0 var(--bt-pin-y) var(--bt-pin-bg), 0 0 0 var(--bt-pin-y) var(--bt-pin-bg); }
+/* O fundo cobre o espaço entre colunas (à esquerda e à direita) e o recuo vertical da linha, para o conteúdo que rola não aparecer pelas frestas. */
+.bt-table--view .bt-table__cell--pinned { position: sticky; left: var(--bt-pin-left); z-index: 1; align-self: stretch; background-color: var(--bt-pin-bg); box-shadow: calc(var(--bt-pin-y) - var(--bt-pin-cover, var(--bt-table-gap))) 0 0 var(--bt-pin-y) var(--bt-pin-bg), calc(var(--bt-table-gap) - var(--bt-pin-y)) 0 0 var(--bt-pin-y) var(--bt-pin-bg); }
 .bt-table--view .bt-table__head .bt-table__cell--pinned { z-index: 3; }
-.bt-table.is-scrolled .bt-table__cell--pin-last { box-shadow: calc(var(--bt-pin-y) - var(--bt-pin-cover, var(--bt-table-gap))) 0 0 var(--bt-pin-y) var(--bt-pin-bg), 0 0 0 var(--bt-pin-y) var(--bt-pin-bg), calc(var(--bt-pin-y) + 6px) 0 8px -4px color-mix(in srgb, var(--bt-color-text-primary) 16%, transparent); }
+/* Sombra de divisão depois da última fixa, só com a tabela rolada na horizontal (por baixo das camadas que cobrem as frestas). */
+.bt-table.is-scrolled .bt-table__cell--pin-last { box-shadow: calc(var(--bt-pin-y) - var(--bt-pin-cover, var(--bt-table-gap))) 0 0 var(--bt-pin-y) var(--bt-pin-bg), calc(var(--bt-table-gap) - var(--bt-pin-y)) 0 0 var(--bt-pin-y) var(--bt-pin-bg), calc(var(--bt-table-gap) - var(--bt-pin-y) + 2px) 0 8px var(--bt-pin-y) color-mix(in srgb, var(--bt-color-text-primary) 14%, transparent); }
 /* Seleção (§10.9.3): checkbox em coluna de 40px, sempre fixa; linha selecionada em azul-claro, inclusive nas fixas. */
 .bt-table__cell--select { justify-content: center; }
 .bt-table__check { min-height: 0; align-items: center; }
