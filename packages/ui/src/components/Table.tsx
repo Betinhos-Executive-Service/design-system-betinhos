@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState, type HTMLAttributes, type KeyboardEvent, type PointerEvent, type ReactNode } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type HTMLAttributes, type KeyboardEvent, type PointerEvent, type ReactNode } from 'react'
 import { isExtraColumn, moveVisibleColumn, resizeColumn, sortBy, toggleColumn, visibleColumns, type ViewColumnDef, type ViewConfig } from '../tableView/config'
 import { ColumnFilter } from '../tableView/ColumnFilter'
 import { COLUMN_FILTER_EVENT, ColumnMenu } from '../tableView/ColumnMenu'
@@ -84,7 +84,13 @@ export function tableViewColumns<Row>(columns: TableColumn<Row>[]): ViewColumnDe
 
 export const columnDefaultWidth = <Row,>(column: TableColumn<Row>, index: number) => column.defaultWidth ?? (index === 0 ? 240 : 160)
 
-type Placed<Row> = { column: TableColumn<Row>; width: number; label: string }
+/** Coluna que gruda na rolagem: `left` em px desde o início da linha e quantos espaços entre colunas vêm antes dela. */
+export type TablePin = { left: number; gaps: number; last: boolean }
+
+type Placed<Row> = { column: TableColumn<Row>; width: number; label: string; pinned: boolean; pin?: TablePin }
+
+/** `lead`: coluna antes dos dados (seleção), sempre fixa e fora do limite. `maxPinned`: largura máxima em px das fixas. */
+export type ViewLayoutOptions = { lead?: number; maxPinned?: number }
 
 /** Colunas do código mais as adicionadas pelo usuário na visão (`x:`), com o rótulo guardado na visão. */
 export function withExtraColumns<Row>(columns: TableColumn<Row>[], config: ViewConfig, cell: (row: Row, key: string) => ReactNode): TableColumn<Row>[] {
@@ -95,17 +101,59 @@ export function withExtraColumns<Row>(columns: TableColumn<Row>[], config: ViewC
   return extras.length ? [...columns, ...extras] : columns
 }
 
-/** Colunas visíveis da visão, na ordem e com a largura em px; a última trilha estica até a borda. */
-export function viewLayout<Row>(columns: TableColumn<Row>[], config: ViewConfig, chevron: boolean) {
+/**
+ * Colunas visíveis da visão, na ordem e com a largura em px; a última trilha estica até a borda.
+ * As fixas recebem `pin` com o deslocamento acumulado; a que passaria de `maxPinned` deixa de grudar, e as seguintes também.
+ * `pinnedWidth` soma as larguras de todas as fixas pedidas na visão (grudando ou não).
+ */
+export function viewLayout<Row>(columns: TableColumn<Row>[], config: ViewConfig, chevron: boolean, { lead = 0, maxPinned }: ViewLayoutOptions = {}) {
   const defs = tableViewColumns(columns)
   const byKey = new Map(columns.map((c, i) => [c.key, { column: c, index: i }]))
   const placed: Placed<Row>[] = visibleColumns(config).flatMap((state) => {
     const found = byKey.get(state.key)
-    return found ? [{ column: found.column, width: state.width ?? columnDefaultWidth(found.column, found.index), label: defs[found.index].label }] : []
+    return found ? [{ column: found.column, width: state.width ?? columnDefaultWidth(found.column, found.index), label: defs[found.index].label, pinned: state.pinned === true }] : []
   })
-  const template = [...placed.map((p) => `${p.width}px`), chevron ? 'minmax(24px, 1fr)' : 'minmax(0, 1fr)'].join(' ')
-  return { defs, placed, template }
+  let pinnedWidth = 0
+  let sticking = true
+  placed.forEach((p, index) => {
+    if (!p.pinned) return
+    sticking = sticking && (maxPinned === undefined || pinnedWidth + p.width <= maxPinned)
+    if (sticking) p.pin = { left: lead + pinnedWidth, gaps: index + (lead ? 1 : 0), last: false }
+    pinnedWidth += p.width
+  })
+  const lastPin = placed.filter((p) => p.pin).pop()
+  if (lastPin?.pin) lastPin.pin.last = true
+  const template = [lead ? `${lead}px` : null, ...placed.map((p) => `${p.width}px`), chevron ? 'minmax(24px, 1fr)' : 'minmax(0, 1fr)'].filter(Boolean).join(' ')
+  return { defs, placed, template, pinnedWidth }
 }
+
+/** Estilo da célula fixa: `left` em px mais os espaços entre colunas e o recuo da linha. */
+export function pinStyle(pin: TablePin | undefined): CSSProperties | undefined {
+  if (!pin) return undefined
+  return {
+    ['--bt-pin-left' as string]: `calc(var(--bt-table-pad) + ${pin.left}px + ${pin.gaps} * var(--bt-table-gap))`,
+    ...(pin.gaps === 0 ? { ['--bt-pin-cover' as string]: 'var(--bt-table-pad)' } : {}),
+  }
+}
+
+const pinClass = (pin: TablePin | undefined) => pin ? ['bt-table__cell--pinned', pin.last && 'bt-table__cell--pin-last'].filter(Boolean).join(' ') : ''
+
+/** Largura visível do contêiner de rolagem, para o limite das fixas; 0 enquanto não mede (ou sem ResizeObserver). */
+function useViewportWidth(ref: { current: HTMLElement | null }, active: boolean) {
+  const [width, setWidth] = useState(0)
+  useLayoutEffect(() => {
+    const node = ref.current
+    if (!active || !node || typeof ResizeObserver === 'undefined') return
+    setWidth(node.clientWidth)
+    const observer = new ResizeObserver(() => setWidth(node.clientWidth))
+    observer.observe(node)
+    return () => observer.disconnect()
+  }, [ref, active])
+  return width
+}
+
+/** Fixas ocupam no máximo metade da largura visível da tabela. */
+export const PINNED_MAX_RATIO = 0.5
 
 const RESIZE_STEP = 16
 const DRAG_THRESHOLD = 4
@@ -118,18 +166,23 @@ export function Table<Row>({ columns: own, rows, rowKey, onRowClick, severity, e
   const context = useContextMenu()
   const actionsOf = rowActions ?? (onRowClick ? (row: Row) => [{ id: 'abrir', label: 'Abrir', icon: icons.open, onSelect: () => onRowClick(row) }] : null)
   const chevron = Boolean(onRowClick)
-  const layout = view ? viewLayout(columns, view.config, chevron) : null
-  const placed: Placed<Row>[] = layout ? layout.placed : columns.map((column, index) => ({ column, width: 0, label: tableViewColumns(columns)[index].label }))
+  const scrollRef = useRef<HTMLDivElement>(null)
+  const viewport = useViewportWidth(scrollRef, Boolean(view))
+  const [scrolled, setScrolled] = useState(false)
+  const maxPinned = viewport > 0 ? viewport * PINNED_MAX_RATIO : undefined
+  const layout = view ? viewLayout(columns, view.config, chevron, { maxPinned }) : null
+  const placed: Placed<Row>[] = layout ? layout.placed : columns.map((column, index) => ({ column, width: 0, label: tableViewColumns(columns)[index].label, pinned: false }))
   const template = layout ? { full: layout.template, compact: layout.template } : tableTemplates(columns, chevron)
   const cellClass = (column: TableColumn<Row>, index: number) => ['bt-table__cell',
     !view && column.hideBelow && `bt-table__cell--hide-${column.hideBelow}`,
     view && index >= 3 && 'bt-table__cell--extra',
-    column.align === 'end' && 'bt-table__cell--end'].filter(Boolean).join(' ')
+    column.align === 'end' && 'bt-table__cell--end',
+    pinClass(placed[index]?.pin)].filter(Boolean).join(' ')
   const RowTag = onRowClick ? 'button' : 'div'
 
   const body = (
     <>
-      {view && layout ? <ViewHead placed={placed} defs={layout.defs} view={view} chevron={chevron} cellClass={cellClass} quick={quickFilters} /> : (
+      {view && layout ? <ViewHead placed={placed} defs={layout.defs} view={view} chevron={chevron} cellClass={cellClass} quick={quickFilters} pinRoom={maxPinned === undefined ? Infinity : maxPinned - layout.pinnedWidth} /> : (
         <div className="bt-table__head" role="row">
           {placed.map(({ column }, index) => <span key={column.key} role="columnheader" className={cellClass(column, index)}>{column.header}</span>)}
           {chevron ? <span aria-hidden="true" /> : null}
@@ -137,7 +190,7 @@ export function Table<Row>({ columns: own, rows, rowKey, onRowClick, severity, e
       )}
       {loading ? [0, 1, 2].map((index) => (
         <div key={index} className="bt-table__row bt-table__row--loading" role="row" aria-hidden="true">
-          {placed.map(({ column }, i) => <span key={column.key} className={cellClass(column, i)}><span className="bt-table__skeleton" /></span>)}
+          {placed.map(({ column, pin }, i) => <span key={column.key} className={cellClass(column, i)} style={pinStyle(pin)}><span className="bt-table__skeleton" /></span>)}
         </div>
       )) : null}
       {!loading && rows.length === 0 ? <div className="bt-table__empty">{empty}</div> : null}
@@ -152,8 +205,8 @@ export function Table<Row>({ columns: own, rows, rowKey, onRowClick, severity, e
             onClick={onRowClick ? () => onRowClick(row) : undefined}
             onContextMenu={actionsOf ? (event) => { context.onContextMenu(event, actionsOf(row)) } : undefined}
           >
-            {placed.map(({ column }, index) => (
-              <span key={column.key} role="cell" className={cellClass(column, index)}>
+            {placed.map(({ column, pin }, index) => (
+              <span key={column.key} role="cell" className={cellClass(column, index)} style={pinStyle(pin)}>
                 {index === 0 && mark ? <i className={`bt-table__severity bt-table__severity--${mark.tone}`} role="img" aria-label={mark.label} /> : null}
                 {column.cell(row)}
               </span>
@@ -168,8 +221,8 @@ export function Table<Row>({ columns: own, rows, rowKey, onRowClick, severity, e
   )
 
   return (
-    <div className={['bt-table', view && 'bt-table--view', className].filter(Boolean).join(' ')} style={{ ...style, ['--bt-table-columns' as string]: template.full, ['--bt-table-columns-compact' as string]: template.compact }} role="table" aria-busy={loading || undefined} {...rest}>
-      {view ? <div className="bt-table__scroll">{body}</div> : body}
+    <div className={['bt-table', view && 'bt-table--view', scrolled && 'is-scrolled', className].filter(Boolean).join(' ')} style={{ ...style, ['--bt-table-columns' as string]: template.full, ['--bt-table-columns-compact' as string]: template.compact }} role="table" aria-busy={loading || undefined} {...rest}>
+      {view ? <div ref={scrollRef} className="bt-table__scroll" onScroll={(event) => { const next = event.currentTarget.scrollLeft > 0; if (next !== scrolled) setScrolled(next) }}>{body}</div> : body}
       {footer != null ? <div className="bt-table__footer">{footer}</div> : null}
       {context.menu}
     </div>
@@ -180,7 +233,7 @@ type Drag = { key: string; pointerId: number; startX: number; grab: number; star
 type Resize = { key: string; pointerId: number; startX: number; startWidth: number }
 
 /** Cabeçalho com visão: o título abre o menu (ordenar, filtrar, ocultar), arrastar reordena, alça de largura e atalhos de teclado, com anúncio em `aria-live`. */
-function ViewHead<Row>({ placed, defs, view, chevron, cellClass, quick }: { placed: Placed<Row>[]; defs: ViewColumnDef[]; view: TableView; chevron: boolean; cellClass: (column: TableColumn<Row>, index: number) => string; quick?: TableQuickFilters }) {
+function ViewHead<Row>({ placed, defs, view, chevron, cellClass, quick, pinRoom }: { placed: Placed<Row>[]; defs: ViewColumnDef[]; view: TableView; chevron: boolean; cellClass: (column: TableColumn<Row>, index: number) => string; quick?: TableQuickFilters; pinRoom: number }) {
   const headRef = useRef<HTMLDivElement>(null)
   const drag = useRef<Drag | null>(null)
   const resize = useRef<Resize | null>(null)
@@ -278,7 +331,7 @@ function ViewHead<Row>({ placed, defs, view, chevron, cellClass, quick }: { plac
     // Posição final: quantas colunas (fora a arrastada) têm o meio à esquerda do ponteiro.
     const { placed: current, view: bound } = latest.current
     const others = current.map((p) => p.column.key).filter((k) => k !== state.key)
-    const target = Math.max(1, others.filter((k) => { const c = cellOf(k); return c ? c.offsetLeft + c.offsetWidth / 2 < x : false }).length)
+    const target = Math.max(0, others.filter((k) => { const c = cellOf(k); return c ? c.offsetLeft + c.offsetWidth / 2 < x : false }).length)
     if (current.findIndex((p) => p.column.key === state.key) !== target) bound.onChange((config) => moveVisibleColumn(config, defs, state.key, target))
   }
   function dragEnd() {
@@ -326,7 +379,7 @@ function ViewHead<Row>({ placed, defs, view, chevron, cellClass, quick }: { plac
   return (
     <>
     <div ref={headRef} className="bt-table__head" role="row">
-      {placed.map(({ column, width, label }, index) => {
+      {placed.map(({ column, width, label, pin }, index) => {
         const sorted = sort?.key === column.key ? sort.dir : null
         const movable = column.key !== first
         return (
@@ -337,6 +390,7 @@ function ViewHead<Row>({ placed, defs, view, chevron, cellClass, quick }: { plac
             aria-sort={column.sortable ? (sorted === 'asc' ? 'ascending' : sorted === 'desc' ? 'descending' : 'none') : undefined}
             aria-label={movable ? `${label}. Alt e setas movem a coluna.` : undefined}
             className={[cellClass(column, index), 'bt-table__headcell', movable && 'bt-table__headcell--movable', dragging === column.key && 'is-dragging'].filter(Boolean).join(' ')}
+            style={pinStyle(pin)}
             onPointerDown={(event) => onCellPointerDown(event, column.key)}
             onKeyDown={(event) => onCellKeyDown(event, column.key)}
           >

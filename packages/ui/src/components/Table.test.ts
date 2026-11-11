@@ -36,3 +36,23 @@ it('com visão: só as visíveis, na ordem da visão, em px, com a última trilh
   expect(layout.placed.map((p) => p.column.key)).toEqual(['nome', 'valor', 'status', 'obs'])
   expect(layout.template).toBe('240px 160px 120px 300px minmax(24px, 1fr)')
 })
+
+it('fixas: left acumulado, com e sem a coluna de seleção, e limite de largura', async () => {
+  const { defaultConfig, pinColumn } = await import('../tableView/config')
+  const columns = [col('nome'), col('status', { defaultWidth: 100 }), col('valor', { defaultWidth: 120 }), col('obs')]
+  const defs = tableViewColumns(columns)
+  const config = pinColumn(pinColumn(defaultConfig(defs), defs, 'status'), defs, 'valor')
+  const pins = (lead?: number, maxPinned?: number) => viewLayout(columns, config, false, { lead, maxPinned }).placed.map((p) => p.pin ?? null)
+  expect(pins()).toEqual([{ left: 0, gaps: 0, last: false }, { left: 100, gaps: 1, last: true }, null, null])
+  expect(pins(40)).toEqual([{ left: 40, gaps: 1, last: false }, { left: 140, gaps: 2, last: true }, null, null])
+  expect(viewLayout(columns, config, false, { lead: 40 }).template).toBe('40px 100px 120px 240px 160px minmax(0, 1fr)')
+  // Passou do limite: a da direita deixa de grudar, sem mexer na visão.
+  expect(pins(40, 150)).toEqual([{ left: 40, gaps: 1, last: true }, null, null, null])
+  expect(viewLayout(columns, config, false, { maxPinned: 150 }).pinnedWidth).toBe(220)
+})
+
+it('sem fixas na visão, nenhuma coluna gruda', async () => {
+  const { defaultConfig } = await import('../tableView/config')
+  const columns = [col('nome'), col('status')]
+  expect(viewLayout(columns, defaultConfig(tableViewColumns(columns)), false).placed.every((p) => !p.pin)).toBe(true)
+})
