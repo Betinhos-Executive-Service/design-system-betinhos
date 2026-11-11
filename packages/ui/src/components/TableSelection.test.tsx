@@ -129,3 +129,64 @@ it('sem selection, o clique simples abre como antes', () => {
   expect(open).toHaveBeenCalledTimes(1)
   expect(rowOf('a').tagName).toBe('BUTTON')
 })
+
+function MenuHarness({ actions, initial = [] as string[] }: { actions: (row: Row, selection: Row[]) => { id: string; label: string; onSelect: () => void }[]; initial?: string[] }) {
+  const [selected, setSelected] = useState<Set<string>>(new Set(initial))
+  return (
+    <>
+      <output data-testid="sel">{[...selected].sort().join(',')}</output>
+      <Table columns={columns} rows={rows} rowKey={(r) => r.id} onRowClick={() => {}} rowActions={actions}
+        selection={{ selected, onChange: setSelected }} />
+    </>
+  )
+}
+const lote = (seen: string[][]) => (_row: Row, selection: Row[]) => {
+  seen.push(selection.map((r) => r.id))
+  return [{ id: 'lote', label: `Agir em ${selection.length}`, onSelect: () => {} }]
+}
+
+it('clique direito fora da seleção seleciona só a linha e o menu age nela', () => {
+  const seen: string[][] = []
+  render(<MenuHarness actions={lote(seen)} initial={['a', 'b']} />)
+  fireEvent.contextMenu(rowOf('d'))
+  expect(sel()).toBe('d')
+  expect(seen).toEqual([['d']])
+  expect(screen.getByRole('menuitem', { name: 'Agir em 1', hidden: true })).toBeTruthy()
+})
+
+it('clique direito dentro da seleção mantém e entrega todas as selecionadas, na ordem das linhas', () => {
+  const seen: string[][] = []
+  render(<MenuHarness actions={lote(seen)} initial={['c', 'a', 'fora-da-lista']} />)
+  fireEvent.contextMenu(rowOf('c'))
+  expect(sel()).toBe('a,c,fora-da-lista')
+  expect(seen).toEqual([['a', 'c']])
+  expect(screen.getByRole('menuitem', { name: 'Agir em 2', hidden: true })).toBeTruthy()
+})
+
+it('Ctrl+clique direito fica com o menu do navegador e não mexe na seleção', () => {
+  const seen: string[][] = []
+  render(<MenuHarness actions={lote(seen)} initial={['a']} />)
+  const event = fireEvent.contextMenu(rowOf('d'), { ctrlKey: true })
+  expect(event).toBe(true)
+  expect(sel()).toBe('a')
+  expect(seen).toEqual([])
+})
+
+it('ações vazias não abrem menu nem mudam a seleção', () => {
+  render(<MenuHarness actions={() => []} initial={['a']} />)
+  expect(fireEvent.contextMenu(rowOf('d'))).toBe(true)
+  expect(sel()).toBe('a')
+})
+
+it('rowActions antigo, de um argumento, continua funcionando (com e sem seleção)', () => {
+  const old = vi.fn((row: Row) => [{ id: 'x', label: `Ação ${row.id}`, onSelect: () => {} }])
+  const { unmount } = render(<Table columns={columns} rows={rows} rowKey={(r) => r.id} rowActions={old} />)
+  fireEvent.contextMenu(rowOf('b'))
+  expect(old.mock.calls[0][0].id).toBe('b')
+  expect((old.mock.calls[0] as unknown[])[1]).toEqual([rows[1]])
+  expect(screen.getByRole('menuitem', { name: 'Ação b', hidden: true })).toBeTruthy()
+  unmount()
+  render(<MenuHarness actions={old} />)
+  fireEvent.contextMenu(rowOf('c'))
+  expect(screen.getByRole('menuitem', { name: 'Ação c', hidden: true })).toBeTruthy()
+})

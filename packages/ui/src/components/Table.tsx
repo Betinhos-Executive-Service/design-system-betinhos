@@ -6,7 +6,7 @@ import type { LookupSearch } from '../tableView/FilterEditors'
 import type { FilterCondition, FilterField } from '../tableView/filters'
 import { icons } from '../tableView/icons'
 import { Checkbox } from './Choice'
-import { useContextMenu, type MenuAction } from './Menu'
+import { useContextMenu, wantsNativeMenu, type MenuAction } from './Menu'
 
 export type TableColumn<Row> = {
   key: string
@@ -84,8 +84,12 @@ export type TableProps<Row> = Omit<HTMLAttributes<HTMLDivElement>, 'children'> &
   view?: TableView
   /** Filtro por coluna no menu do título; exige `view`. */
   quickFilters?: TableQuickFilters
-  /** Ações do clique direito na linha (§10.9.3). Sem ela, a linha com `onRowClick` oferece "Abrir"; `[]` desliga o menu. */
-  rowActions?: (row: Row) => MenuAction[]
+  /**
+   * Ações do clique direito na linha (§10.9.3). Sem ela, a linha com `onRowClick` oferece "Abrir"; `[]` desliga o menu.
+   * `selection` traz as linhas sobre as quais o menu age: com `selection` ligada, todas as selecionadas
+   * (clique direito fora da seleção seleciona só a linha); sem ela, sempre `[row]`.
+   */
+  rowActions?: (row: Row, selection: Row[]) => MenuAction[]
 }
 
 /** Largura da coluna de seleção (checkbox), sempre fixa e fora do limite das fixas. */
@@ -205,7 +209,7 @@ export function Table<Row>({ columns: own, rows, rowKey, onRowClick, severity, e
   const extraCell = view?.extraCell
   const columns = view && extraCell ? withExtraColumns(own, view.config, (row: Row, key) => extraCell(rowKey(row), key)) : own
   const context = useContextMenu()
-  const actionsOf = rowActions ?? (onRowClick ? (row: Row) => [{ id: 'abrir', label: 'Abrir', icon: icons.open, onSelect: () => onRowClick(row) }] : null)
+  const actionsOf = rowActions ?? (onRowClick ? (row: Row, _selection: Row[]) => [{ id: 'abrir', label: 'Abrir', icon: icons.open, onSelect: () => onRowClick(row) }] : null)
   const chevron = Boolean(onRowClick)
   const scrollRef = useRef<HTMLDivElement>(null)
   const viewport = useViewportWidth(scrollRef, Boolean(view))
@@ -278,7 +282,14 @@ export function Table<Row>({ columns: own, rows, rowKey, onRowClick, severity, e
               onClick={(event) => { if (!fromControl(event)) select(key, event.shiftKey ? 'range' : event.ctrlKey || event.metaKey ? 'toggle' : 'only') }}
               onDoubleClick={onRowClick ? (event) => { if (!fromControl(event)) onRowClick(row) } : undefined}
               onKeyDown={onRowClick ? (event) => { if (event.key === 'Enter' && event.target === event.currentTarget) { event.preventDefault(); onRowClick(row) } } : undefined}
-              onContextMenu={actionsOf ? (event) => { context.onContextMenu(event, actionsOf(row)) } : undefined}
+              onContextMenu={actionsOf ? (event) => {
+                if (wantsNativeMenu(event)) return
+                const targets = checked ? rows.filter((other) => selection.selected.has(rowKey(other))) : [row]
+                const actions = actionsOf(row, targets)
+                if (actions.length === 0) return
+                if (!checked) { selection.onChange(new Set([key])); anchor.current = key }
+                context.onContextMenu(event, actions)
+              } : undefined}
             >
               {leadCell(<Checkbox className="bt-table__check" label={selection.label?.(row) ?? 'Selecionar linha'} checked={checked} onChange={() => select(key, 'toggle')} />, 'gridcell')}
               {placed.map(({ column, pin }, index) => (
@@ -302,7 +313,7 @@ export function Table<Row>({ columns: own, rows, rowKey, onRowClick, severity, e
             className="bt-table__row"
             role="row"
             onClick={onRowClick ? () => onRowClick(row) : undefined}
-            onContextMenu={actionsOf ? (event) => { context.onContextMenu(event, actionsOf(row)) } : undefined}
+            onContextMenu={actionsOf ? (event) => { context.onContextMenu(event, actionsOf(row, [row])) } : undefined}
           >
             {placed.map(({ column, pin }, index) => (
               <span key={column.key} role="cell" className={cellClass(column, index)} style={pinStyle(pin)}>
