@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type HTMLAttributes, type KeyboardEvent, type PointerEvent, type ReactNode } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type HTMLAttributes, type KeyboardEvent, type PointerEvent, type ReactNode, type Ref } from 'react'
 import { isExtraColumn, moveVisibleColumn, pinColumn, resizeColumn, unpinColumn, sortBy, toggleColumn, visibleColumns, type ViewColumnDef, type ViewConfig } from '../tableView/config'
 import { ColumnFilter } from '../tableView/ColumnFilter'
 import { COLUMN_FILTER_EVENT, ColumnMenu } from '../tableView/ColumnMenu'
@@ -90,6 +90,10 @@ export type TableProps<Row> = Omit<HTMLAttributes<HTMLDivElement>, 'children'> &
    * (clique direito fora da seleção seleciona só a linha); sem ela, sempre `[row]`.
    */
   rowActions?: (row: Row, selection: Row[]) => MenuAction[]
+  /** Contêiner de rolagem (`.bt-table__scroll`), raiz do observador da rolagem infinita. Sem `view`, passa a existir com esta prop. */
+  scrollRef?: Ref<HTMLDivElement>
+  /** Conteúdo logo depois da última linha, dentro da rolagem (ex.: o sentinela de "carregar mais"). */
+  afterRows?: ReactNode
 }
 
 /** Largura da coluna de seleção (checkbox), sempre fixa e fora do limite das fixas. */
@@ -205,13 +209,18 @@ const DRAG_THRESHOLD = 4
 const reducedMotion = () => typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
 /** Lista operacional em linhas: cabeçalho off-white, barra de gravidade, linha clicável e cabeçalho que some no mobile. */
-export function Table<Row>({ columns: own, rows, rowKey, onRowClick, severity, empty, footer, loading = false, view, quickFilters, rowActions, selection, className, style, onKeyDown, ...rest }: TableProps<Row>) {
+export function Table<Row>({ columns: own, rows, rowKey, onRowClick, severity, empty, footer, loading = false, view, quickFilters, rowActions, selection, scrollRef: outerScrollRef, afterRows, className, style, onKeyDown, ...rest }: TableProps<Row>) {
   const extraCell = view?.extraCell
   const columns = view && extraCell ? withExtraColumns(own, view.config, (row: Row, key) => extraCell(rowKey(row), key)) : own
   const context = useContextMenu()
   const actionsOf = rowActions ?? (onRowClick ? (row: Row, _selection: Row[]) => [{ id: 'abrir', label: 'Abrir', icon: icons.open, onSelect: () => onRowClick(row) }] : null)
   const chevron = Boolean(onRowClick)
-  const scrollRef = useRef<HTMLDivElement>(null)
+  const scrollRef = useRef<HTMLDivElement | null>(null)
+  const setScrollNode = useCallback((node: HTMLDivElement | null) => {
+    scrollRef.current = node
+    if (typeof outerScrollRef === 'function') outerScrollRef(node)
+    else if (outerScrollRef) (outerScrollRef as { current: HTMLDivElement | null }).current = node
+  }, [outerScrollRef])
   const viewport = useViewportWidth(scrollRef, Boolean(view))
   const [scrolled, setScrolled] = useState(false)
   const maxPinned = viewport > 0 ? viewport * PINNED_MAX_RATIO : undefined
@@ -327,6 +336,7 @@ export function Table<Row>({ columns: own, rows, rowKey, onRowClick, severity, e
           </RowTag>
         )
       }) : null}
+      {afterRows}
     </>
   )
 
@@ -347,7 +357,7 @@ export function Table<Row>({ columns: own, rows, rowKey, onRowClick, severity, e
       }}
       {...rest}
     >
-      {view ? <div ref={scrollRef} className="bt-table__scroll" onScroll={(event) => { const next = event.currentTarget.scrollLeft > 0; if (next !== scrolled) setScrolled(next) }}>{body}</div> : body}
+      {view || outerScrollRef ? <div ref={setScrollNode} className="bt-table__scroll" onScroll={(event) => { const next = event.currentTarget.scrollLeft > 0; if (next !== scrolled) setScrolled(next) }}>{body}</div> : body}
       {footer != null ? <div className="bt-table__footer">{footer}</div> : null}
       {context.menu}
     </div>
