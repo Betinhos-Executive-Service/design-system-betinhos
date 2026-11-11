@@ -640,7 +640,6 @@ function TableViewShowcase() {
           { id: 'abrir', label: 'Abrir', icon: <Pencil />, disabled: selecao.length > 1, title: selecao.length > 1 ? 'Selecione só uma ocorrência' : undefined, onSelect: () => toast({ tone: 'info', message: `Abrir ${row.id}: ${row.titulo}` }) },
           { id: 'copiar', label: selecao.length > 1 ? `Copiar ${selecao.length} ocorrências` : 'Copiar', icon: <Copy />, onSelect: () => toast({ message: `Copiadas: ${selecao.map((r) => r.id).join(', ')}` }) },
         ]}
-        severity={(row) => ({ tone: row.gravidade, label: row.gravidadeLabel })}
         empty={<EmptyState icon={<SearchX />} title="Nenhum registro com estes filtros" action={<Button variant="secondary" onClick={() => view.setConfig((c) => ({ ...c, filters: {} }))}>Limpar filtros</Button>} />}
         footer={<span>Linhas: {rows.length}{selected.size ? ` · ${selected.size} selecionada(s)` : ''}</span>}
       />
