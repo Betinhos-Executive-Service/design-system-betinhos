@@ -59,6 +59,11 @@ export type TableSelection<Row> = {
   onChange: (next: Set<string>) => void
   /** Texto do checkbox para leitor de tela. Padrão: "Selecionar linha". */
   label?: (row: Row) => string
+  /**
+   * Todas as linhas da lista, na ordem, quando `rows` é só uma parte delas (janela de uma lista virtualizada).
+   * "Selecionar todas", o intervalo do Shift e o lote do clique direito usam estas. Padrão: `rows`.
+   */
+  all?: Row[]
 }
 
 export type TableProps<Row> = Omit<HTMLAttributes<HTMLDivElement>, 'children'> & {
@@ -237,7 +242,8 @@ export function Table<Row>({ columns: own, rows, rowKey, onRowClick, severity, e
   const template = layout ? { full: layout.template, compact: layout.template } : tableTemplates(columns, chevron, Boolean(selection))
   // Âncora do Shift: a última linha clicada sem Shift.
   const anchor = useRef<string | null>(null)
-  const keys = selection ? rows.map(rowKey) : []
+  const listed = selection?.all ?? rows
+  const keys = selection ? listed.map(rowKey) : []
   const selectedCount = selection ? keys.filter((k) => selection.selected.has(k)).length : 0
   const allSelected = keys.length > 0 && selectedCount === keys.length
   const select = (key: string, mode: 'only' | 'toggle' | 'range') => {
@@ -308,7 +314,7 @@ export function Table<Row>({ columns: own, rows, rowKey, onRowClick, severity, e
               onKeyDown={onRowClick ? (event) => { if (event.key === 'Enter' && event.target === event.currentTarget) { event.preventDefault(); onRowClick(row) } } : undefined}
               onContextMenu={actionsOf ? (event) => {
                 if (wantsNativeMenu(event)) return
-                const targets = checked ? rows.filter((other) => selection.selected.has(rowKey(other))) : [row]
+                const targets = checked ? listed.filter((other) => selection.selected.has(rowKey(other))) : [row]
                 const actions = actionsOf(row, targets)
                 if (actions.length === 0) return
                 if (!checked) { selection.onChange(new Set([key])); anchor.current = key }
