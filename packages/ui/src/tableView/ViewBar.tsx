@@ -13,6 +13,7 @@ import type { LookupSearch } from './FilterEditors'
 import { COLUMN_FILTER_EVENT } from './ColumnMenu'
 import { countActiveFilters, emptyFilters, readFilters, storedFilters, type FilterField, type TableFilters } from './filters'
 import { FiltersPanel, type FiltersPanelTab } from './FiltersPanel'
+import { SelectionBar, SelectionCommands, type ViewBarSelection } from './Selection'
 import { icons } from './icons'
 import type { TableViewEntry } from './store'
 import type { TableDensity } from '../components/Table'
@@ -32,8 +33,17 @@ export type ViewBarProps = {
   catalog?: ColumnCatalog
   /** Liga as colunas fixas no painel (seção "Fixas" e alfinete). Passe o mesmo `pinnable` à `view` do `Table`. */
   pinnable?: boolean
-  /** Comandos à direita, depois de "Colunas": Filtros, busca e a ação primária, nessa ordem. */
+  /** Comandos da tela depois de Colunas, Filtros e Auditoria. Com `search`, `more`, `primary` ou `selection`, use para o que
+   * sobrar (selo, Atualizar); sai da linha enquanto houver seleção. */
   children?: ReactNode
+  /** Busca por palavra-chave (`SearchBox`). Ocupa o espaço flexível da linha; com seleção, dá lugar aos comandos dela. */
+  search?: ReactNode
+  /** "⋮ Mais ações": comandos raros da tela (atalhos, modo de exibição). Fica no mesmo lugar com ou sem seleção. */
+  more?: MenuAction[]
+  /** A ação primária da lista (§10.9.1): sempre a última à direita, com ou sem seleção. */
+  primary?: ReactNode
+  /** Modo seleção (§10.9.6): com `count > 0`, o espaço da busca vira contador, ações da seleção e "Ações"; no celular, barra no rodapé. */
+  selection?: ViewBarSelection
   /** Liga o botão "Auditoria" (§10.9.4), depois de "Filtros": abre as alterações recentes da tabela (ou da seleção). */
   onAudit?: () => void
   /** Erro ao gravar; sem isso usa o toast do `ToastProvider`. */
@@ -63,8 +73,12 @@ const messageOf = (error: unknown) => (error instanceof Error && error.message ?
  * Linha de comando da lista (§10.9.1): o seletor de visão é o título da página; à direita, "Colunas" e os comandos da tela.
  * Gravar, renomear, excluir e publicar abrem diálogo e avisam por toast.
  */
-export function ViewBar({ view, columns, catalog, pinnable, children, onError, filters, onAudit }: ViewBarProps) {
+export function ViewBar({ view, columns, catalog, pinnable, children, onError, filters, onAudit, search, more, primary, selection }: ViewBarProps) {
   const mobile = useMediaQuery('(max-width: 820px)')
+  const wide = useMediaQuery('(min-width: 1280px)')
+  // Com os espaços nomeados a linha tem lugar fixo para cada coisa; só `children` soltos mantém o desenho antigo.
+  const slotted = search !== undefined || more !== undefined || primary !== undefined || selection !== undefined
+  const selecting = selection != null && selection.count > 0
   const toast = useOptionalToast()
   const [mode, setMode] = useState<Mode>(null)
   const [name, setName] = useState('')
@@ -142,7 +156,7 @@ export function ViewBar({ view, columns, catalog, pinnable, children, onError, f
 
   return (
     <>
-    <div className="bt-viewbar">
+    <div className={slotted ? `bt-viewbar bt-viewbar--slots${selecting ? ' is-selecting' : ''}` : 'bt-viewbar'}>
       <div className="bt-viewbar__start">
         <Menu
           align="start"
@@ -175,8 +189,22 @@ export function ViewBar({ view, columns, catalog, pinnable, children, onError, f
           )}
         />
         {onAudit ? <AuditButton iconOnly={mobile} size={mobile ? 'touch' : 'default'} onClick={onAudit} /> : null}
-        {children}
+        {slotted ? (
+          <>
+            <div className="bt-viewbar__zone">
+              {selecting && !mobile ? <SelectionCommands selection={selection} maxInline={wide ? 3 : 1} /> : <>{search}{children}</>}
+            </div>
+            {more?.length ? (
+              <Menu
+                actions={more}
+                trigger={(props) => <Button {...props} variant="secondary" size={mobile ? 'touch' : 'default'} icon={icons.more} aria-label="Mais ações" title="Mais ações" />}
+              />
+            ) : null}
+            {primary}
+          </>
+        ) : children}
       </div>
+      {selecting && mobile ? <SelectionBar selection={selection} /> : null}
 
       <ColumnsPanel
         open={panel}

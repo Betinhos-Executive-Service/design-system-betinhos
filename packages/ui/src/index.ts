@@ -48,6 +48,7 @@ export {
 export { useTableView, type TableViewState, type UseTableViewOptions } from './tableView/useTableView'
 export { ColumnsPanel, type ColumnCatalog, type ColumnCatalogEntry, type ColumnCatalogType, type ColumnsPanelProps } from './tableView/ColumnsPanel'
 export { ViewBar, VIEW_NAME_MAX, type ViewBarProps } from './tableView/ViewBar'
+export { SINGLE_REASON, selectionBlock, selectionMenuActions, type SelectionAction, type ViewBarSelection } from './tableView/Selection'
 export { useMediaQuery } from './useMediaQuery'
 export {
   DATE_PRESETS, FILTER_OPS, MAX_GROUP_DEPTH, appendTo, conditionProblem, countActiveFilters, countIncomplete, describeCondition, describeGroup,
