@@ -8,6 +8,8 @@ export type MenuAction = {
   selected?: boolean
   /** Dica do item (ex.: por que está desabilitado). */
   title?: string
+  /** Linha de apoio embaixo do rótulo, quebrando se precisar (ex.: o motivo de o item estar desabilitado). */
+  description?: string
 }
 
 export type MenuProps = {
@@ -49,7 +51,9 @@ function MenuPanel({ id, panelRef, actions, onClose, onSelect }: { id: string; p
             {startsGroup && action.group ? <div className="bt-menu__group" role="presentation">{action.group}</div> : null}
             <button type="button" role={action.selected !== undefined ? 'menuitemradio' : 'menuitem'} aria-checked={action.selected} tabIndex={index === active ? 0 : -1} disabled={action.disabled} title={action.title} className={['bt-menu__item', action.tone === 'danger' && 'bt-menu__item--danger', action.selected && 'bt-menu__item--selected'].filter(Boolean).join(' ')} onMouseEnter={() => setActive(index)} onClick={() => { if (!action.disabled) onSelect(action) }}>
               {action.icon != null ? <span className="bt-menu__icon">{action.icon}</span> : null}
-              <span className="bt-menu__label">{action.label}</span>
+              {action.description
+                ? <span className="bt-menu__text"><span className="bt-menu__label">{action.label}</span><small className="bt-menu__description">{action.description}</small></span>
+                : <span className="bt-menu__label">{action.label}</span>}
               {action.selected ? <svg className="bt-menu__check" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5" /></svg> : null}
             </button>
           </Fragment>

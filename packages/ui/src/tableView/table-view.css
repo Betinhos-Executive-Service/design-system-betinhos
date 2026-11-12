@@ -67,6 +67,48 @@ body.bt-columns-grabbing, body.bt-columns-grabbing * { cursor: grabbing !importa
 .bt-viewbar__chevron { display: inline-grid; flex: 0 0 auto; color: var(--bt-color-text-secondary); transition: transform var(--bt-duration-fast) var(--bt-ease-out); }
 .bt-viewbar__trigger[aria-expanded='true'] .bt-viewbar__chevron { transform: rotate(180deg); }
 .bt-viewbar__dirty { flex: 0 0 auto; color: var(--bt-color-text-secondary); font-family: var(--bt-font-family-sans); font-size: var(--bt-font-size-12); font-weight: var(--bt-font-weight-semibold); letter-spacing: 0; }
+/* Linha com espaços nomeados (search/more/primary/selection): visão | Colunas, Filtros, Auditoria | espaço flexível | ⋮ | primária.
+   Só o espaço flexível muda com a seleção; o resto não sai do lugar. Acima de 820 px não quebra linha: a busca encolhe. */
+.bt-viewbar--slots .bt-viewbar__start { flex: 0 1 auto; }
+.bt-viewbar--slots .bt-viewbar__end { flex: 1 1 0; flex-wrap: nowrap; min-width: 0; }
+.bt-viewbar__zone { display: flex; flex: 1 1 auto; align-items: center; justify-content: flex-end; gap: var(--bt-space-2); min-width: 0; }
+.bt-viewbar__zone > .bt-control--search { flex: 0 1 320px; min-width: 140px; }
+.bt-viewbar--slots .bt-viewbar__end > *, .bt-viewbar__zone > :not(.bt-control--search) { flex-shrink: 0; }
+.bt-viewbar--slots .bt-button { white-space: nowrap; }
+/* O espaço flexível é container: a largura vem da linha, nunca do conteúdo, então a seleção não empurra Colunas/Filtros/Auditoria.
+   Sem espaço, os comandos com ícone viram só ícone; o rótulo continua como nome acessível. */
+.bt-viewbar--slots { container: bt-viewbar / inline-size; }
+.bt-viewbar--slots .bt-viewbar__zone { container: bt-viewbar-zone / inline-size; }
+@container bt-viewbar (max-width: 1119px) {
+  .bt-viewbar__end > .bt-button--secondary:has(> svg) { padding: 0; aspect-ratio: 1; }
+  .bt-viewbar__end > .bt-button--secondary:has(> svg) > .bt-button__label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+}
+@container bt-viewbar-zone (max-width: 579px) {
+  .bt-selection > .bt-button:has(> svg) { padding: 0; aspect-ratio: 1; }
+  .bt-selection > .bt-button:has(> svg) > .bt-button__label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+}
+@media (max-width: 820px) {
+  .bt-viewbar--slots .bt-viewbar__start { flex: 1 0 100%; }
+  .bt-viewbar--slots .bt-viewbar__end { flex-wrap: wrap; }
+  .bt-viewbar__zone { flex: 1 1 100%; order: 1; }
+  .bt-viewbar__zone > .bt-control--search { flex: 1 1 auto; }
+}
+
+/* Modo seleção (§10.9.6). */
+.bt-selection { display: flex; align-items: center; gap: var(--bt-space-2); min-width: 0; }
+.bt-selection__count { display: inline-flex; flex: 0 0 auto; align-items: center; gap: var(--bt-space-1); padding-right: var(--bt-space-3); border-radius: var(--bt-radius-full); background-color: var(--bt-color-action-soft); color: var(--bt-color-brand); }
+.bt-selection__count .bt-button { border-radius: var(--bt-radius-full); color: inherit; }
+.bt-selection__label { font-size: var(--bt-font-size-13); font-weight: var(--bt-font-weight-extrabold); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.bt-selection__blocked { opacity: var(--bt-opacity-disabled); cursor: not-allowed; }
+.bt-button.bt-selection__blocked:active { transform: none; }
+.bt-selectionbar { position: fixed; inset: auto 0 0 0; z-index: calc(var(--bt-z-index-mobile-navigation) + 1); display: grid; gap: var(--bt-space-2); padding: var(--bt-space-2) var(--bt-space-3) calc(var(--bt-space-2) + env(safe-area-inset-bottom)); border-top: var(--bt-border-width-default) solid var(--bt-color-border); background-color: var(--bt-color-surface); box-shadow: var(--bt-shadow-panel); font-family: var(--bt-font-family-sans); animation: bt-selectionbar-in var(--bt-duration-fast) var(--bt-ease-out); }
+.bt-selectionbar .bt-selection__count { justify-self: start; }
+.bt-selectionbar__actions { display: flex; gap: var(--bt-space-2); }
+.bt-selectionbar__actions > * { flex: 1 1 0; min-width: 0; }
+.bt-selectionbar__actions .bt-menu > .bt-button, .bt-selectionbar__actions > .bt-button { width: 100%; }
+@keyframes bt-selectionbar-in { from { transform: translateY(100%); } }
+@media (prefers-reduced-motion: reduce) { .bt-selectionbar { animation: none; } }
+
 .bt-viewbar__form { display: grid; gap: var(--bt-space-3); }
 .bt-viewbar__form p { margin: 0; color: var(--bt-color-text-secondary); font-size: var(--bt-font-size-13); }
 

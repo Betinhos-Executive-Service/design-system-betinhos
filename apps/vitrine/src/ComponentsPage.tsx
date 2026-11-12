@@ -3,7 +3,7 @@ import { useQueryBandeira, useQueryTexto } from './nav/queryState'
 import { Check, ChevronRight, CircleCheck, Clock, Copy, EllipsisVertical, Home, Inbox, LayoutDashboard, Pencil, Plus, PlugZap, RefreshCw, SearchX, Trash2, TriangleAlert, Truck, X } from 'lucide-react'
 import {
   Alert, Avatar, BottomNav, Breadcrumb, Button, Checkbox, ChoiceGroup, Cluster, DateTile, Dialog, Drawer, EmptyState, Field, Grid, Input, Menu, MetricCard, PageHeader, PageToolbar, Pagination, Progress, Radio, SearchBox, SegmentedControl, Select, Sheet, Skeleton, Spinner, Stack, StatusBadge, Surface, Switch, Table, TableTitle, Tabs, Textarea, ToastProvider, Tooltip, Upload, ViewBar,
-  createMemoryViewStore, defaultConfig, type ColumnCatalog, type ColumnCatalogEntry, filterOptions, matchesFilters, useTableFilters, type FilterField, type FilterOption, serializeConfig, tableViewColumns, toggleColumn, useShellHeader, useTableView, useToast, type TableColumn, type TableCellStatus, type ViewConfig, type AlertTone, type ButtonSize, type ButtonVariant, type ControlSize, type SelectOption, type StatusTone, type UploadFile,
+  createMemoryViewStore, defaultConfig, type ColumnCatalog, type ColumnCatalogEntry, filterOptions, matchesFilters, useTableFilters, type FilterField, type FilterOption, serializeConfig, selectionMenuActions, type SelectionAction, tableViewColumns, toggleColumn, useShellHeader, useTableView, useToast, type TableColumn, type TableCellStatus, type ViewConfig, type AlertTone, type ButtonSize, type ButtonVariant, type ControlSize, type SelectOption, type StatusTone, type UploadFile,
 } from '@betinhos/ui'
 import { PageLayout } from './PageLayout'
 
@@ -622,12 +622,32 @@ function TableViewShowcase() {
     const value = (row: OcorrenciaFiltro) => String(row[sort.key as keyof OcorrenciaFiltro] ?? '')
     return [...filtered].sort((a, b) => value(a).localeCompare(value(b), 'pt-BR') * (sort.dir === 'asc' ? 1 : -1))
   }, [sort, filters, busca])
+  // §10.9.6: uma lista de ações para a linha de comando, o menu "Ações", a barra do celular e o clique direito.
+  const acoesSelecao = (ids: string[]): SelectionAction[] => {
+    const linhas = OCORRENCIAS_FILTRO.filter((r) => ids.includes(r.id))
+    const concluidas = linhas.filter((r) => r.status === 'success').length
+    return [
+      { id: 'abrir', label: 'Abrir', icon: <Pencil size={16} />, single: true, inline: true, onSelect: () => toast({ tone: 'info', message: `Abrir ${ids[0]}` }) },
+      { id: 'copiar', label: 'Copiar', icon: <Copy size={16} />, inline: true, onSelect: () => toast({ message: `Copiadas: ${ids.join(', ')}` }) },
+      { id: 'concluir', label: 'Concluir', icon: <Check size={16} />, inline: true, blocked: concluidas ? 'Há ocorrências já concluídas na seleção.' : null, onSelect: () => toast({ tone: 'success', message: `${ids.length} concluída(s)` }) },
+      { id: 'excluir', label: 'Excluir', icon: <Trash2 size={16} />, tone: 'danger', onSelect: () => toast({ tone: 'danger', message: `${ids.length} excluída(s)` }) },
+    ]
+  }
+  const selecao = { count: selected.size, onClear: () => setSelected(new Set()), actions: acoesSelecao([...selected]) }
   return (
     <Section name="Visões, colunas e filtros" summary="§10.9.1 e §10.9.2: seletor de visão como título; Colunas e Filtros abrem painéis; o título de cada coluna abre o menu (ordenar, Filtrar por…, fixar, ocultar); chips dos filtros ativos. Seleção de linhas (clique, Ctrl/⌘, Shift, Esc) e clique direito sobre a seleção. Linhas entre colunas ligadas (`columnLines`) e cabeçalho fixo com rolagem por dentro (`stickyHeader`, `maxHeight`). Dados de exemplo com 'hoje' = 15/10/2026.">
-      <ViewBar view={view} columns={OCORRENCIA_DEFS} pinnable catalog={catalogoExemplo} filters={{ fields: OCORRENCIA_FILTROS, search: buscarCliente }}>
-        <SearchBox placeholder="Filtrar por palavra-chave" aria-label="Filtrar por palavra-chave" value={busca} onChange={setBusca} />
-        <Button icon={<Plus size={16} />}>Nova ocorrência</Button>
-      </ViewBar>
+      <ViewBar
+        view={view}
+        columns={OCORRENCIA_DEFS}
+        pinnable
+        catalog={catalogoExemplo}
+        filters={{ fields: OCORRENCIA_FILTROS, search: buscarCliente }}
+        onAudit={() => toast({ tone: 'info', message: selected.size ? `Auditoria de ${selected.size} ocorrência(s)` : 'Auditoria da tabela' })}
+        search={<SearchBox placeholder="Filtrar por palavra-chave" aria-label="Filtrar por palavra-chave" value={busca} onChange={setBusca} />}
+        more={[{ id: 'exportar', label: 'Exportar CSV', onSelect: () => toast({ message: 'Exportado.' }) }]}
+        primary={<Button icon={<Plus size={16} />}>Nova ocorrência</Button>}
+        selection={selecao}
+      />
       <Table<Ocorrencia>
         rows={rows}
         rowKey={(row) => row.id}
@@ -639,10 +659,7 @@ function TableViewShowcase() {
         maxHeight="420px"
         selection={{ selected, onChange: setSelected, label: (row) => `Selecionar ${row.id}` }}
         onRowClick={(row) => toast({ tone: 'info', message: `Abrir ${row.id}: ${row.titulo}` })}
-        rowActions={(row, selecao) => [
-          { id: 'abrir', label: 'Abrir', icon: <Pencil />, disabled: selecao.length > 1, title: selecao.length > 1 ? 'Selecione só uma ocorrência' : undefined, onSelect: () => toast({ tone: 'info', message: `Abrir ${row.id}: ${row.titulo}` }) },
-          { id: 'copiar', label: selecao.length > 1 ? `Copiar ${selecao.length} ocorrências` : 'Copiar', icon: <Copy />, onSelect: () => toast({ message: `Copiadas: ${selecao.map((r) => r.id).join(', ')}` }) },
-        ]}
+        rowActions={(_row, linhas) => selectionMenuActions({ count: linhas.length, actions: acoesSelecao(linhas.map((r) => r.id)) })}
         empty={<EmptyState icon={<SearchX />} title="Nenhum registro com estes filtros" action={<Button variant="secondary" onClick={() => view.setConfig((c) => ({ ...c, filters: {} }))}>Limpar filtros</Button>} />}
         footer={<span>Linhas: {rows.length}{selected.size ? ` · ${selected.size} selecionada(s)` : ''}</span>}
       />
