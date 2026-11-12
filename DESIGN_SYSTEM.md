@@ -1,6 +1,6 @@
 # Betinhos Design System
 
-**Versão:** 1.21.0
+**Versão:** 1.22.0
 
 **Status:** fonte oficial inicial
 
@@ -710,7 +710,11 @@ Rótulos começam com verbo: “Registrar erro”, “Salvar alterações”, �
 - **Linhas entre colunas (opcional, prop `columnLines`):** linha vertical de 1 px (`color.border`) no meio do espaço entre as colunas, de cima a baixo da linha, também no cabeçalho e nas colunas fixas. Use em grades largas, com muitas colunas de dados parecidos, em que o olho se perde na horizontal. Só acima de 820 px; no card mobile não há linhas. Padrão: sem linhas.
 - **Cabeçalho fixo (opcional, prop `stickyHeader`):** a tabela rola por dentro, nos dois eixos, e o cabeçalho (com as colunas fixas) fica preso ao topo. A altura vem de `maxHeight` (CSS, ex. `420px`) ou de `fill`. Use em listas longas em que o usuário precisa ver o título das colunas enquanto rola. Só acima de 820 px.
 - **Altura cheia (opcional, prop `fill`):** a tabela ocupa a altura que sobra no pai (flex em coluna, com altura) e rola por dentro, com piso de 240 px; em janela mais baixa, quem rola é a página. Liga o cabeçalho fixo. Sem linhas, a área não rola e o estado vazio fica logo abaixo do cabeçalho. Para telas em que a lista é o conteúdo da página (grade operacional).
-- Rolagem infinita: `scrollRef` aponta para o contêiner de rolagem (`.bt-table__scroll`), raiz do observador que carrega mais linhas, e `afterRows` entra logo depois da última linha, dentro da rolagem (o sentinela de "carregar mais"). A virtualização fica na tela; as colunas fixas funcionam com espaçadores antes e depois das linhas.
+- Rolagem infinita: `scrollRef` aponta para o contêiner de rolagem (`.bt-table__scroll`), raiz do observador que carrega mais linhas, e `afterRows` entra logo depois da última linha, dentro da rolagem (o sentinela de "carregar mais").
+- **Virtualização (opcional, prop `virtual`):** passando de 100 linhas (`VIRTUAL_FROM`), o `Table` desenha só as linhas perto da tela; as de fora viram espaçadores com a altura medida de cada linha, e as colunas fixas continuam funcionando. Rola na área da própria tabela (`stickyHeader`/`fill`) ou no primeiro ancestral com rolagem vertical; sem nenhum, desenha tudo. "Selecionar linhas carregadas", o Shift e o lote do clique direito valem para todas as `rows`. A tabela leva `aria-rowcount` e cada linha `aria-rowindex`. Limitação: o Ctrl+F do navegador só acha as linhas desenhadas. A tela que já virtualiza por fora continua podendo passar só a janela, com `selection.all`.
+- **Coluna-título como link (opcional, `opens` na coluna, com `selection`):** o conteúdo vira um botão na cor da marca (800) que abre o registro (`onRowClick`); o clique no resto da linha só seleciona. Enter com a célula focada também abre.
+
+**Larguras proporcionais** (opcional, `view.fluid`): a coluna que o usuário não redimensionou cresce com a tela na proporção da sua largura (`minmax(Npx, Nfr)`), e a largura da visão vira o mínimo; a linha não fica abaixo da soma dos mínimos (aí rola na horizontal). Redimensionar parte da largura desenhada e grava em px; coluna fixa fica sempre em px. Para coluna estreita de conteúdo fixo (Sim/Não, ícone), use `defaultWidth` baixo (ex. 96).
 
 **Seleção de linhas** (prop `selection`, só em listas com ação em lote definida):
 
@@ -852,6 +856,17 @@ Toda lista de registros tem o botão "Auditoria" na linha de comando, e todo dra
 - Estados: carregando (skeleton de 3 eventos), sem alterações, sem permissão (perfil sem "Exibir auditoria"), auditoria desligada na tabela, erro com "Tentar de novo", nada nos filtros com "Limpar filtros".
 - Movimento: o painel entra como o Drawer; os eventos sobem 4 px com opacidade em 200 ms `ease-out`, 24 ms de atraso por item (máximo 8). Com `prefers-reduced-motion`, sem animação.
 - Mobile: o Drawer ocupa a tela; filtros em duas colunas e campo/valor empilhados.
+
+### 10.9.5 Grade editável (edição na célula)
+
+Para listas operacionais em que o usuário corrige muitos registros seguidos sem abrir cada um. Use com `density="dense"` e `selection`; sem `selection`, só em tabela sem `onRowClick` (linha que é botão não pode ter campos dentro).
+
+- **Coluna editável** (`edit` na coluna): `start(row, typed)` dá o rascunho ao abrir, `editor(row, props)` desenha o controle na célula (`draft`, `setDraft`, `commit`, `cancel`, `error`, `label`) e `commit(row, draft)` decide: devolver um texto recusa (a edição fica aberta com a mensagem); qualquer outro retorno fecha. Gravar no servidor é da tela, que mostra o andamento por `cellStatus`. `enabled(row)` deixa a célula só leitura numa linha; `typing` abre a edição com a letra digitada (editores de texto).
+- **Coluna só leitura** (`readOnly`, `true` ou o motivo): cadeado no foco e no hover, com o motivo no rótulo.
+- **Teclado:** toda célula é `gridcell`; as editáveis e as só leitura entram no Tab. Setas movem entre células e linhas. Enter, F2 ou duplo clique abrem a edição (o duplo clique numa célula editável não abre o registro). Enter grava num campo de uma linha; no textarea, Ctrl/⌘+Enter. Tab grava e vai para a próxima editável da linha (Shift+Tab, a anterior). Sair da célula grava. Esc desiste. Escolhas que valem no clique (Select, Switch) chamam `commit(valor)` direto.
+- **Andamento** (`cellStatus(row, coluna)`): `saving` (spinner de 12 px e a célula não aceita clique), `saved` (a célula pisca em `success-soft` e mostra o check) e `error` (barra vermelha de 2 px à esquerda, ícone com a mensagem no foco, `aria-invalid` e "Tentar de novo" quando há `onRetry`).
+- Entrar em edição seleciona a linha. O clique dentro da célula em edição não mexe na seleção.
+- Listas, menus e painéis dos editores usam a top layer (como o `Select`), então não são cortados pela célula.
 
 ### 10.10 Date tile
 
@@ -1234,7 +1249,7 @@ Este bloco permite implementação mesmo quando os arquivos auxiliares não acom
 
 <!-- GENERATED:TOKENS_CSS:START -->
 ```css
-/* Betinhos Design System 1.21.0.
+/* Betinhos Design System 1.22.0.
  * GENERATED from design-tokens.json. Do not edit this file manually.
  */
 :root {
@@ -1526,6 +1541,14 @@ O padrão de mercado não é apenas um PDF de marca. É um produto versionado: t
 ---
 
 ## 20. Changelog
+
+### 1.22.0 — 12/11/2026
+
+- Novo §10.9.5 **Grade editável** no `Table`: `edit` e `readOnly` na coluna, `cellStatus` na tabela (gravando, salvo, erro com "Tentar de novo"), células focáveis com setas, Enter/F2/duplo clique para editar, Tab para a próxima editável, Esc desiste. Tipos `TableCellEdit`, `TableEditorProps` e `TableCellStatus`.
+- §10.9 `virtual` no `Table`: virtualização embutida a partir de 100 linhas (`VIRTUAL_FROM`), com `aria-rowcount`/`aria-rowindex`. Nova dependência `@tanstack/react-virtual`.
+- §10.9 `opens` na coluna: coluna-título como link na cor da marca que abre o registro, com `selection`.
+- §10.9 `view.fluid`: larguras proporcionais (`minmax(Npx, Nfr)`) para as colunas não redimensionadas; `viewLayout` devolve `minWidth`. Redimensionar parte da largura desenhada.
+- Todas opcionais: quem não usa não muda nada.
 
 ### 1.21.0 — 12/11/2026
 

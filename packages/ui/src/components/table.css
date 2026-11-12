@@ -112,6 +112,44 @@ button.bt-table__row:focus-visible { outline: 0; box-shadow: inset 0 0 0 2px var
   .bt-table--lines.bt-table--view .bt-table__cell--pinned:has(+ .bt-table__cell) { box-shadow: calc(-1 * var(--bt-pin-cover, var(--bt-table-gap) / 2)) 0 0 0 var(--bt-pin-bg), calc(var(--bt-table-gap) / 2) 0 0 0 var(--bt-pin-bg); }
   .bt-table--lines.bt-table--view.is-scrolled .bt-table__cell--pin-last:has(+ .bt-table__cell) { box-shadow: calc(-1 * var(--bt-pin-cover, var(--bt-table-gap) / 2)) 0 0 0 var(--bt-pin-bg), calc(var(--bt-table-gap) / 2) 0 0 0 var(--bt-pin-bg), calc(var(--bt-table-gap) / 2 + 2px) 0 8px 0 color-mix(in srgb, var(--bt-color-text-primary) 14%, transparent); }
 }
+/* Larguras proporcionais (`view.fluid`): a linha ocupa a largura da área e não fica abaixo da soma dos mínimos. */
+.bt-table--fluid.bt-table--view .bt-table__head, .bt-table--fluid.bt-table--view .bt-table__row { width: 100%; min-width: var(--bt-table-min-width, 100%); }
+/* Espaçadores da virtualização: as linhas fora da tela viram altura antes da primeira e depois da última desenhada. */
+.bt-table__spacer { flex: none; }
+/* Coluna-título como link (`opens`): cor da marca, separado do clique na linha. */
+.bt-table__link { min-width: 0; max-width: 100%; overflow: hidden; padding: 0; border: 0; border-radius: var(--bt-radius-xs); background: transparent; color: var(--bt-color-brand); font: inherit; font-weight: var(--bt-font-weight-extrabold); text-align: left; text-overflow: ellipsis; white-space: nowrap; cursor: pointer; }
+.bt-table__link:focus-visible { outline: 0; box-shadow: 0 0 0 2px var(--bt-focus-border); }
+.bt-table__link:active { transform: scale(.97); }
+
+/* Grade editável (§10.9.5): célula focável com setas, editor na própria célula e o andamento da gravação ali mesmo.
+   Foco por outline (as fixas usam a box-shadow para cobrir as frestas). */
+.bt-table__cell--grid { outline: 0; }
+.bt-table__cell--grid:focus-visible { outline: 2px solid var(--bt-focus-border); outline-offset: -2px; }
+.bt-table__value { display: flex; align-items: center; gap: var(--bt-space-2-5); flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--bt-color-text-primary); }
+.bt-table__editor { flex: 1 1 auto; min-width: 0; }
+.bt-table__editor .bt-control { min-height: 32px; }
+.bt-table__mark { display: inline-flex; flex: 0 0 auto; align-items: center; color: var(--bt-color-text-secondary); }
+.bt-table__lock { color: var(--bt-color-text-tertiary); opacity: 0; }
+.bt-table__cell--readonly:focus-visible .bt-table__lock { opacity: 1; }
+.bt-table__cell--editing, .bt-table__cell--editing * { user-select: text; -webkit-user-select: text; }
+.bt-table--view .bt-table__cell--editing { overflow: visible; }
+.bt-table__cell.is-saving { pointer-events: none; }
+.bt-table__cell.is-saved { animation: bt-table-saved var(--bt-duration-normal) var(--bt-ease-out); }
+.bt-table__cell.is-saved .bt-table__mark { color: var(--bt-color-success); animation: bt-table-mark-in 160ms var(--bt-ease-out); }
+/* Erro: barra vermelha à esquerda, ícone com a mensagem (aparece no foco) e "Tentar de novo". A célula deixa o balão passar da borda. */
+.bt-table__cell.is-error:not(.bt-table__cell--pinned) { position: relative; }
+.bt-table__cell.is-error::before { content: ""; position: absolute; top: 0; bottom: 0; left: 0; width: 2px; background-color: var(--bt-color-danger); }
+.bt-table--view .bt-table__cell.is-error { overflow: visible; }
+.bt-table__cell.is-error .bt-table__mark { color: var(--bt-color-danger); }
+.bt-table__cell.is-error:focus-within .bt-tooltip__bubble { opacity: 1; visibility: visible; transition-delay: 0s; }
+@keyframes bt-table-saved { from { background-color: var(--bt-color-success-soft); } to { background-color: var(--bt-pin-bg, transparent); } }
+@keyframes bt-table-mark-in { from { opacity: 0; transform: scale(.9); } to { opacity: 1; transform: none; } }
+@media (hover: hover) and (pointer: fine) {
+  .bt-table__link:hover { color: var(--bt-color-action); }
+  .bt-table__lock { transition: opacity var(--bt-duration-fast) ease; }
+  .bt-table__cell--readonly:hover .bt-table__lock { opacity: 1; }
+}
+
 /* Densa (`density="dense"`, §10.9): linha de 44 px e cabeçalho de 32 px; o recuo vertical (e o das fixas) cai para 4 px. O card mobile não muda. */
 @media (min-width: 821px) {
   .bt-table--dense .bt-table__row { --bt-pin-y: var(--bt-space-1); min-height: var(--bt-table-row-dense); padding-top: var(--bt-space-1); padding-bottom: var(--bt-space-1); }
@@ -137,7 +175,7 @@ button.bt-table__row:focus-visible { outline: 0; box-shadow: inset 0 0 0 2px var
   .bt-table__row { grid-template-columns: minmax(0, 1fr) auto; min-height: 72px; }
   .bt-table__cell--hide-mobile { display: none; }
   .bt-table__chevron { display: none; }
-  .bt-table--view .bt-table__head, .bt-table--view .bt-table__row { width: 100%; }
+  .bt-table--view .bt-table__head, .bt-table--view .bt-table__row, .bt-table--fluid.bt-table--view .bt-table__head, .bt-table--fluid.bt-table--view .bt-table__row { width: 100%; min-width: 0; }
   .bt-table__cell--extra { display: none; }
   .bt-table--view .bt-table__cell--pinned { position: static; box-shadow: none; background-color: transparent; }
   /* Lista no mobile: o checkbox sai da grade e fica à esquerda da linha. */
@@ -148,4 +186,7 @@ button.bt-table__row:focus-visible { outline: 0; box-shadow: inset 0 0 0 2px var
 @media (prefers-reduced-motion: reduce) {
   .bt-table__row, .bt-colhead__sort { transition: none; }
   .bt-table__skeleton { animation: none; }
+  .bt-table__link:active { transform: none; }
+  .bt-table__cell.is-saved, .bt-table__cell.is-saved .bt-table__mark { animation: none; }
+  .bt-table__lock { transition: none; }
 }
