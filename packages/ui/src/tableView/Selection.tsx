@@ -47,7 +47,8 @@ function SelectionButton({ action, count, size }: { action: SelectionAction; cou
   const reason = selectionBlock(action, count)
   const reasonId = useId()
   const variant = action.tone === 'danger' ? 'danger' : 'secondary'
-  if (reason == null) return <Button variant={variant} size={size} icon={action.icon} onClick={action.onSelect}>{action.label}</Button>
+  // title: sem espaço o botão vira só ícone (table-view.css) e o nome aparece no hover.
+  if (reason == null) return <Button variant={variant} size={size} icon={action.icon} title={action.label} onClick={action.onSelect}>{action.label}</Button>
   // aria-disabled (não disabled): continua focável, o leitor de tela lê o motivo e o clique não faz nada.
   return (
     <>
