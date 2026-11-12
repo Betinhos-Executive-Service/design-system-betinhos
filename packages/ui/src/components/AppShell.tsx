@@ -42,6 +42,8 @@ export type AppShellProps = {
   user?: { name: string; initials: string }
   /** Ações extras no rodapé da navegação (instalar app, sair). */
   footer?: ReactNode
+  /** Versão do build (`formatBuild`), sempre a última linha do rodapé; no trilho quebra em linhas no ` · `. */
+  version?: string
   /** Permite recolher a navegação num trilho de 72px no desktop. */
   collapsible?: boolean
   /**
@@ -154,7 +156,7 @@ const NavGroups = memo(function NavGroups({ groups, openGroups, filtering, activ
  * (grupos em acordeão, busca, rodapé) e trilho de 72px (só ícones, popover ao pousar). No celular a
  * sidebar vira gaveta e entra o cabeçalho fixo.
  */
-export function AppShell({ brand, groups, activeId, title, headerActions, status, user, footer, collapsible = true, defaultCollapsed = false, searchable, navOpen, onNavOpenChange, search, onSearchChange, children }: AppShellProps) {
+export function AppShell({ brand, groups, activeId, title, headerActions, status, user, footer, version, collapsible = true, defaultCollapsed = false, searchable, navOpen, onNavOpenChange, search, onSearchChange, children }: AppShellProps) {
   const activeGroup = groups.find((group) => group.items.some((item) => item.id === activeId)) ?? null
   const [openGroups, setOpenGroups] = useState<Set<string>>(() => new Set(activeGroup ? [activeGroup.id] : []))
   const [drawerInternal, setDrawerInternal] = useState(false)
@@ -291,7 +293,12 @@ export function AppShell({ brand, groups, activeId, title, headerActions, status
             </div>
           ))}
           <span className="bt-shell__rail-spacer" />
-          {avatar ? <div className="bt-shell__rail-foot">{avatar}</div> : null}
+          {avatar || version ? (
+            <div className="bt-shell__rail-foot">
+              {avatar}
+              {version ? <span className="bt-shell__version bt-shell__version--rail">{version.replace(' · ', '\n')}</span> : null}
+            </div>
+          ) : null}
         </nav>
       ) : (
         <nav id={navId} className="bt-shell__nav" aria-label="Menu principal">
@@ -334,6 +341,7 @@ export function AppShell({ brand, groups, activeId, title, headerActions, status
                 <span className="bt-shell__status-text">{status.text}</span>
               </div>
             ) : null}
+            {version ? <span className="bt-shell__version">{version}</span> : null}
           </div>
         </nav>
       )}
