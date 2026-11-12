@@ -112,6 +112,22 @@ button.bt-table__row:focus-visible { outline: 0; box-shadow: inset 0 0 0 2px var
   .bt-table--lines.bt-table--view .bt-table__cell--pinned:has(+ .bt-table__cell) { box-shadow: calc(-1 * var(--bt-pin-cover, var(--bt-table-gap) / 2)) 0 0 0 var(--bt-pin-bg), calc(var(--bt-table-gap) / 2) 0 0 0 var(--bt-pin-bg); }
   .bt-table--lines.bt-table--view.is-scrolled .bt-table__cell--pin-last:has(+ .bt-table__cell) { box-shadow: calc(-1 * var(--bt-pin-cover, var(--bt-table-gap) / 2)) 0 0 0 var(--bt-pin-bg), calc(var(--bt-table-gap) / 2) 0 0 0 var(--bt-pin-bg), calc(var(--bt-table-gap) / 2 + 2px) 0 8px 0 color-mix(in srgb, var(--bt-color-text-primary) 14%, transparent); }
 }
+/* Densa (`density="dense"`, §10.9): linha de 44 px e cabeçalho de 32 px; o recuo vertical (e o das fixas) cai para 4 px. O card mobile não muda. */
+@media (min-width: 821px) {
+  .bt-table--dense .bt-table__row { --bt-pin-y: var(--bt-space-1); min-height: var(--bt-table-row-dense); padding-top: var(--bt-space-1); padding-bottom: var(--bt-space-1); }
+  .bt-table--dense .bt-table__head { min-height: 32px; }
+}
+/* Cabeçalho fixo (`stickyHeader`): a área de rolagem rola nos dois eixos e o cabeçalho gruda no topo, acima das fixas das linhas. */
+@media (min-width: 821px) {
+  .bt-table--sticky > .bt-table__scroll { overflow: auto; max-height: var(--bt-table-max-height, none); overscroll-behavior: contain; }
+  .bt-table--sticky .bt-table__head, .bt-table--sticky.bt-table--view .bt-table__head { position: sticky; top: 0; z-index: 4; }
+  /* Altura cheia (`fill`): a tabela ocupa o que sobra no pai (flex em coluna) e rola por dentro, com piso de 240 px. */
+  .bt-table--fill { display: flex; flex-direction: column; flex: 1 1 auto; min-height: 240px; }
+  .bt-table--fill > .bt-table__scroll { flex: 1 1 auto; min-height: 0; max-height: none; }
+  .bt-table--fill > .bt-table__footer { flex: 0 0 auto; }
+  /* Sem linhas não há o que rolar: sem barras, e o estado vazio fica logo abaixo do cabeçalho. */
+  .bt-table--fill.is-empty > .bt-table__scroll { overflow: hidden; }
+}
 @media (max-width: 1120px) {
   .bt-table__head, .bt-table__row { grid-template-columns: var(--bt-table-columns-compact, var(--bt-table-columns)); }
   .bt-table__cell--hide-compact { display: none; }

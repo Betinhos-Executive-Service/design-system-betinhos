@@ -49,3 +49,28 @@ it('columnLines liga a classe das linhas entre colunas; sem ela a tabela fica se
   rerender(<Table columns={columns} rows={rows} rowKey={(r) => r.id} columnLines />)
   expect(container.querySelector('.bt-table')?.classList.contains('bt-table--lines')).toBe(true)
 })
+
+it('density="dense" liga a classe da linha densa; o padrão fica sem', () => {
+  const { container, rerender } = render(<Table columns={columns} rows={rows} rowKey={(r) => r.id} />)
+  expect(container.querySelector('.bt-table')?.classList.contains('bt-table--dense')).toBe(false)
+  rerender(<Table columns={columns} rows={rows} rowKey={(r) => r.id} density="dense" />)
+  expect(container.querySelector('.bt-table')?.classList.contains('bt-table--dense')).toBe(true)
+})
+
+it('stickyHeader cria a área de rolagem com o cabeçalho dentro e passa maxHeight na variável', () => {
+  const { container } = render(<Table columns={columns} rows={rows} rowKey={(r) => r.id} stickyHeader maxHeight="420px" />)
+  const table = container.querySelector<HTMLElement>('.bt-table')!
+  expect(table.classList.contains('bt-table--sticky')).toBe(true)
+  expect(table.style.getPropertyValue('--bt-table-max-height')).toBe('420px')
+  expect(container.querySelector('.bt-table__scroll > .bt-table__head')).not.toBeNull()
+})
+
+it('fill liga o cabeçalho fixo e marca a tabela vazia', () => {
+  const { container, rerender } = render(<Table columns={columns} rows={rows} rowKey={(r) => r.id} fill />)
+  const table = () => container.querySelector<HTMLElement>('.bt-table')!
+  expect(table().classList.contains('bt-table--fill')).toBe(true)
+  expect(table().classList.contains('bt-table--sticky')).toBe(true)
+  expect(table().classList.contains('is-empty')).toBe(false)
+  rerender(<Table columns={columns} rows={[]} rowKey={(r) => r.id} fill />)
+  expect(table().classList.contains('is-empty')).toBe(true)
+})

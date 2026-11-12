@@ -101,6 +101,20 @@ export type TableProps<Row> = Omit<HTMLAttributes<HTMLDivElement>, 'children'> &
   afterRows?: ReactNode
   /** Linha vertical entre as colunas (no meio do espaço entre elas), de cima a baixo da linha. Só acima de 820 px. Padrão: sem linhas. */
   columnLines?: boolean
+  /** Densidade da linha. `dense`: linha de 44 px (`--bt-table-row-dense`) e cabeçalho de 32 px, para grade editável (§10.9). Só acima de 820 px. Padrão: `default`. */
+  density?: 'default' | 'dense'
+  /**
+   * Cabeçalho preso ao topo: a tabela rola por dentro, nos dois eixos, e o cabeçalho (com as colunas fixas) fica à vista.
+   * A altura vem de `maxHeight` ou de `fill`. Só acima de 820 px (no mobile o cabeçalho some).
+   */
+  stickyHeader?: boolean
+  /** Altura máxima da área de rolagem com `stickyHeader`, em CSS (`480px`, `60vh`). Sem ela (e sem `fill`), a tabela cresce com as linhas. */
+  maxHeight?: string
+  /**
+   * Ocupa a altura que sobra no pai (que tem de ser flex em coluna, com altura) e rola por dentro, com piso de 240 px.
+   * Liga `stickyHeader`. Sem linhas, a área não rola e o estado vazio ocupa o espaço. Só acima de 820 px.
+   */
+  fill?: boolean
 }
 
 /** Largura da coluna de seleção (checkbox), sempre fixa e fora do limite das fixas. */
@@ -218,12 +232,13 @@ const DRAG_THRESHOLD = 4
 const reducedMotion = () => typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
 /** Lista operacional em linhas: cabeçalho off-white, barra de gravidade, linha clicável e cabeçalho que some no mobile. */
-export function Table<Row>({ columns: own, rows, rowKey, onRowClick, severity, empty, footer, loading = false, view, quickFilters, rowActions, selection, scrollRef: outerScrollRef, afterRows, columnLines = false, className, style, onKeyDown, ...rest }: TableProps<Row>) {
+export function Table<Row>({ columns: own, rows, rowKey, onRowClick, severity, empty, footer, loading = false, view, quickFilters, rowActions, selection, scrollRef: outerScrollRef, afterRows, columnLines = false, density = 'default', stickyHeader = false, maxHeight, fill = false, className, style, onKeyDown, ...rest }: TableProps<Row>) {
   const extraCell = view?.extraCell
   const columns = view && extraCell ? withExtraColumns(own, view.config, (row: Row, key) => extraCell(rowKey(row), key)) : own
   const context = useContextMenu()
   const actionsOf = rowActions ?? (onRowClick ? (row: Row, _selection: Row[]) => [{ id: 'abrir', label: 'Abrir', icon: icons.open, onSelect: () => onRowClick(row) }] : null)
   const chevron = Boolean(onRowClick)
+  const sticky = stickyHeader || fill
   const scrollRef = useRef<HTMLDivElement | null>(null)
   // O ref da tela vai num ref interno para o callback ficar estável mesmo com `scrollRef` inline.
   const outerRef = useRef(outerScrollRef)
@@ -353,8 +368,8 @@ export function Table<Row>({ columns: own, rows, rowKey, onRowClick, severity, e
 
   return (
     <div
-      className={['bt-table', view && 'bt-table--view', selection && 'bt-table--selectable', columnLines && 'bt-table--lines', scrolled && 'is-scrolled', className].filter(Boolean).join(' ')}
-      style={{ ...style, ['--bt-table-columns' as string]: template.full, ['--bt-table-columns-compact' as string]: template.compact }}
+      className={['bt-table', view && 'bt-table--view', selection && 'bt-table--selectable', columnLines && 'bt-table--lines', density === 'dense' && 'bt-table--dense', sticky && 'bt-table--sticky', fill && 'bt-table--fill', fill && !loading && rows.length === 0 && 'is-empty', scrolled && 'is-scrolled', className].filter(Boolean).join(' ')}
+      style={{ ...style, ['--bt-table-columns' as string]: template.full, ['--bt-table-columns-compact' as string]: template.compact, ...(sticky && maxHeight ? { ['--bt-table-max-height' as string]: maxHeight } : {}) }}
       role={selection ? 'grid' : 'table'}
       aria-multiselectable={selection ? true : undefined}
       aria-busy={loading || undefined}
@@ -368,7 +383,7 @@ export function Table<Row>({ columns: own, rows, rowKey, onRowClick, severity, e
       }}
       {...rest}
     >
-      {view || outerScrollRef ? <div ref={setScrollNode} className="bt-table__scroll" onScroll={(event) => { const next = event.currentTarget.scrollLeft > 0; if (next !== scrolled) setScrolled(next) }}>{body}</div> : body}
+      {view || outerScrollRef || sticky ? <div ref={setScrollNode} className="bt-table__scroll" onScroll={(event) => { const next = event.currentTarget.scrollLeft > 0; if (next !== scrolled) setScrolled(next) }}>{body}</div> : body}
       {footer != null ? <div className="bt-table__footer">{footer}</div> : null}
       {context.menu}
     </div>
