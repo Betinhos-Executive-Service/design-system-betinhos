@@ -154,6 +154,11 @@ button.bt-table__row:focus-visible { outline: 0; box-shadow: inset 0 0 0 2px var
 @media (min-width: 821px) {
   .bt-table--dense .bt-table__row { --bt-pin-y: var(--bt-space-1); min-height: var(--bt-table-row-dense); padding-top: var(--bt-space-1); padding-bottom: var(--bt-space-1); }
   .bt-table--dense .bt-table__head { min-height: 32px; }
+  /* Mínima (`density="minimal"`): linha de 32 px, recuo de 2 px e uma linha de texto por célula (corta com reticências); botões da linha encolhem para 24 px. */
+  .bt-table--minimal .bt-table__row { --bt-pin-y: var(--bt-space-0-5); --bt-control-height-compact: 24px; --bt-control-height-default: 24px; min-height: 32px; padding-top: var(--bt-space-0-5); padding-bottom: var(--bt-space-0-5); }
+  .bt-table--minimal .bt-table__head { min-height: 28px; }
+  .bt-table--minimal .bt-table__cell { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .bt-table--minimal .bt-table__cell > * { min-width: 0; }
 }
 /* Cabeçalho fixo (`stickyHeader`): a área de rolagem rola nos dois eixos e o cabeçalho gruda no topo, acima das fixas das linhas. */
 @media (min-width: 821px) {

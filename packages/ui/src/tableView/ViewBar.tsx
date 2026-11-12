@@ -16,6 +16,7 @@ import { FiltersPanel, type FiltersPanelTab } from './FiltersPanel'
 import { SelectionBar, SelectionCommands, type ViewBarSelection } from './Selection'
 import { icons } from './icons'
 import type { TableViewEntry } from './store'
+import type { TableDensity } from '../components/Table'
 import type { TableViewState } from './useTableView'
 
 /** Explica o selo "Alterada" (§10.9.1): o que difere e onde resolver, sem abrir o menu para descobrir. */
@@ -56,6 +57,12 @@ export type ViewBarProps = {
     notApplied?: string[]
   }
 }
+
+const DENSITIES: { value: TableDensity; label: string; icon: ReactNode }[] = [
+  { value: 'default', label: 'Confortável', icon: icons.rows },
+  { value: 'dense', label: 'Compacta', icon: icons.rowsDense },
+  { value: 'minimal', label: 'Mínima', icon: icons.rowsMinimal },
+]
 
 type Mode = 'create' | 'rename' | 'delete' | 'publish' | null
 
@@ -175,6 +182,12 @@ export function ViewBar({ view, columns, catalog, pinnable, children, onError, f
             </Button>
           </>
         ) : null}
+        <Menu
+          actions={DENSITIES.map((d) => ({ id: `densidade-${d.value}`, label: d.label, icon: d.icon, group: 'Densidade das linhas', selected: view.density === d.value, onSelect: () => view.setDensity(d.value) }))}
+          trigger={(props) => (
+            <Button {...props} variant="secondary" size={mobile ? 'touch' : 'default'} icon={DENSITIES.find((d) => d.value === view.density)?.icon ?? icons.rows} aria-label="Densidade das linhas" title="Densidade das linhas" />
+          )}
+        />
         {onAudit ? <AuditButton iconOnly={mobile} size={mobile ? 'touch' : 'default'} onClick={onAudit} /> : null}
         {slotted ? (
           <>
