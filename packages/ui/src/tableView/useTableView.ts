@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import type { TableDensity } from '../components/Table'
 import { defaultConfig, sameConfig, serializeConfig, type ViewColumnDef, type ViewConfig, type ViewFilters, type ViewSort } from './config'
 import { buildEntries, DEFAULT_VIEW_ID, pickInitial, type TableViewEntry, type ViewStore } from './store'
 
@@ -31,6 +32,9 @@ export type TableViewState = {
   dirty: boolean
   canPublish: boolean
   setConfig: (update: (config: ViewConfig) => ViewConfig) => void
+  /** Densidade das linhas (botão "Densidade" da `ViewBar`); passe à `Table` em `view.density`. */
+  density: TableDensity
+  setDensity: (density: TableDensity) => void
   select: (id: string) => void
   /** Volta à visão padrão, descartando o que estiver na tela. */
   restore: () => void
@@ -44,12 +48,19 @@ export type TableViewState = {
 }
 
 const storageKey = (tela: string) => `betinhos.visao.${tela}`
+const densityKey = (tela: string) => `betinhos.densidade.${tela}`
 
 function defaultStorage(): KV | null {
   try { return window.localStorage } catch { return null }
 }
 function readLast(kv: KV | null, tela: string) {
   try { return kv?.getItem(storageKey(tela)) ?? null } catch { return null }
+}
+function readDensity(kv: KV | null, tela: string): TableDensity {
+  try {
+    const v = kv?.getItem(densityKey(tela))
+    return v === 'dense' || v === 'minimal' ? v : 'default'
+  } catch { return 'default' }
 }
 function writeLast(kv: KV | null, tela: string, id: string) {
   try { kv?.setItem(storageKey(tela), id) } catch { /* sem armazenamento: só não lembra */ }
@@ -70,6 +81,7 @@ export function useTableView({ tela, columns, store, defaultSort = null, default
   const [views, setViews] = useState<TableViewEntry[]>(() => buildEntries([], defs, fallback, false, defaultName))
   const [activeId, setActiveId] = useState(DEFAULT_VIEW_ID)
   const [config, setConfigState] = useState<ViewConfig>(fallback)
+  const [density, setDensityState] = useState<TableDensity>(() => readDensity(kv, tela))
   const live = useRef(true)
   // Volta a `true` na remontagem do StrictMode; só a desmontagem real deixa `false`.
   useEffect(() => {
@@ -111,6 +123,10 @@ export function useTableView({ tela, columns, store, defaultSort = null, default
 
   const setConfig = useCallback((update: (c: ViewConfig) => ViewConfig) => setConfigState((c) => update(c)), [])
   const restore = useCallback(() => select(DEFAULT_VIEW_ID), [select])
+  const setDensity = useCallback((next: TableDensity) => {
+    setDensityState(next)
+    try { kv?.setItem(densityKey(tela), next) } catch { /* sem armazenamento: só não lembra */ }
+  }, [kv, tela])
 
   const requireEditable = () => {
     if (!active.canEdit) throw new Error('Esta visão não pode ser alterada.')
@@ -145,6 +161,6 @@ export function useTableView({ tela, columns, store, defaultSort = null, default
 
   return {
     status, error, views, active, config, dirty: !sameConfig(config, active.config), canPublish,
-    setConfig, select, restore, save, saveAs, rename, remove, publish, reload,
+    setConfig, density, setDensity, select, restore, save, saveAs, rename, remove, publish, reload,
   }
 }

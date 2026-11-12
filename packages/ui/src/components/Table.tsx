@@ -48,6 +48,9 @@ export type TableColumn<Row> = {
  * Liga a tabela a uma visão (§10.9.1): ordem, visibilidade, largura e ordenação vêm de `config`.
  * `extraCell` desenha as colunas adicionadas pelo usuário (`x:`), recebendo o `rowKey` da linha; sem ele elas não aparecem.
  */
+/** Altura das linhas da lista: `default` (confortável), `dense` (compacta) ou `minimal` (mínima, uma linha de texto). */
+export type TableDensity = 'default' | 'dense' | 'minimal'
+
 export type TableView = {
   config: ViewConfig
   onChange: (update: (config: ViewConfig) => ViewConfig) => void
@@ -59,6 +62,8 @@ export type TableView = {
    * (`minmax(Npx, Nfr)`), e a largura vira o mínimo. Redimensionada ou fixa, fica em px. Padrão: todas em px.
    */
   fluid?: boolean
+  /** Densidade escolhida na `ViewBar` (`view.density` de `useTableView`); vence a prop `density`. */
+  density?: TableDensity
 }
 
 /** Filtro por coluna (§10.9.2): "Filtrar por…" no menu do título abre o painel ancorado ao cabeçalho. Exige `view`. */
@@ -121,7 +126,7 @@ export type TableProps<Row> = Omit<HTMLAttributes<HTMLDivElement>, 'children'> &
   /** Linha vertical entre as colunas (no meio do espaço entre elas), de cima a baixo da linha. Só acima de 820 px. Padrão: sem linhas. */
   columnLines?: boolean
   /** Densidade da linha. `dense`: linha de 44 px (`--bt-table-row-dense`) e cabeçalho de 32 px, para grade editável (§10.9). Só acima de 820 px. Padrão: `default`. */
-  density?: 'default' | 'dense'
+  density?: TableDensity
   /**
    * Cabeçalho preso ao topo: a tabela rola por dentro, nos dois eixos, e o cabeçalho (com as colunas fixas) fica à vista.
    * A altura vem de `maxHeight` ou de `fill`. Só acima de 820 px (no mobile o cabeçalho some).
@@ -266,8 +271,9 @@ const DRAG_THRESHOLD = 4
 const reducedMotion = () => typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
 /** Lista operacional em linhas: cabeçalho off-white, barra de gravidade, linha clicável e cabeçalho que some no mobile. */
-export function Table<Row>({ columns: own, rows, rowKey, onRowClick, severity, empty, footer, loading = false, view, quickFilters, rowActions, selection, scrollRef: outerScrollRef, afterRows, columnLines = false, density = 'default', stickyHeader = false, maxHeight, fill = false, virtual = false, cellStatus, className, style, onKeyDown, ...rest }: TableProps<Row>) {
+export function Table<Row>({ columns: own, rows, rowKey, onRowClick, severity, empty, footer, loading = false, view, quickFilters, rowActions, selection, scrollRef: outerScrollRef, afterRows, columnLines = false, density: densityProp = 'default', stickyHeader = false, maxHeight, fill = false, virtual = false, cellStatus, className, style, onKeyDown, ...rest }: TableProps<Row>) {
   const extraCell = view?.extraCell
+  const density = view?.density ?? densityProp
   const columns = view && extraCell ? withExtraColumns(own, view.config, (row: Row, key) => extraCell(rowKey(row), key)) : own
   const context = useContextMenu()
   const actionsOf = rowActions ?? (onRowClick ? (row: Row, _selection: Row[]) => [{ id: 'abrir', label: 'Abrir', icon: icons.open, onSelect: () => onRowClick(row) }] : null)
@@ -295,7 +301,7 @@ export function Table<Row>({ columns: own, rows, rowKey, onRowClick, severity, e
   const editable = placed.some((p) => p.column.edit || p.column.readOnly) && (Boolean(selection) || !onRowClick)
   const grid = Boolean(selection) || editable
   const rootRef = useRef<HTMLDivElement>(null)
-  const win = useTableVirtual({ rows, rowKey, enabled: virtual && !loading, root: rootRef, own: scrollRef, estimate: density === 'dense' ? 45 : 57 })
+  const win = useTableVirtual({ rows, rowKey, enabled: virtual && !loading, root: rootRef, own: scrollRef, estimate: density === 'minimal' ? 33 : density === 'dense' ? 45 : 57 })
   // Âncora do Shift: a última linha clicada sem Shift.
   const anchor = useRef<string | null>(null)
   const listed = selection?.all ?? rows
@@ -434,7 +440,7 @@ export function Table<Row>({ columns: own, rows, rowKey, onRowClick, severity, e
   return (
     <div
       ref={rootRef}
-      className={['bt-table', view && 'bt-table--view', layout?.minWidth && 'bt-table--fluid', editable && 'bt-table--grid', selection && 'bt-table--selectable', columnLines && 'bt-table--lines', density === 'dense' && 'bt-table--dense', sticky && 'bt-table--sticky', fill && 'bt-table--fill', fill && !loading && rows.length === 0 && 'is-empty', scrolled && 'is-scrolled', className].filter(Boolean).join(' ')}
+      className={['bt-table', view && 'bt-table--view', layout?.minWidth && 'bt-table--fluid', editable && 'bt-table--grid', selection && 'bt-table--selectable', columnLines && 'bt-table--lines', density !== 'default' && 'bt-table--dense', density === 'minimal' && 'bt-table--minimal', sticky && 'bt-table--sticky', fill && 'bt-table--fill', fill && !loading && rows.length === 0 && 'is-empty', scrolled && 'is-scrolled', className].filter(Boolean).join(' ')}
       style={{ ...style, ['--bt-table-columns' as string]: template.full, ['--bt-table-columns-compact' as string]: template.compact, ...(sticky && maxHeight ? { ['--bt-table-max-height' as string]: maxHeight } : {}), ...(layout?.minWidth ? { ['--bt-table-min-width' as string]: layout.minWidth } : {}) }}
       role={grid ? 'grid' : 'table'}
       aria-rowcount={win.measure ? rows.length + 1 : undefined}
