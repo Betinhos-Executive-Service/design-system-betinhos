@@ -94,6 +94,24 @@ button.bt-table__row:focus-visible { outline: 0; box-shadow: inset 0 0 0 2px var
   button.bt-table__row:hover, .bt-table__row--selectable:not(.is-selected):hover { --bt-pin-bg: var(--bt-color-surface-soft); background-color: var(--bt-color-surface-soft); }
   .bt-table__open:hover { background-color: var(--bt-color-surface-neutral); color: var(--bt-color-action); }
 }
+/* Linhas entre colunas (`columnLines`, §10.9): a célula avança até o meio do espaço entre colunas e até a beira da linha,
+   e a borda direita fica no meio desse espaço. A largura do conteúdo não muda. Só entre células (não antes do chevron). */
+@media (min-width: 821px) {
+  .bt-table--lines .bt-table__cell:has(+ .bt-table__cell) {
+    align-self: stretch;
+    margin-block: calc(-1 * var(--bt-pin-y));
+    margin-right: calc(var(--bt-table-gap) / -2);
+    padding-block: var(--bt-pin-y);
+    padding-right: calc(var(--bt-table-gap) / 2 - var(--bt-border-width-default));
+    border-right: var(--bt-border-width-default) solid var(--bt-color-border);
+  }
+  .bt-table--lines .bt-table__headcell:has(+ .bt-table__cell) { padding-right: calc(var(--bt-space-2) + var(--bt-table-gap) / 2 - var(--bt-border-width-default)); }
+  /* A alça de largura acompanha a linha, que agora é a beira da célula. */
+  .bt-table--lines .bt-table__headcell:has(+ .bt-table__cell) > .bt-table__resize { right: -4px; }
+  /* Fixas: a célula já cobre a altura da linha e metade do espaço à direita; o fundo cobre só a outra metade de cada lado. */
+  .bt-table--lines.bt-table--view .bt-table__cell--pinned:has(+ .bt-table__cell) { box-shadow: calc(-1 * var(--bt-pin-cover, var(--bt-table-gap) / 2)) 0 0 0 var(--bt-pin-bg), calc(var(--bt-table-gap) / 2) 0 0 0 var(--bt-pin-bg); }
+  .bt-table--lines.bt-table--view.is-scrolled .bt-table__cell--pin-last:has(+ .bt-table__cell) { box-shadow: calc(-1 * var(--bt-pin-cover, var(--bt-table-gap) / 2)) 0 0 0 var(--bt-pin-bg), calc(var(--bt-table-gap) / 2) 0 0 0 var(--bt-pin-bg), calc(var(--bt-table-gap) / 2 + 2px) 0 8px 0 color-mix(in srgb, var(--bt-color-text-primary) 14%, transparent); }
+}
 @media (max-width: 1120px) {
   .bt-table__head, .bt-table__row { grid-template-columns: var(--bt-table-columns-compact, var(--bt-table-columns)); }
   .bt-table__cell--hide-compact { display: none; }

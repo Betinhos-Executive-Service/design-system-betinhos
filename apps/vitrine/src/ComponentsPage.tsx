@@ -623,7 +623,7 @@ function TableViewShowcase() {
     return [...filtered].sort((a, b) => value(a).localeCompare(value(b), 'pt-BR') * (sort.dir === 'asc' ? 1 : -1))
   }, [sort, filters, busca])
   return (
-    <Section name="Visões, colunas e filtros" summary="§10.9.1 e §10.9.2: seletor de visão como título; Colunas e Filtros abrem painéis; o título de cada coluna abre o menu (ordenar, Filtrar por…, fixar, ocultar); chips dos filtros ativos. Seleção de linhas (clique, Ctrl/⌘, Shift, Esc) e clique direito sobre a seleção. Dados de exemplo com 'hoje' = 15/10/2026.">
+    <Section name="Visões, colunas e filtros" summary="§10.9.1 e §10.9.2: seletor de visão como título; Colunas e Filtros abrem painéis; o título de cada coluna abre o menu (ordenar, Filtrar por…, fixar, ocultar); chips dos filtros ativos. Seleção de linhas (clique, Ctrl/⌘, Shift, Esc) e clique direito sobre a seleção. Linhas entre colunas ligadas (`columnLines`). Dados de exemplo com 'hoje' = 15/10/2026.">
       <ViewBar view={view} columns={OCORRENCIA_DEFS} pinnable catalog={catalogoExemplo} filters={{ fields: OCORRENCIA_FILTROS, search: buscarCliente }}>
         <SearchBox placeholder="Filtrar por palavra-chave" aria-label="Filtrar por palavra-chave" value={busca} onChange={setBusca} />
         <Button icon={<Plus size={16} />}>Nova ocorrência</Button>
@@ -634,6 +634,7 @@ function TableViewShowcase() {
         columns={OCORRENCIA_COLUNAS}
         view={{ config: view.config, onChange: view.setConfig, pinnable: true, extraCell: (id, key) => valorExtra(OCORRENCIAS_FILTRO.find((r) => r.id === id)!, key) }}
         quickFilters={quickFilters}
+        columnLines
         selection={{ selected, onChange: setSelected, label: (row) => `Selecionar ${row.id}` }}
         onRowClick={(row) => toast({ tone: 'info', message: `Abrir ${row.id}: ${row.titulo}` })}
         rowActions={(row, selecao) => [

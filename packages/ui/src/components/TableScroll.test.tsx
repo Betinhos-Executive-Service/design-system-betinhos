@@ -42,3 +42,10 @@ it('sem as props novas não cria o contêiner de rolagem', () => {
   const { container } = render(<Table columns={columns} rows={rows} rowKey={(r) => r.id} />)
   expect(container.querySelector('.bt-table__scroll')).toBeNull()
 })
+
+it('columnLines liga a classe das linhas entre colunas; sem ela a tabela fica sem', () => {
+  const { container, rerender } = render(<Table columns={columns} rows={rows} rowKey={(r) => r.id} />)
+  expect(container.querySelector('.bt-table')?.classList.contains('bt-table--lines')).toBe(false)
+  rerender(<Table columns={columns} rows={rows} rowKey={(r) => r.id} columnLines />)
+  expect(container.querySelector('.bt-table')?.classList.contains('bt-table--lines')).toBe(true)
+})

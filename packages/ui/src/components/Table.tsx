@@ -99,6 +99,8 @@ export type TableProps<Row> = Omit<HTMLAttributes<HTMLDivElement>, 'children'> &
   scrollRef?: Ref<HTMLDivElement>
   /** Conteúdo logo depois da última linha, dentro da rolagem (ex.: o sentinela de "carregar mais"). */
   afterRows?: ReactNode
+  /** Linha vertical entre as colunas (no meio do espaço entre elas), de cima a baixo da linha. Só acima de 820 px. Padrão: sem linhas. */
+  columnLines?: boolean
 }
 
 /** Largura da coluna de seleção (checkbox), sempre fixa e fora do limite das fixas. */
@@ -216,7 +218,7 @@ const DRAG_THRESHOLD = 4
 const reducedMotion = () => typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
 /** Lista operacional em linhas: cabeçalho off-white, barra de gravidade, linha clicável e cabeçalho que some no mobile. */
-export function Table<Row>({ columns: own, rows, rowKey, onRowClick, severity, empty, footer, loading = false, view, quickFilters, rowActions, selection, scrollRef: outerScrollRef, afterRows, className, style, onKeyDown, ...rest }: TableProps<Row>) {
+export function Table<Row>({ columns: own, rows, rowKey, onRowClick, severity, empty, footer, loading = false, view, quickFilters, rowActions, selection, scrollRef: outerScrollRef, afterRows, columnLines = false, className, style, onKeyDown, ...rest }: TableProps<Row>) {
   const extraCell = view?.extraCell
   const columns = view && extraCell ? withExtraColumns(own, view.config, (row: Row, key) => extraCell(rowKey(row), key)) : own
   const context = useContextMenu()
@@ -351,7 +353,7 @@ export function Table<Row>({ columns: own, rows, rowKey, onRowClick, severity, e
 
   return (
     <div
-      className={['bt-table', view && 'bt-table--view', selection && 'bt-table--selectable', scrolled && 'is-scrolled', className].filter(Boolean).join(' ')}
+      className={['bt-table', view && 'bt-table--view', selection && 'bt-table--selectable', columnLines && 'bt-table--lines', scrolled && 'is-scrolled', className].filter(Boolean).join(' ')}
       style={{ ...style, ['--bt-table-columns' as string]: template.full, ['--bt-table-columns-compact' as string]: template.compact }}
       role={selection ? 'grid' : 'table'}
       aria-multiselectable={selection ? true : undefined}
