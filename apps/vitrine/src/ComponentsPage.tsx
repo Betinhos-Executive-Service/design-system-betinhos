@@ -3,7 +3,7 @@ import { useQueryBandeira, useQueryTexto } from './nav/queryState'
 import { Check, ChevronRight, CircleCheck, Clock, Copy, EllipsisVertical, Home, Inbox, LayoutDashboard, Pencil, Plus, PlugZap, RefreshCw, SearchX, Trash2, TriangleAlert, Truck, X } from 'lucide-react'
 import {
   Alert, Avatar, BottomNav, Breadcrumb, Button, Checkbox, ChoiceGroup, Cluster, DateTile, Dialog, Drawer, EmptyState, Field, Grid, Input, Menu, MetricCard, PageHeader, PageToolbar, Pagination, Progress, Radio, SearchBox, SegmentedControl, Select, Sheet, Skeleton, Spinner, Stack, StatusBadge, Surface, Switch, Table, TableTitle, Tabs, Textarea, ToastProvider, Tooltip, Upload, ViewBar,
-  createMemoryViewStore, defaultConfig, type ColumnCatalog, type ColumnCatalogEntry, filterOptions, matchesFilters, useTableFilters, type FilterField, type FilterOption, serializeConfig, tableViewColumns, toggleColumn, useShellHeader, useTableView, useToast, type TableColumn, type AlertTone, type ButtonSize, type ButtonVariant, type ControlSize, type SelectOption, type StatusTone, type UploadFile,
+  createMemoryViewStore, defaultConfig, type ColumnCatalog, type ColumnCatalogEntry, filterOptions, matchesFilters, useTableFilters, type FilterField, type FilterOption, serializeConfig, tableViewColumns, toggleColumn, useShellHeader, useTableView, useToast, type TableColumn, type TableCellStatus, type ViewConfig, type AlertTone, type ButtonSize, type ButtonVariant, type ControlSize, type SelectOption, type StatusTone, type UploadFile,
 } from '@betinhos/ui'
 import { PageLayout } from './PageLayout'
 
@@ -655,6 +655,84 @@ function TableViewShowcase() {
   )
 }
 
+// Grade editável (§10.9.5): 300 serviços para exercitar a virtualização; gravação simulada (valor com "erro" falha).
+type Servico = { id: string; passageiro: string; status: string; valor: number; cidade: string; urgente: boolean }
+const SERVICO_STATUS: SelectOption[] = [{ value: 'agendado', label: 'Agendado' }, { value: 'andamento', label: 'Em andamento' }, { value: 'concluido', label: 'Concluído' }]
+const SERVICOS: Servico[] = Array.from({ length: 300 }, (_, i) => ({
+  id: `OS-${String(11000 + i)}`, passageiro: ['Ana Souza', 'Bruno Lima', 'Carla Dias', 'Diego Reis'][i % 4], status: SERVICO_STATUS[i % 3].value,
+  valor: 180 + (i % 7) * 35, cidade: ['Taubaté', 'São José dos Campos', 'Jacareí'][i % 3], urgente: i % 5 === 0,
+}))
+const reais = (n: number) => n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+
+function GradeEditavelShowcase() {
+  const toast = useToast()
+  const [rows, setRows] = useState(SERVICOS)
+  const [selected, setSelected] = useState<Set<string>>(new Set())
+  const [status, setStatus] = useState<Record<string, TableCellStatus>>({})
+  const gravar = (row: Servico, key: keyof Servico, value: Servico[keyof Servico], falha = false) => {
+    const id = `${row.id}:${key}`
+    setStatus((s) => ({ ...s, [id]: { state: 'saving' } }))
+    window.setTimeout(() => {
+      if (falha) { setStatus((s) => ({ ...s, [id]: { state: 'error', message: 'O servidor recusou o valor', onRetry: () => gravar(row, key, value) } })); return }
+      setRows((list) => list.map((r) => (r.id === row.id ? { ...r, [key]: value } : r)))
+      setStatus((s) => ({ ...s, [id]: { state: 'saved' } }))
+      window.setTimeout(() => setStatus((s) => { const next = { ...s }; delete next[id]; return next }), 1200)
+    }, 600)
+  }
+  const columns = useMemo((): TableColumn<Servico>[] => [
+    { key: 'id', header: 'OS', defaultWidth: 110, opens: true, cell: (r) => r.id },
+    {
+      key: 'passageiro', header: 'Passageiro', defaultWidth: 200, cell: (r) => r.passageiro,
+      edit: {
+        typing: true,
+        start: (r, typed) => typed ?? r.passageiro,
+        commit: (r, draft: string) => { const v = draft.trim(); if (!v) return 'Informe o passageiro'; if (v !== r.passageiro) gravar(r, 'passageiro', v, v.toLowerCase().includes('erro')) },
+        editor: (_r, { draft, setDraft, error, label }) => <Input size="compact" aria-label={label} invalid={error != null} value={draft} onChange={(e) => setDraft(e.target.value)} />,
+      },
+    },
+    {
+      key: 'status', header: 'Status', defaultWidth: 150, cell: (r) => SERVICO_STATUS.find((o) => o.value === r.status)?.label,
+      edit: {
+        start: (r) => r.status,
+        commit: (r, draft: string | null) => { if (draft && draft !== r.status) gravar(r, 'status', draft) },
+        enabled: (r) => r.status !== 'concluido',
+        editor: (_r, { draft, commit, label }) => <Select size="compact" aria-label={label} options={SERVICO_STATUS} value={draft} onChange={(v) => commit(v)} />,
+      },
+    },
+    {
+      key: 'valor', header: 'Valor', defaultWidth: 130, align: 'end', cell: (r) => reais(r.valor),
+      edit: {
+        typing: true,
+        start: (r, typed) => typed ?? String(r.valor).replace('.', ','),
+        commit: (r, draft: string) => { const n = Number(draft.replace(/\./g, '').replace(',', '.')); if (!Number.isFinite(n) || n < 0) return 'Valor inválido'; if (n !== r.valor) gravar(r, 'valor', n) },
+        editor: (_r, { draft, setDraft, error, label }) => <Input size="compact" inputMode="decimal" prefix="R$" aria-label={label} invalid={error != null} value={draft} onChange={(e) => setDraft(e.target.value)} />,
+      },
+    },
+    { key: 'cidade', header: 'Cidade', defaultWidth: 180, readOnly: 'Vem do cadastro do cliente', cell: (r) => r.cidade },
+    { key: 'urgente', header: 'Urgente', defaultWidth: 96, cell: (r) => (r.urgente ? 'Sim' : 'Não') },
+  ], [])
+  const [config, setConfig] = useState<ViewConfig>(() => defaultConfig(tableViewColumns(columns)))
+  return (
+    <Section name="Grade editável" summary="§10.9.5: edição na célula (Enter, F2, duplo clique ou digitando; Tab grava e vai para a próxima; Esc desiste), gravando/salvo/erro por célula, cadeado de só leitura e Status travado quando Concluído. Densa, cabeçalho fixo, larguras proporcionais (`view.fluid`), coluna-título que abre (`opens`) e virtualização (`virtual`) com 300 linhas. Passageiro com 'erro' simula falha de gravação.">
+      <Table<Servico>
+        rows={rows}
+        rowKey={(r) => r.id}
+        columns={columns}
+        view={{ config, onChange: (fn) => setConfig(fn), fluid: true }}
+        density="dense"
+        columnLines
+        stickyHeader
+        maxHeight="480px"
+        virtual
+        selection={{ selected, onChange: setSelected, label: (r) => `Selecionar ${r.id}` }}
+        onRowClick={(r) => toast({ tone: 'info', message: `Abrir ${r.id}` })}
+        cellStatus={(r, key) => status[`${r.id}:${key}`]}
+        footer={<span>Linhas: {rows.length}{selected.size ? ` · ${selected.size} selecionada(s)` : ''}</span>}
+      />
+    </Section>
+  )
+}
+
 function DrawerShowcase() {
   const toast = useToast()
   const [open, setOpen] = useQueryBandeira('drawer')
@@ -881,6 +959,7 @@ export function ComponentsPage() {
         <DateTileShowcase />
         <TableShowcase />
         <TableViewShowcase />
+        <GradeEditavelShowcase />
         <DrawerShowcase />
         <SheetShowcase />
         <UploadShowcase />

@@ -7,6 +7,10 @@ import type { FilterCondition, FilterField } from '../tableView/filters'
 import { icons } from '../tableView/icons'
 import { Checkbox } from './Choice'
 import { useContextMenu, wantsNativeMenu, type MenuAction } from './Menu'
+import { TableGridCell, type TableCellEdit, type TableCellStatus } from './TableCell'
+import { useTableVirtual } from './useTableVirtual'
+
+export type { TableCellEdit, TableCellStatus, TableEditorProps } from './TableCell'
 
 export type TableColumn<Row> = {
   key: string
@@ -28,6 +32,16 @@ export type TableColumn<Row> = {
   defaultPinned?: boolean
   /** Com `view`, o menu do título oferece "Ordenar A→Z" e "Z→A"; a tela ordena as linhas por `config.sort`. */
   sortable?: boolean
+  /**
+   * Coluna-título como link na cor da marca que abre o registro (`onRowClick`), separado do clique na linha, que só seleciona.
+   * Só com `selection` (sem ela a linha inteira já é o botão de abrir).
+   */
+  opens?: boolean
+  /** Edição na célula (grade editável, §10.9.5). Liga a grade: células focáveis, setas entre elas e `role="grid"`. */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- o rascunho de cada coluna tem o seu tipo
+  edit?: TableCellEdit<Row, any>
+  /** Coluna só leitura numa grade editável: cadeado no foco e no hover; o texto é o motivo. */
+  readOnly?: boolean | string
 }
 
 /**
@@ -40,6 +54,11 @@ export type TableView = {
   extraCell?: (rowKey: string, key: string) => ReactNode
   /** Liga "Fixar coluna" no menu do título; a escolha vai na visão (`pinned`). Passe o mesmo `pinnable` ao `ViewBar`. */
   pinnable?: boolean
+  /**
+   * Larguras proporcionais: a coluna que o usuário não redimensionou cresce com a tela na proporção da sua largura
+   * (`minmax(Npx, Nfr)`), e a largura vira o mínimo. Redimensionada ou fixa, fica em px. Padrão: todas em px.
+   */
+  fluid?: boolean
 }
 
 /** Filtro por coluna (§10.9.2): "Filtrar por…" no menu do título abre o painel ancorado ao cabeçalho. Exige `view`. */
@@ -115,6 +134,14 @@ export type TableProps<Row> = Omit<HTMLAttributes<HTMLDivElement>, 'children'> &
    * Liga `stickyHeader`. Sem linhas, a área não rola e o estado vazio ocupa o espaço. Só acima de 820 px.
    */
   fill?: boolean
+  /**
+   * Desenha só as linhas perto da tela quando a lista passa de 100 linhas. Rola na área da tabela (`stickyHeader`/`fill`)
+   * ou no primeiro ancestral com rolagem vertical; sem nenhum, desenha tudo. "Selecionar todas", o Shift e o lote do clique
+   * direito continuam valendo para todas as `rows`. Limitação: o Ctrl+F do navegador só acha as linhas desenhadas.
+   */
+  virtual?: boolean
+  /** Andamento da gravação de cada célula editável (`edit`): gravando, salvo ou erro. */
+  cellStatus?: (row: Row, columnKey: string) => TableCellStatus | null | undefined
 }
 
 /** Largura da coluna de seleção (checkbox), sempre fixa e fora do limite das fixas. */
@@ -136,10 +163,10 @@ export const columnDefaultWidth = <Row,>(column: TableColumn<Row>, index: number
 /** Coluna que gruda na rolagem: `left` em px desde o início da linha e quantos espaços entre colunas vêm antes dela. */
 export type TablePin = { left: number; gaps: number; last: boolean }
 
-type Placed<Row> = { column: TableColumn<Row>; width: number; label: string; pinned: boolean; pin?: TablePin }
+type Placed<Row> = { column: TableColumn<Row>; width: number; label: string; pinned: boolean; pin?: TablePin; custom?: boolean }
 
 /** `lead`: coluna antes dos dados (seleção), sempre fixa e fora do limite. `maxPinned`: largura máxima em px das fixas. */
-export type ViewLayoutOptions = { lead?: number; maxPinned?: number }
+export type ViewLayoutOptions = { lead?: number; maxPinned?: number; chevronWidth?: number; fluid?: boolean }
 
 /** Colunas do código mais as adicionadas pelo usuário na visão (`x:`), com o rótulo guardado na visão. */
 export function withExtraColumns<Row>(columns: TableColumn<Row>[], config: ViewConfig, cell: (row: Row, key: string) => ReactNode): TableColumn<Row>[] {
@@ -155,12 +182,12 @@ export function withExtraColumns<Row>(columns: TableColumn<Row>[], config: ViewC
  * As fixas recebem `pin` com o deslocamento acumulado; a que passaria de `maxPinned` deixa de grudar, e as seguintes também.
  * `pinnedWidth` soma as larguras de todas as fixas pedidas na visão (grudando ou não).
  */
-export function viewLayout<Row>(columns: TableColumn<Row>[], config: ViewConfig, chevron: boolean, { lead = 0, maxPinned }: ViewLayoutOptions = {}) {
+export function viewLayout<Row>(columns: TableColumn<Row>[], config: ViewConfig, chevron: boolean, { lead = 0, maxPinned, fluid = false }: ViewLayoutOptions = {}) {
   const defs = tableViewColumns(columns)
   const byKey = new Map(columns.map((c, i) => [c.key, { column: c, index: i }]))
   const placed: Placed<Row>[] = visibleColumns(config).flatMap((state) => {
     const found = byKey.get(state.key)
-    return found ? [{ column: found.column, width: state.width ?? columnDefaultWidth(found.column, found.index), label: defs[found.index].label, pinned: state.pinned === true }] : []
+    return found ? [{ column: found.column, width: state.width ?? columnDefaultWidth(found.column, found.index), label: defs[found.index].label, pinned: state.pinned === true, custom: state.width != null }] : []
   })
   let pinnedWidth = 0
   let sticking = true
@@ -172,8 +199,15 @@ export function viewLayout<Row>(columns: TableColumn<Row>[], config: ViewConfig,
   })
   const lastPin = placed.filter((p) => p.pin).pop()
   if (lastPin?.pin) lastPin.pin.last = true
-  const template = [lead ? `${lead}px` : null, ...placed.map((p) => `${p.width}px`), chevron ? 'minmax(24px, 1fr)' : 'minmax(0, 1fr)'].filter(Boolean).join(' ')
-  return { defs, placed, template, pinnedWidth }
+  // Proporcional: a coluna que não foi redimensionada nem gruda cresce na proporção da largura; aí ela estica, e não a última trilha.
+  const grows = (p: Placed<Row>) => fluid && !p.custom && !p.pin
+  const flexible = placed.some(grows)
+  const tail = flexible ? (chevron ? '24px' : null) : chevron ? 'minmax(24px, 1fr)' : 'minmax(0, 1fr)'
+  const template = [lead ? `${lead}px` : null, ...placed.map((p) => (grows(p) ? `minmax(${p.width}px, ${p.width}fr)` : `${p.width}px`)), tail].filter(Boolean).join(' ')
+  // Largura mínima da linha com trilhas proporcionais: soma dos mínimos, dos espaços entre colunas e do recuo dos dois lados.
+  const tracks = (lead ? 1 : 0) + placed.length + (tail ? 1 : 0)
+  const minWidth = flexible ? `calc(${lead + placed.reduce((sum, p) => sum + p.width, 0) + (chevron ? 24 : 0)}px + ${Math.max(0, tracks - 1)} * var(--bt-table-gap) + 2 * var(--bt-table-pad))` : null
+  return { defs, placed, template, pinnedWidth, minWidth }
 }
 
 /** Estilo da célula fixa: `left` em px mais os espaços entre colunas e o recuo da linha. */
@@ -205,7 +239,7 @@ function useViewportWidth(ref: { current: HTMLElement | null }, active: boolean)
 export const PINNED_MAX_RATIO = 0.5
 
 /** Cliques nestes elementos dentro da linha não mexem na seleção nem abrem o registro. */
-const INTERACTIVE = 'button, input, select, textarea, a, label, [role="listbox"], [role="option"], [role="dialog"], [role="menu"]'
+const INTERACTIVE = 'button, input, select, textarea, a, label, [role="listbox"], [role="option"], [role="dialog"], [role="menu"], .bt-table__cell--editing'
 const fromControl = (event: { target: EventTarget; currentTarget: EventTarget }) => {
   const hit = (event.target as HTMLElement).closest?.(INTERACTIVE)
   return Boolean(hit && hit !== event.currentTarget && (event.currentTarget as HTMLElement).contains(hit))
@@ -232,7 +266,7 @@ const DRAG_THRESHOLD = 4
 const reducedMotion = () => typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
 /** Lista operacional em linhas: cabeçalho off-white, barra de gravidade, linha clicável e cabeçalho que some no mobile. */
-export function Table<Row>({ columns: own, rows, rowKey, onRowClick, severity, empty, footer, loading = false, view, quickFilters, rowActions, selection, scrollRef: outerScrollRef, afterRows, columnLines = false, density = 'default', stickyHeader = false, maxHeight, fill = false, className, style, onKeyDown, ...rest }: TableProps<Row>) {
+export function Table<Row>({ columns: own, rows, rowKey, onRowClick, severity, empty, footer, loading = false, view, quickFilters, rowActions, selection, scrollRef: outerScrollRef, afterRows, columnLines = false, density = 'default', stickyHeader = false, maxHeight, fill = false, virtual = false, cellStatus, className, style, onKeyDown, ...rest }: TableProps<Row>) {
   const extraCell = view?.extraCell
   const columns = view && extraCell ? withExtraColumns(own, view.config, (row: Row, key) => extraCell(rowKey(row), key)) : own
   const context = useContextMenu()
@@ -254,9 +288,14 @@ export function Table<Row>({ columns: own, rows, rowKey, onRowClick, severity, e
   // Sem `pinnable`, nenhuma coluna gruda: o usuário não teria como soltá-la.
   const maxPinned = !view?.pinnable ? 0 : viewport > 0 ? viewport * PINNED_MAX_RATIO : undefined
   const lead = selection ? SELECT_COLUMN_WIDTH : 0
-  const layout = view ? viewLayout(columns, view.config, chevron, { lead, maxPinned }) : null
+  const layout = view ? viewLayout(columns, view.config, chevron, { lead, maxPinned, fluid: view.fluid }) : null
   const placed: Placed<Row>[] = layout ? layout.placed : columns.map((column, index) => ({ column, width: 0, label: tableViewColumns(columns)[index].label, pinned: false }))
   const template = layout ? { full: layout.template, compact: layout.template } : tableTemplates(columns, chevron, Boolean(selection))
+  // Grade editável: precisa de linha que não seja botão (com `selection`, ou sem `onRowClick`).
+  const editable = placed.some((p) => p.column.edit || p.column.readOnly) && (Boolean(selection) || !onRowClick)
+  const grid = Boolean(selection) || editable
+  const rootRef = useRef<HTMLDivElement>(null)
+  const win = useTableVirtual({ rows, rowKey, enabled: virtual && !loading, root: rootRef, own: scrollRef, estimate: density === 'dense' ? 45 : 57 })
   // Âncora do Shift: a última linha clicada sem Shift.
   const anchor = useRef<string | null>(null)
   const listed = selection?.all ?? rows
@@ -287,14 +326,34 @@ export function Table<Row>({ columns: own, rows, rowKey, onRowClick, severity, e
     column.align === 'end' && 'bt-table__cell--end',
     pinClass(placed[index]?.pin)].filter(Boolean).join(' ')
   const RowTag = onRowClick ? 'button' : 'div'
+  // Entrar em edição seleciona a linha (se ainda não estiver).
+  const beginEdit = (key: string) => {
+    if (!selection || selection.selected.has(key)) return
+    selection.onChange(new Set([key]))
+    anchor.current = key
+  }
   const cells = (row: Row, role: 'cell' | 'gridcell') => {
     const mark = severity?.(row)
-    return placed.map(({ column, pin }, index) => (
-    <span key={column.key} role={role} className={cellClass(column, index)} style={pinStyle(pin)}>
-      {index === 0 && mark ? <i className={`bt-table__severity bt-table__severity--${mark.tone}`} role="img" aria-label={mark.label} /> : null}
-      {column.cell(row)}
-    </span>
-    ))
+    const key = rowKey(row)
+    return placed.map(({ column, pin, label }, index) => {
+      const severityMark = index === 0 && mark ? <i className={`bt-table__severity bt-table__severity--${mark.tone}`} role="img" aria-label={mark.label} /> : null
+      const content = column.opens && selection && onRowClick
+        ? <button type="button" className="bt-table__link" onClick={() => onRowClick(row)}>{column.cell(row)}</button>
+        : column.cell(row)
+      if (editable) {
+        return (
+          <TableGridCell key={column.key} row={row} label={label} edit={column.edit} readOnly={column.readOnly} status={column.edit ? cellStatus?.(row, column.key) : null}
+            role="gridcell" className={cellClass(column, index)} style={pinStyle(pin)} onBegin={() => beginEdit(key)}>
+            {severityMark}{content}
+          </TableGridCell>
+        )
+      }
+      return (
+        <span key={column.key} role={role} className={cellClass(column, index)} style={pinStyle(pin)}>
+          {severityMark}{content}
+        </span>
+      )
+    })
   }
 
   const body = (
@@ -313,13 +372,17 @@ export function Table<Row>({ columns: own, rows, rowKey, onRowClick, severity, e
         </div>
       )) : null}
       {!loading && rows.length === 0 ? <div className="bt-table__empty">{empty}</div> : null}
-      {!loading ? rows.map((row) => {
+      {!loading && win.before ? <div className="bt-table__spacer" aria-hidden="true" style={{ height: win.before }} /> : null}
+      {!loading ? win.visible.map((row, offset) => {
+        const index = win.start + offset
+        const virtualAttrs = win.measure ? { ref: win.measure, 'data-index': index, 'aria-rowindex': index + 2 } : {}
         if (selection) {
           const key = rowKey(row)
           const checked = selection.selected.has(key)
           return (
             <div
               key={key}
+              {...virtualAttrs}
               className={['bt-table__row', 'bt-table__row--selectable', checked && 'is-selected'].filter(Boolean).join(' ')}
               role="row"
               tabIndex={0}
@@ -327,7 +390,7 @@ export function Table<Row>({ columns: own, rows, rowKey, onRowClick, severity, e
               // Shift+clique não seleciona texto.
               onMouseDown={(event) => { if (event.shiftKey && !fromControl(event)) event.preventDefault() }}
               onClick={(event) => { if (!fromControl(event)) select(key, event.shiftKey ? 'range' : event.ctrlKey || event.metaKey ? 'toggle' : 'only') }}
-              onDoubleClick={onRowClick ? (event) => { if (!fromControl(event)) onRowClick(row) } : undefined}
+              onDoubleClick={onRowClick ? (event) => { if (!fromControl(event) && !(event.target as HTMLElement).closest('.bt-table__cell--editable')) onRowClick(row) } : undefined}
               onKeyDown={onRowClick ? (event) => { if (event.key === 'Enter' && event.target === event.currentTarget) { event.preventDefault(); onRowClick(row) } } : undefined}
               onContextMenu={actionsOf ? (event) => {
                 if (wantsNativeMenu(event)) return
@@ -351,26 +414,30 @@ export function Table<Row>({ columns: own, rows, rowKey, onRowClick, severity, e
         return (
           <RowTag
             key={rowKey(row)}
+            {...virtualAttrs}
             type={onRowClick ? 'button' : undefined}
             className="bt-table__row"
             role="row"
             onClick={onRowClick ? () => onRowClick(row) : undefined}
             onContextMenu={actionsOf ? (event) => { context.onContextMenu(event, actionsOf(row, [row])) } : undefined}
           >
-            {cells(row, 'cell')}
+            {cells(row, editable ? 'gridcell' : 'cell')}
             {onRowClick ? chevronIcon : null}
           </RowTag>
         )
       }) : null}
+      {!loading && win.after ? <div className="bt-table__spacer" aria-hidden="true" style={{ height: win.after }} /> : null}
       {afterRows}
     </>
   )
 
   return (
     <div
-      className={['bt-table', view && 'bt-table--view', selection && 'bt-table--selectable', columnLines && 'bt-table--lines', density === 'dense' && 'bt-table--dense', sticky && 'bt-table--sticky', fill && 'bt-table--fill', fill && !loading && rows.length === 0 && 'is-empty', scrolled && 'is-scrolled', className].filter(Boolean).join(' ')}
-      style={{ ...style, ['--bt-table-columns' as string]: template.full, ['--bt-table-columns-compact' as string]: template.compact, ...(sticky && maxHeight ? { ['--bt-table-max-height' as string]: maxHeight } : {}) }}
-      role={selection ? 'grid' : 'table'}
+      ref={rootRef}
+      className={['bt-table', view && 'bt-table--view', layout?.minWidth && 'bt-table--fluid', editable && 'bt-table--grid', selection && 'bt-table--selectable', columnLines && 'bt-table--lines', density === 'dense' && 'bt-table--dense', sticky && 'bt-table--sticky', fill && 'bt-table--fill', fill && !loading && rows.length === 0 && 'is-empty', scrolled && 'is-scrolled', className].filter(Boolean).join(' ')}
+      style={{ ...style, ['--bt-table-columns' as string]: template.full, ['--bt-table-columns-compact' as string]: template.compact, ...(sticky && maxHeight ? { ['--bt-table-max-height' as string]: maxHeight } : {}), ...(layout?.minWidth ? { ['--bt-table-min-width' as string]: layout.minWidth } : {}) }}
+      role={grid ? 'grid' : 'table'}
+      aria-rowcount={win.measure ? rows.length + 1 : undefined}
       aria-multiselectable={selection ? true : undefined}
       aria-busy={loading || undefined}
       onKeyDown={(event) => {
@@ -511,11 +578,19 @@ function ViewHead<Row>({ placed, defs, view, chevron, cellClass, quick, pinRoom,
     announce(state.key, latest.current.view.config)
   }
 
+  // Largura desenhada da trilha (com `fluid` a coluna pode estar mais larga que a da visão); sem layout (jsdom), a da visão.
+  const drawnWidth = (key: string, width: number) => {
+    const head = headRef.current
+    const index = latest.current.placed.findIndex((p) => p.column.key === key)
+    if (!head || index < 0) return width
+    const value = parseFloat(getComputedStyle(head).gridTemplateColumns.split(' ')[index + (lead ? 1 : 0)] ?? '')
+    return Number.isFinite(value) && value > 0 ? Math.round(value) : width
+  }
   function onResizePointerDown(event: PointerEvent<HTMLElement>, key: string, width: number) {
     if (event.button !== 0) return
     event.stopPropagation()
     event.currentTarget.setPointerCapture(event.pointerId)
-    resize.current = { key, pointerId: event.pointerId, startX: event.clientX, startWidth: width }
+    resize.current = { key, pointerId: event.pointerId, startX: event.clientX, startWidth: drawnWidth(key, width) }
   }
   function onResizePointerMove(event: PointerEvent<HTMLElement>) {
     const state = resize.current
@@ -533,7 +608,7 @@ function ViewHead<Row>({ placed, defs, view, chevron, cellClass, quick, pinRoom,
     if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return
     event.preventDefault()
     event.stopPropagation()
-    update((config) => resizeColumn(config, key, width + (event.key === 'ArrowRight' ? RESIZE_STEP : -RESIZE_STEP)))
+    update((config) => resizeColumn(config, key, drawnWidth(key, width) + (event.key === 'ArrowRight' ? RESIZE_STEP : -RESIZE_STEP)))
   }
   function onCellKeyDown(event: KeyboardEvent<HTMLElement>, key: string) {
     if (!event.altKey || (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') || key === first) return

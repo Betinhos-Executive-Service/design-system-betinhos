@@ -26,7 +26,8 @@ export { PageToolbar, pageToolbarClassName, type PageToolbarProps, type PageTool
 export { createShellHeaderStore, useShellHeader, type ShellHeaderEntry, type ShellHeaderStore } from './components/ShellHeader'
 export { SegmentedControl, type SegmentedControlProps, type SegmentedOption } from './components/SegmentedControl'
 export { Surface, type SurfaceProps } from './components/Surface'
-export { Table, TableTitle, columnDefaultWidth, tableViewColumns, viewLayout, withExtraColumns, type TableColumn, type TableProps, type TableQuickFilters, type TableSelection, type TableView } from './components/Table'
+export { Table, TableTitle, columnDefaultWidth, tableViewColumns, viewLayout, withExtraColumns, type TableCellEdit, type TableCellStatus, type TableColumn, type TableEditorProps, type TableProps, type TableQuickFilters, type TableSelection, type TableView } from './components/Table'
+export { VIRTUAL_FROM } from './components/useTableVirtual'
 export {
   Field, Input, Textarea, fieldIds,
   type ControlSize, type FieldProps, type InputProps, type TextareaProps,
