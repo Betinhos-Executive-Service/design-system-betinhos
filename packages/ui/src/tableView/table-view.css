@@ -59,7 +59,7 @@ body.bt-columns-grabbing, body.bt-columns-grabbing * { cursor: grabbing !importa
 .bt-viewbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--bt-space-2) var(--bt-space-3); min-height: var(--bt-layout-toolbar-min-height); margin-bottom: var(--bt-space-3); font-family: var(--bt-font-family-sans); }
 .bt-viewbar__start { display: flex; flex: 1 0 auto; align-items: center; max-width: 100%; min-width: 0; }
 .bt-viewbar__end { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: var(--bt-space-2); margin-left: auto; }
-.bt-viewbar__trigger { display: inline-flex; align-items: center; gap: var(--bt-space-1-5); min-width: 0; max-width: 100%; min-height: 40px; padding: 0 var(--bt-space-1); border: 0; border-radius: var(--bt-radius-sm); background: transparent; color: var(--bt-color-brand); font-family: var(--bt-typography-heading-detail-font-family); font-size: var(--bt-typography-heading-detail-font-size); font-weight: var(--bt-typography-heading-detail-font-weight); letter-spacing: var(--bt-typography-heading-detail-letter-spacing); line-height: var(--bt-typography-heading-detail-line-height); cursor: pointer; transition: background-color var(--bt-duration-fast) ease, transform var(--bt-duration-fast) var(--bt-ease-out); }
+.bt-viewbar__trigger { display: inline-flex; align-items: center; gap: var(--bt-space-1-5); min-width: 0; max-width: 100%; min-height: var(--bt-control-height-default); padding: 0 var(--bt-space-1); border: 0; border-radius: var(--bt-radius-sm); background: transparent; color: var(--bt-color-brand); font-family: var(--bt-typography-heading-detail-font-family); font-size: var(--bt-typography-heading-detail-font-size); font-weight: var(--bt-typography-heading-detail-font-weight); letter-spacing: var(--bt-typography-heading-detail-letter-spacing); line-height: var(--bt-typography-heading-detail-line-height); cursor: pointer; transition: background-color var(--bt-duration-fast) ease, transform var(--bt-duration-fast) var(--bt-ease-out); }
 .bt-viewbar__trigger:active { transform: scale(.98); }
 .bt-viewbar__trigger:focus-visible { outline: 0; box-shadow: 0 0 0 2px var(--bt-focus-border); }
 .bt-viewbar__name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -85,17 +85,20 @@ body.bt-columns-grabbing, body.bt-columns-grabbing * { cursor: grabbing !importa
 .bt-viewbar--slots .bt-button { white-space: nowrap; }
 .bt-viewbar__slot { display: flex; align-items: center; gap: var(--bt-space-2); }
 /* Peça única (1.27): tudo menos a visão e a ação principal numa superfície de cartão; dentro, botões ghost separados por
-   fios entre os grupos. A altura total iguala a do botão de fora (botão interno = altura do controle − 2 × recuo). */
-/* Recuo da superfície (padding + borda), compartilhado com a ação principal de fora para as alturas baterem. */
-.bt-viewbar--slots { --bt-viewbar-inset: calc(var(--bt-space-0-5) + var(--bt-border-width-default)); --bt-viewbar-tint: color-mix(in srgb, var(--bt-color-action) 12%, transparent); }
+   fios entre os grupos. Altura única (1.27.2): a superfície e a ação principal têm exatamente a altura do controle do DS
+   (--bt-viewbar-h: 40 px; 44 px em toque/celular) e os itens internos encolhem para caber (altura − 2 × recuo). */
+/* Recuo da superfície (padding + borda). A linha centra a visão na mesma altura, mesmo se a tela alinhar a barra no topo. */
+.bt-viewbar.bt-viewbar--slots { --bt-viewbar-h: var(--bt-control-height-default); --bt-viewbar-inset: calc(var(--bt-space-0-5) + var(--bt-border-width-default)); --bt-viewbar-tint: color-mix(in srgb, var(--bt-color-action) 12%, transparent); align-items: center; }
 .bt-viewbar__surface {
-  --bt-viewbar-inner: calc(var(--bt-control-height-default) - 2 * var(--bt-viewbar-inset));
-  display: flex; flex: 1 1 0; align-items: center; gap: var(--bt-space-0-5); min-width: 0; padding: var(--bt-space-0-5);
+  --bt-viewbar-inner: calc(var(--bt-viewbar-h, var(--bt-control-height-default)) - 2 * var(--bt-viewbar-inset));
+  display: flex; flex: 1 1 0; align-items: center; gap: var(--bt-space-0-5); box-sizing: border-box; height: var(--bt-viewbar-h, auto); min-width: 0; padding: var(--bt-space-0-5);
   border: var(--bt-border-width-default) solid var(--bt-color-border); border-radius: var(--bt-radius-lg); background-color: var(--bt-color-surface);
 }
 .bt-viewbar__surface > * { flex-shrink: 0; }
 .bt-viewbar__surface .bt-viewbar__slot { gap: var(--bt-space-0-5); }
-.bt-viewbar__surface .bt-button { min-height: var(--bt-viewbar-inner); border-radius: var(--bt-radius-sm); }
+/* Mais específico que o alvo de 44 px do toque (button.css) e que --touch: dentro da peça manda a altura interna. */
+.bt-viewbar--slots .bt-viewbar__surface .bt-button { height: var(--bt-viewbar-inner); min-height: var(--bt-viewbar-inner); border-radius: var(--bt-radius-sm); }
+.bt-viewbar--slots .bt-viewbar__surface .bt-selection { max-height: var(--bt-viewbar-inner); }
 .bt-viewbar__surface .bt-button--secondary, .bt-viewbar__surface .bt-button--ghost, .bt-viewbar__surface > [data-vb="tools"] .bt-button { border-color: transparent; background-color: transparent; color: var(--bt-color-brand); }
 /* Fio entre grupos: 1 px na cor da borda, com respiro lateral no padding (entra na medida) e 8 px de margem vertical. */
 .bt-viewbar__sep { flex: none; align-self: stretch; box-sizing: content-box; width: var(--bt-border-width-default); margin-block: var(--bt-space-2); padding-inline: var(--bt-space-1); background-color: var(--bt-color-border); background-clip: content-box; }
@@ -107,14 +110,13 @@ body.bt-columns-grabbing, body.bt-columns-grabbing * { cursor: grabbing !importa
 .bt-viewbar__zone > * { flex-shrink: 0; }
 /* Busca dentro da superfície: só a lupa e o texto, sem caixa própria; o foco continua visível. Aberta pela lupa, flutua
    com a caixa normal. */
-.bt-viewbar__surface .bt-viewbar__search:not(.is-floating) .bt-control { min-height: var(--bt-viewbar-inner); border-color: transparent; border-radius: var(--bt-radius-sm); background-color: transparent; }
+.bt-viewbar__surface .bt-viewbar__search:not(.is-floating) .bt-control { height: var(--bt-viewbar-inner); min-height: var(--bt-viewbar-inner); border-color: transparent; border-radius: var(--bt-radius-sm); background-color: transparent; }
 .bt-viewbar__surface .bt-viewbar__search:not(.is-floating) .bt-control:focus-within { border-color: var(--bt-focus-border); }
-/* A ação principal (fora) tem a mesma altura da superfície. */
-.bt-viewbar--slots .bt-viewbar__end > [data-vb="primary"] .bt-button { min-height: var(--bt-control-height-default); }
-/* Toque ou celular (até 820 px, onde o ViewBar usa size="touch"): botões internos de 44 px. */
+/* A ação principal (fora) tem a mesma altura da superfície: topo e base alinhados ao pixel. */
+.bt-viewbar--slots .bt-viewbar__end > [data-vb="primary"] .bt-button { box-sizing: border-box; height: var(--bt-viewbar-h); min-height: var(--bt-viewbar-h); }
+/* Toque ou celular (até 820 px, onde o ViewBar usa size="touch"): a peça e a principal sobem para 44 px. */
 @media (pointer: coarse), (max-width: 820px) {
-  .bt-viewbar__surface { --bt-viewbar-inner: var(--bt-control-height-touch); }
-  .bt-viewbar--slots .bt-viewbar__end > [data-vb="primary"] .bt-button { min-height: calc(var(--bt-control-height-touch) + 2 * var(--bt-viewbar-inset)); }
+  .bt-viewbar.bt-viewbar--slots { --bt-viewbar-h: var(--bt-control-height-touch); }
 }
 @media (hover: hover) and (pointer: fine) {
   .bt-viewbar__surface .bt-button--secondary:hover:not(:disabled), .bt-viewbar__surface .bt-button--ghost:hover:not(:disabled), .bt-viewbar__surface > [data-vb="tools"] .bt-button:hover:not(:disabled) { background-color: var(--bt-color-surface-soft); }
@@ -138,7 +140,7 @@ body.bt-columns-grabbing, body.bt-columns-grabbing * { cursor: grabbing !importa
 .bt-viewbar__measure { position: fixed; top: 0; left: 0; display: flex; align-items: center; width: max-content; visibility: hidden; pointer-events: none; contain: layout style; }
 .bt-viewbar__measure > * { flex: none; max-width: none; }
 /* Contêineres da medida: mesmas classes da superfície e do fim (mesmas alturas), sem moldura nem largura própria. */
-.bt-viewbar--slots .bt-viewbar__measure > .bt-viewbar__surface, .bt-viewbar--slots .bt-viewbar__measure > .bt-viewbar__end { display: flex; flex: none; align-items: center; width: max-content; min-width: 0; margin: 0; padding: 0; border: 0; }
+.bt-viewbar--slots .bt-viewbar__measure > .bt-viewbar__surface, .bt-viewbar--slots .bt-viewbar__measure > .bt-viewbar__end { display: flex; flex: none; align-items: center; width: max-content; height: auto; min-width: 0; margin: 0; padding: 0; border: 0; }
 @media (prefers-reduced-motion: reduce) { .bt-viewbar__search.is-floating { animation: none; } }
 
 /* Modo seleção (§10.9.6). */
