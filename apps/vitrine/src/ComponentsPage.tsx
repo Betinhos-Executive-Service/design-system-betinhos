@@ -638,7 +638,6 @@ function TableViewShowcase() {
   const grupos = useMemo(() => groupRows(rows, view.config.group, OCORRENCIA_FILTROS, (r, key) => r[key as keyof OcorrenciaFiltro]), [rows, view.config.group])
   // Sem linha nenhuma, a tabela única mostra o estado vazio (com "Limpar filtros"); a seleção enxerga todos os grupos.
   const agrupado = grupos?.length ? grupos : null
-  const todas = useMemo(() => agrupado?.flatMap((g) => g.rows), [agrupado])
   const tabela = (linhas: OcorrenciaFiltro[]) => (
       <Table<Ocorrencia>
         rows={linhas}
@@ -649,7 +648,7 @@ function TableViewShowcase() {
         columnLines
         stickyHeader
         maxHeight={agrupado ? undefined : '420px'}
-        selection={{ selected, onChange: setSelected, all: todas, scope: agrupado ? linhas : undefined, label: (row) => `Selecionar ${row.id}` }}
+        selection={{ selected, onChange: setSelected, label: (row) => `Selecionar ${row.id}` }}
         onRowClick={(row) => toast({ tone: 'info', message: `Abrir ${row.id}: ${row.titulo}` })}
         rowActions={(_row, sel) => selectionMenuActions({ count: sel.length, actions: acoesSelecao(sel.map((r) => r.id)) })}
         empty={<EmptyState icon={<SearchX />} title="Nenhum registro com estes filtros" action={<Button variant="secondary" onClick={() => view.setConfig((c) => ({ ...c, filters: {} }))}>Limpar filtros</Button>} />}

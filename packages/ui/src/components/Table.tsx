@@ -1,10 +1,11 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type HTMLAttributes, type KeyboardEvent, type PointerEvent, type ReactNode, type Ref } from 'react'
+import { useCallback, useContext, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type HTMLAttributes, type KeyboardEvent, type PointerEvent, type ReactNode, type Ref } from 'react'
 import { isExtraColumn, moveVisibleColumn, pinColumn, resizeColumn, unpinColumn, sortBy, toggleColumn, visibleColumns, type ViewColumnDef, type ViewConfig } from '../tableView/config'
 import { ColumnFilter } from '../tableView/ColumnFilter'
 import { COLUMN_FILTER_EVENT, ColumnMenu } from '../tableView/ColumnMenu'
 import type { LookupSearch } from '../tableView/FilterEditors'
 import type { FilterCondition, FilterField } from '../tableView/filters'
 import { icons } from '../tableView/icons'
+import { TableGroupContext } from '../tableView/TableGroups'
 import { Checkbox } from './Choice'
 import { useContextMenu, wantsNativeMenu, type MenuAction } from './Menu'
 import { TableGridCell, type TableCellEdit, type TableCellStatus } from './TableCell'
@@ -90,7 +91,8 @@ export type TableSelection<Row> = {
   all?: Row[]
   /**
    * Linhas que o checkbox do cabeçalho marca e desmarca, sem mexer no resto da seleção (o grupo de uma tabela do
-   * Agrupar por, com `all` = a lista inteira). Padrão: `all`, e o cabeçalho substitui a seleção.
+   * Agrupar por, com `all` = a lista inteira). Padrão: `all`, e o cabeçalho substitui a seleção. Dentro do
+   * `TableGroups`, `all` e `scope` vêm sozinhos (lista agrupada e linhas do grupo).
    */
   scope?: Row[]
 }
@@ -276,7 +278,11 @@ const DRAG_THRESHOLD = 4
 const reducedMotion = () => typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
 /** Lista operacional em linhas: cabeçalho off-white, barra de gravidade, linha clicável e cabeçalho que some no mobile. */
-export function Table<Row>({ columns: own, rows, rowKey, onRowClick, severity, empty, footer, loading = false, view, quickFilters, rowActions, selection, scrollRef: outerScrollRef, afterRows, columnLines = false, density: densityProp = 'default', stickyHeader = false, maxHeight, fill = false, virtual = false, cellStatus, className, style, onKeyDown, ...rest }: TableProps<Row>) {
+export function Table<Row>({ columns: own, rows, rowKey, onRowClick, severity, empty, footer, loading = false, view, quickFilters, rowActions, selection: ownSelection, scrollRef: outerScrollRef, afterRows, columnLines = false, density: densityProp = 'default', stickyHeader = false, maxHeight, fill = false, virtual = false, cellStatus, className, style, onKeyDown, ...rest }: TableProps<Row>) {
+  const inherited = useContext(TableGroupContext) as { all: Row[]; scope: Row[] } | null
+  // Só herda a tabela com as linhas do grupo: outra tabela ali dentro (numa célula, num painel, com linhas transformadas) não.
+  const group = inherited && rows.length > 0 && inherited.scope.includes(rows[0]) ? inherited : null
+  const selection = ownSelection && group ? { ...ownSelection, all: ownSelection.all ?? group.all, scope: ownSelection.scope ?? group.scope } : ownSelection
   const extraCell = view?.extraCell
   const density = view?.density ?? densityProp
   const columns = view && extraCell ? withExtraColumns(own, view.config, (row: Row, key) => extraCell(rowKey(row), key)) : own

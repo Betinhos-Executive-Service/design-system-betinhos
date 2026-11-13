@@ -3,6 +3,7 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { useState } from 'react'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import { defaultConfig } from '../tableView/config'
+import { TableGroups } from '../tableView/TableGroups'
 import { Table, tableViewColumns, type TableColumn } from './Table'
 
 type Row = { id: string; nome: string }
@@ -238,4 +239,54 @@ it('grupo do Agrupar por: o cabeçalho com selection.scope larga chaves que saí
   render(<Harness list={rows.slice(2)} all={rows} scope={rows.slice(2)} initial={['a', 'sumiu']} />)
   fireEvent.click(screen.getByRole('checkbox', { name: 'Selecionar linhas do grupo' }))
   expect(sel()).toBe('a,c,d')
+})
+
+it('dentro do TableGroups, all e scope vêm sozinhos: o cabeçalho marca só o grupo e o Shift não atravessa grupos', () => {
+  const groups = [{ id: 'g1', label: 'G1', rows: rows.slice(0, 2) }, { id: 'g2', label: 'G2', rows: rows.slice(2) }]
+  function Agrupada() {
+    const [selected, setSelected] = useState<Set<string>>(new Set(['zzz']))
+    return (
+      <>
+        <output data-testid="sel">{[...selected].sort().join(',')}</output>
+        <TableGroups groups={groups} resetKey="g">
+          {(linhas) => <Table columns={columns} rows={linhas} rowKey={(r) => r.id} selection={{ selected, onChange: setSelected }} />}
+        </TableGroups>
+      </>
+    )
+  }
+  render(<Agrupada />)
+  fireEvent.click(screen.getByRole('button', { name: /G1/ }))
+  fireEvent.click(screen.getByRole('button', { name: /G2/ }))
+  const [g1, g2] = screen.getAllByRole('checkbox', { name: 'Selecionar linhas do grupo' }) as HTMLInputElement[]
+  fireEvent.click(g2)
+  expect(sel()).toBe('c,d') // 'zzz' saiu da lista: o cabeçalho larga
+  expect(g1.checked).toBe(false)
+  expect(g1.indeterminate).toBe(false)
+  fireEvent.click(g1)
+  expect(sel()).toBe('a,b,c,d')
+  fireEvent.click(g2)
+  expect(sel()).toBe('a,b')
+  fireEvent.click(rowOf('a'))
+  fireEvent.click(rowOf('d'), { shiftKey: true }) // a âncora 'a' é da tabela do G1: no G2 o Shift vira clique simples
+  expect(sel()).toBe('d')
+})
+
+it('tabela de outras linhas dentro do grupo não herda all/scope do TableGroups', () => {
+  type Filho = { k: string }
+  const filhos: Filho[] = [{ k: 'x' }, { k: 'y' }]
+  function Aninhada() {
+    const [selected, setSelected] = useState<Set<string>>(new Set())
+    return (
+      <>
+        <output data-testid="sel">{[...selected].sort().join(',')}</output>
+        <TableGroups groups={[{ id: 'g1', label: 'G1', rows }]} resetKey="g">
+          {() => <Table<Filho> columns={[{ key: 'k', header: 'K', cell: (f) => f.k }]} rows={filhos} rowKey={(f) => f.k} selection={{ selected, onChange: setSelected }} />}
+        </TableGroups>
+      </>
+    )
+  }
+  render(<Aninhada />)
+  fireEvent.click(screen.getByRole('button', { name: /G1/ }))
+  fireEvent.click(screen.getByRole('checkbox', { name: 'Selecionar linhas carregadas' }))
+  expect(sel()).toBe('x,y')
 })
