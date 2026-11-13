@@ -3,7 +3,7 @@ import { useQueryBandeira, useQueryTexto } from './nav/queryState'
 import { Check, ChevronRight, CircleCheck, Clock, Copy, EllipsisVertical, Home, Inbox, LayoutDashboard, Pencil, Plus, PlugZap, RefreshCw, SearchX, Trash2, TriangleAlert, Truck, X } from 'lucide-react'
 import {
   Alert, Avatar, BottomNav, Breadcrumb, Button, Checkbox, ChoiceGroup, Cluster, DateTile, Dialog, Drawer, EmptyState, Field, Grid, Input, Menu, MetricCard, PageHeader, PageToolbar, Pagination, Progress, Radio, SearchBox, SegmentedControl, Select, Sheet, Skeleton, Spinner, Stack, StatusBadge, Surface, Switch, Table, TableTitle, Tabs, Textarea, ToastProvider, Tooltip, Upload, ViewBar,
-  createMemoryViewStore, defaultConfig, type ColumnCatalog, type ColumnCatalogEntry, filterOptions, matchesFilters, useTableFilters, type FilterField, type FilterOption, serializeConfig, selectionMenuActions, type SelectionAction, tableViewColumns, toggleColumn, useShellHeader, useTableView, useToast, type TableColumn, type TableCellStatus, type ViewConfig, type AlertTone, type ButtonSize, type ButtonVariant, type ControlSize, type SelectOption, type StatusTone, type UploadFile,
+  TableGroups, groupRows, createMemoryViewStore, defaultConfig, type ColumnCatalog, type ColumnCatalogEntry, filterOptions, matchesFilters, useTableFilters, type FilterField, type FilterOption, serializeConfig, selectionMenuActions, type SelectionAction, tableViewColumns, toggleColumn, useShellHeader, useTableView, useToast, type TableColumn, type TableCellStatus, type ViewConfig, type AlertTone, type ButtonSize, type ButtonVariant, type ControlSize, type SelectOption, type StatusTone, type UploadFile,
 } from '@betinhos/ui'
 import { PageLayout } from './PageLayout'
 
@@ -634,6 +634,28 @@ function TableViewShowcase() {
       { id: 'excluir', label: 'Excluir', icon: <Trash2 size={16} />, tone: 'danger', onSelect: () => toast({ tone: 'danger', message: `${ids.length} excluída(s)` }) },
     ]
   }
+  // §10.9.1 Agrupar por: grupos montados em memória sobre a lista filtrada; uma tabela por grupo aberto.
+  const grupos = useMemo(() => groupRows(rows, view.config.group, OCORRENCIA_FILTROS, (r, key) => r[key as keyof OcorrenciaFiltro]), [rows, view.config.group])
+  // Sem linha nenhuma, a tabela única mostra o estado vazio (com "Limpar filtros"); a seleção enxerga todos os grupos.
+  const agrupado = grupos?.length ? grupos : null
+  const todas = useMemo(() => agrupado?.flatMap((g) => g.rows), [agrupado])
+  const tabela = (linhas: OcorrenciaFiltro[]) => (
+      <Table<Ocorrencia>
+        rows={linhas}
+        rowKey={(row) => row.id}
+        columns={OCORRENCIA_COLUNAS}
+        view={{ config: view.config, onChange: view.setConfig, pinnable: true, extraCell: (id, key) => valorExtra(OCORRENCIAS_FILTRO.find((r) => r.id === id)!, key) }}
+        quickFilters={quickFilters}
+        columnLines
+        stickyHeader
+        maxHeight={agrupado ? undefined : '420px'}
+        selection={{ selected, onChange: setSelected, all: todas, label: (row) => `Selecionar ${row.id}` }}
+        onRowClick={(row) => toast({ tone: 'info', message: `Abrir ${row.id}: ${row.titulo}` })}
+        rowActions={(_row, sel) => selectionMenuActions({ count: sel.length, actions: acoesSelecao(sel.map((r) => r.id)) })}
+        empty={<EmptyState icon={<SearchX />} title="Nenhum registro com estes filtros" action={<Button variant="secondary" onClick={() => view.setConfig((c) => ({ ...c, filters: {} }))}>Limpar filtros</Button>} />}
+        footer={agrupado ? undefined : <span>Linhas: {rows.length}{selected.size ? ` · ${selected.size} selecionada(s)` : ''}</span>}
+      />
+  )
   const selecao = { count: selected.size, onClear: () => setSelected(new Set()), actions: acoesSelecao([...selected]) }
   return (
     <Section name="Visões, colunas e filtros" summary="§10.9.1 e §10.9.2: seletor de visão como título; Colunas e Filtros abrem painéis; o título de cada coluna abre o menu (ordenar, Filtrar por…, fixar, ocultar); chips dos filtros ativos. A linha de comando fica numa linha só e encolhe medindo o espaço (texto some, depois itens vão para o ⋮). Seleção de linhas (clique, Ctrl/⌘, Shift, Esc) e clique direito sobre a seleção. Linhas entre colunas ligadas (`columnLines`) e cabeçalho fixo com rolagem por dentro (`stickyHeader`, `maxHeight`). Dados de exemplo com 'hoje' = 15/10/2026.">
@@ -650,21 +672,9 @@ function TableViewShowcase() {
         primary={<><Button variant="secondary" icon={<RefreshCw size={16} />} aria-label="Atualizar" title="Atualizar" onClick={() => toast({ tone: 'info', message: 'Lista atualizada.' })} /><Button icon={<Plus size={16} />}>Nova ocorrência</Button></>}
         selection={selecao}
       />
-      <Table<Ocorrencia>
-        rows={rows}
-        rowKey={(row) => row.id}
-        columns={OCORRENCIA_COLUNAS}
-        view={{ config: view.config, onChange: view.setConfig, pinnable: true, extraCell: (id, key) => valorExtra(OCORRENCIAS_FILTRO.find((r) => r.id === id)!, key) }}
-        quickFilters={quickFilters}
-        columnLines
-        stickyHeader
-        maxHeight="420px"
-        selection={{ selected, onChange: setSelected, label: (row) => `Selecionar ${row.id}` }}
-        onRowClick={(row) => toast({ tone: 'info', message: `Abrir ${row.id}: ${row.titulo}` })}
-        rowActions={(_row, linhas) => selectionMenuActions({ count: linhas.length, actions: acoesSelecao(linhas.map((r) => r.id)) })}
-        empty={<EmptyState icon={<SearchX />} title="Nenhum registro com estes filtros" action={<Button variant="secondary" onClick={() => view.setConfig((c) => ({ ...c, filters: {} }))}>Limpar filtros</Button>} />}
-        footer={<span>Linhas: {rows.length}{selected.size ? ` · ${selected.size} selecionada(s)` : ''}</span>}
-      />
+      {agrupado
+        ? <TableGroups groups={agrupado} resetKey={JSON.stringify(view.config.group)}>{(linhas) => tabela(linhas)}</TableGroups>
+        : tabela(rows)}
       <details className="showcase__fetch">
         <summary>FetchXML gerado para o Dataverse</summary>
         <pre>{fetchXml || '(nenhum filtro valendo)'}</pre>

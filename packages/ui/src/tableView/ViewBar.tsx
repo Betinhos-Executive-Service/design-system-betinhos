@@ -385,6 +385,7 @@ export function ViewBar({ view, columns, catalog, pinnable, children, onError, f
         onApply={(next) => view.setConfig(() => next)}
         catalog={catalog}
         pinnable={pinnable}
+        groupFields={filters?.fields}
       />
 
       <Dialog

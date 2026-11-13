@@ -29,7 +29,11 @@ export type SortDir = 'asc' | 'desc'
 export type ViewSort = { key: string; dir: SortDir } | null
 export type ViewFilters = Record<string, unknown>
 
-export type ViewConfig = { v: typeof CONFIG_VERSION; columns: ViewColumnState[]; sort: ViewSort; filters: ViewFilters }
+/** Agrupamento da lista (um nível): campo de filtro (choice, lookup, Sim/Não ou data) e, em data, o período. */
+export type ViewGroup = { key: string; by?: 'month' | 'year' }
+
+/** `group` só existe com agrupamento: visões salvas antes da 1.30 continuam iguais. */
+export type ViewConfig = { v: typeof CONFIG_VERSION; columns: ViewColumnState[]; sort: ViewSort; filters: ViewFilters; group?: ViewGroup }
 
 const isObject = (value: unknown): value is Record<string, unknown> => Boolean(value) && typeof value === 'object' && !Array.isArray(value)
 
@@ -90,7 +94,20 @@ export function normalizeConfig(raw: unknown, defs: ViewColumnDef[], fallback: V
     ? { key: raw.sort.key, dir: raw.sort.dir }
     : raw.sort === null ? null : fallback.sort
   const filters = isObject(raw.filters) ? raw.filters : fallback.filters
-  return enforce({ v: CONFIG_VERSION, columns, sort, filters }, defs)
+  const group = cleanGroup(raw.group)
+  return enforce({ v: CONFIG_VERSION, columns, sort, filters, ...(group ? { group } : {}) }, defs)
+}
+
+/** Agrupamento salvo: só a forma; campo que a tela não agrupa é ignorado na hora de agrupar (`groupRows`). */
+function cleanGroup(raw: unknown): ViewGroup | undefined {
+  if (!isObject(raw) || typeof raw.key !== 'string' || !raw.key) return undefined
+  return raw.by === 'month' || raw.by === 'year' ? { key: raw.key, by: raw.by } : { key: raw.key }
+}
+
+/** Liga, troca ou (com `null`) desliga o agrupamento. */
+export function setGroup(config: ViewConfig, group: ViewGroup | null): ViewConfig {
+  const { group: _old, ...rest } = config
+  return group ? { ...rest, group } : rest
 }
 
 /** Lê o texto gravado em `cr40f_configuracao`; texto inválido vira `null` (a tela usa a padrão). */

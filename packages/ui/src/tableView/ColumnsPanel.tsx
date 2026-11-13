@@ -5,9 +5,12 @@ import { Dialog } from '../components/Dialog'
 import { Drawer } from '../components/Drawer'
 import { Spinner } from '../components/Misc'
 import { SearchBox } from '../components/SearchBox'
+import { Select } from '../components/Select'
 import { Sheet } from '../components/Sheet'
 import { useMediaQuery } from '../useMediaQuery'
-import { addColumn, EXTRA_COLUMN_PREFIX, isExtraColumn, moveVisibleColumn, pinColumn, removeColumn, unpinColumn, sameConfig, toggleColumn, visibleColumns, type ViewColumnDef, type ViewConfig } from './config'
+import { addColumn, EXTRA_COLUMN_PREFIX, isExtraColumn, moveVisibleColumn, pinColumn, removeColumn, unpinColumn, sameConfig, setGroup, toggleColumn, visibleColumns, type ViewColumnDef, type ViewConfig } from './config'
+import type { FilterField } from './filters'
+import { groupableFields } from './grouping'
 import { icons } from './icons'
 
 /** Tipo do campo, para o ícone do catálogo (texto, número, data, escolha, vínculo). */
@@ -45,6 +48,8 @@ export type ColumnsPanelProps = {
   catalog?: ColumnCatalog
   /** Liga as colunas fixas: seção "Fixas" no topo e alfinete em cada coluna visível. */
   pinnable?: boolean
+  /** Campos de filtro da lista: os de escolha, relação, Sim/Não e data entram em "Agrupar por" (§10.9.1, 1.30). */
+  groupFields?: FilterField[]
 }
 
 /** Passo da trilha: relação aberta (`label` = campo de vínculo, `table` = tabela de destino). */
@@ -67,7 +72,7 @@ function scrollParent(el: HTMLElement | null): HTMLElement | null {
  * Painel de colunas (§10.9.1): mostrar/ocultar, reordenar (arraste, ↑/↓ ou teclado na alça) e adicionar campos da tabela
  * e das relações N:1; só vale em "Aplicar". Drawer no desktop, Sheet no mobile.
  */
-export function ColumnsPanel({ open, onClose, columns, config, defaults, onApply, catalog, pinnable = false }: ColumnsPanelProps) {
+export function ColumnsPanel({ open, onClose, columns, config, defaults, onApply, catalog, pinnable = false, groupFields }: ColumnsPanelProps) {
   const mobile = useMediaQuery('(max-width: 820px)')
   const [draft, setDraft] = useState(config)
   const [confirming, setConfirming] = useState(false)
@@ -154,7 +159,7 @@ export function ColumnsPanel({ open, onClose, columns, config, defaults, onApply
     onClose()
   }
   function apply() {
-    onApply({ ...config, columns: draft.columns, sort: draft.sort })
+    onApply(setGroup({ ...config, columns: draft.columns, sort: draft.sort }, draft.group ?? null))
     onClose()
   }
   function move(key: string, to: number) {
@@ -277,6 +282,8 @@ export function ColumnsPanel({ open, onClose, columns, config, defaults, onApply
   )
 
   const searching = words.length > 0
+  const groupable = groupFields ? groupableFields(groupFields) : []
+  const dateGroup = (key: string) => groupable.find((f) => f.key === key)?.kind === 'date'
   const isShown = (key: string) => draft.columns.some((c) => c.key === key && c.visible)
   const addable = searching
     ? [
@@ -363,6 +370,20 @@ export function ColumnsPanel({ open, onClose, columns, config, defaults, onApply
       ) : null}
 
       {searching && !onTable.length && !hidden.length && !addable.length && !loadingDeep ? <div className="bt-columns-add__state">Nenhuma coluna com “{query.trim()}”.</div> : null}
+
+      {groupable.length && !searching ? (
+        <section className="bt-columns__section" aria-label="Agrupar por">
+          <h3 className="bt-columns__heading">Agrupar por</h3>
+          <div className="bt-columns__group">
+            <Select aria-label="Agrupar por" placeholder="Sem agrupamento" searchable={groupable.length > 8} options={groupable.map((f) => ({ value: f.key, label: f.label }))}
+              value={draft.group?.key ?? null} onChange={(key) => setDraft((d) => setGroup(d, key ? { key, ...(dateGroup(key) ? { by: 'month' as const } : {}) } : null))} />
+            {draft.group && dateGroup(draft.group.key) ? (
+              <Select aria-label="Período do grupo" searchable={false} clearable={false} options={[{ value: 'month', label: 'Por mês' }, { value: 'year', label: 'Por ano' }]}
+                value={draft.group.by ?? 'month'} onChange={(by) => setDraft((d) => setGroup(d, { key: d.group!.key, by: by === 'year' ? 'year' : 'month' }))} />
+            ) : null}
+          </div>
+        </section>
+      ) : null}
 
       {pinnable && (pinnedCount > 0 || !searching) ? (
         <section className="bt-columns__section" aria-label="Fixas">
