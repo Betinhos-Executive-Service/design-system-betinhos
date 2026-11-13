@@ -15,8 +15,8 @@ description: "Verifica a linha de comando do ViewBar com espaços nomeados (§10
 
 ## Roteiro
 1. Medidas: `PLAYWRIGHT=<pacote playwright> CHROME_EXE=<chromium instalado> node .claude/skills/verificar-viewbar-linha/medir.cjs http://localhost:36490/ <pasta>`. Mede a seção "Visões, colunas e filtros" em 390, 600, 820, 821, 1000, 1280, 1440 e 1920 px com 0, 1 e 3 linhas marcadas e imprime a tabela (vai no PR).
-2. Esperado na tabela: "1 linha" = sim, "Sobreposição" = nenhuma, "Fora da barra" = —, "Fixos parados" = sim em todas as linhas e "Erros de console: nenhum". "Texto cortado" = nenhum, salvo o nome da visão em 390 px (último recurso: a vitrine tem 324 px de barra e os 5 controles que nunca saem ocupam 252).
-3. A ordem aparece na coluna "Estado": a seleção perde o texto antes dos fixos; fixos só ícone antes da principal; seleção vai para o ⋮ antes de Auditoria/Densidade/Colunas; lupa por último.
+2. Esperado na tabela: "1 linha" = sim, "Sobreposição" = nenhuma, "Fora da barra" = —, "Fixos parados" = sim em todas as linhas e "Erros de console: nenhum". "Texto cortado" = nenhum em todas as larguras. Em 390 px a vitrine tem 324 px de barra e os controles que nunca saem ocupam 252: o "Estado" mostra "visão só ícone" (último degrau, 1.26.1) só aí.
+3. A ordem aparece na coluna "Estado": a seleção perde o texto antes dos fixos; fixos só ícone antes da principal; seleção vai para o ⋮ antes de Auditoria/Densidade/Colunas; depois a lupa; "visão só ícone" só quando nem a lupa basta.
 4. Interação (1000 px, 3 marcadas): o ⋮ tem `aria-label` "Mais ações (N da seleção)", selo com N e abre com "[3 selecionados]" em cima (inertes com o motivo), divisor e "Exportar CSV". Clique direito numa linha marcada lista todas as ações da seleção.
 5. Celular (390 px): a lupa abre a busca por cima da linha com foco no campo; Tab para fora com o campo vazio fecha. Com 3 marcadas, "Mais" do rodapé abre o mesmo menu (seleção, ações da tela, "Lista": Colunas/Auditoria, "Densidade das linhas").
 

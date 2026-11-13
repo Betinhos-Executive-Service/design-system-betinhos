@@ -48,6 +48,7 @@ const measure = () => {
     selTexto: !bar.querySelector('.bt-viewbar__end [data-vb^="sel:"].is-compact'),
     noMenu: ['colunas', 'densidade', 'auditoria'].filter((k) => fixed[k] === null),
     lupa: fixed.lupa !== null,
+    visaoCompacta: Boolean(bar.querySelector('[data-vb="view"].is-compact')),
     selo: bar.querySelector('.bt-viewbar__more .bt-viewbar__badge')?.textContent ?? '',
     rodape: Boolean(document.querySelector('.bt-selectionbar')),
   }
@@ -90,7 +91,7 @@ const measure = () => {
   console.log('|---|---|---|---|---|---|---|---|---|---|')
   for (const r of rows) {
     const s = r.state
-    const estado = [s.texto ? 'fixos c/ texto' : 'fixos só ícone', s.principalTexto ? 'principal c/ texto' : 'principal só ícone', r.count ? (s.rodape ? 'seleção no rodapé' : `seleção ${s.selInline} inline${s.selTexto ? ' c/ texto' : ' só ícone'}`) : null, s.noMenu.length ? `no ⋮: ${s.noMenu.join(', ')}` : null, s.lupa ? 'lupa' : 'busca', s.selo ? `selo ${s.selo}` : null].filter(Boolean).join('; ')
+    const estado = [s.texto ? 'fixos c/ texto' : 'fixos só ícone', s.principalTexto ? 'principal c/ texto' : 'principal só ícone', r.count ? (s.rodape ? 'seleção no rodapé' : `seleção ${s.selInline} inline${s.selTexto ? ' c/ texto' : ' só ícone'}`) : null, s.noMenu.length ? `no ⋮: ${s.noMenu.join(', ')}` : null, s.lupa ? 'lupa' : 'busca', s.visaoCompacta ? 'visão só ícone' : null, s.selo ? `selo ${s.selo}` : null].filter(Boolean).join('; ')
     console.log(`| ${r.width} | ${r.count} | ${r.barW} | ${r.barH} | ${r.oneLine ? 'sim' : 'NÃO'} | ${r.overlaps.length ? r.overlaps.join(' ') : 'nenhuma'} | ${r.outside.length ? r.outside.join(' ') : '—'} | ${r.cut.length ? r.cut.join(', ') : 'nenhum'} | ${r.fixosParados ? 'sim' : 'NÃO'} | ${estado}${r.pageScroll ? ' (ROLAGEM HORIZONTAL)' : ''} |`)
   }
   console.log(`Erros de console: ${errors.length ? errors.join(' | ') : 'nenhum'}`)

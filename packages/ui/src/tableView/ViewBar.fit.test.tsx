@@ -28,7 +28,7 @@ const actions: SelectionAction[] = [
 
 // Larguras simuladas (px): cheio / só ícone. Gaps caem no padrão do ViewBar (8 entre comandos, 12 depois da visão).
 const SIZES: Record<string, [number, number]> = {
-  view: [200, 200], colunas: [120, 40], filtros: [110, 40], density: [40, 40], audit: [130, 40], primary: [170, 40],
+  view: [200, 60], colunas: [120, 40], filtros: [110, 40], density: [40, 40], audit: [130, 40], primary: [170, 40],
   'sel:abrir': [100, 40], 'sel:copiar': [100, 40], 'sel:concluir': [100, 40],
 }
 let barWidth = 1800
@@ -92,12 +92,13 @@ const state = (container: HTMLElement) => ({
   colunas: !slot(container, 'colunas')!.hidden,
   filtros: Boolean(slot(container, 'filtros')),
   lupa: Boolean(screen.queryByRole('button', { name: 'Buscar' })),
+  startCompact: container.querySelector('.bt-viewbar__start [data-vb="view"]')!.classList.contains('is-compact'),
 })
 
 describe('ViewBar: encolhimento medido (§10.9.1)', () => {
   // Com tudo cheio: 200 + 12 + (120 + 110 + 40 + 130 + zona(165 + 3×48 + 8 + 140) + 40 + 170 + 6×8) = 1327.
   const cases: Array<[number, Partial<ReturnType<typeof state>>]> = [
-    [1800, { labels: true, primaryLabel: true, selShown: 3, selLabels: true }],
+    [1800, { labels: true, primaryLabel: true, selShown: 3, selLabels: true, startCompact: false }],
     [1400, { labels: true, primaryLabel: true, selShown: 3, selLabels: false }], // 1. a seleção perde o texto primeiro
     [1327, { labels: true, selShown: 3, selLabels: false }],
     [1326, { labels: false, primaryLabel: true, selShown: 3 }], // 2. Colunas, Filtros e Auditoria só ícone
@@ -107,7 +108,10 @@ describe('ViewBar: encolhimento medido (§10.9.1)', () => {
     [812, { selShown: 0, audit: false, density: true }], // 5. Auditoria, depois Densidade, depois Colunas
     [764, { audit: false, density: false, colunas: true }],
     [716, { colunas: false, lupa: false }],
-    [668, { colunas: false, lupa: true, filtros: true }], // 6. a busca vira lupa; Filtros nunca sai
+    [668, { colunas: false, lupa: true, filtros: true, startCompact: false }], // 6. a busca vira lupa; Filtros nunca sai
+    [569, { lupa: true, startCompact: false }],
+    [568, { lupa: true, startCompact: true }], // 7. só quando nem a lupa basta: a visão fica só ícone + chevron
+    [324, { lupa: true, startCompact: true, filtros: true }],
   ]
   it.each(cases)('em %ipx', async (px, expected) => {
     const { container } = await at(px)
@@ -151,6 +155,22 @@ describe('ViewBar: encolhimento medido (§10.9.1)', () => {
     barWidth = 1800
     await act(async () => { resize?.() })
     expect(button.hasAttribute('title')).toBe(false)
+  })
+
+  it('visão compacta: sem o nome na linha, nome no aria-label, no title e no menu; volta com espaço', async () => {
+    const { container } = await at(500, 0)
+    const trigger = container.querySelector<HTMLElement>('.bt-viewbar__start [data-vb="view"]')!
+    expect(trigger.classList.contains('is-compact')).toBe(true)
+    const name = trigger.querySelector('.bt-viewbar__name')!.textContent!
+    expect(trigger.getAttribute('aria-label')).toContain(`Visão: ${name}`)
+    expect(trigger.title).toBe(name)
+    expect(trigger.querySelector('.bt-viewbar__scope svg')).not.toBeNull() // ícone da visão (padrão = lista)
+    fireEvent.click(trigger)
+    expect(within(screen.getByRole('menu', { hidden: true })).getByRole('menuitemradio', { name: name, hidden: true })).toBeTruthy()
+    barWidth = 1800
+    await act(async () => { resize?.() })
+    expect(trigger.classList.contains('is-compact')).toBe(false)
+    expect(trigger.hasAttribute('title')).toBe(false)
   })
 
   it('a lupa abre a busca, que fecha ao perder o foco vazia', async () => {
@@ -234,12 +254,21 @@ describe('ViewBar: modo legado (children sem espaços nomeados)', () => {
 
 describe('planFit / fitSelection', () => {
   const base: FitInput = {
-    avail: 2000, gap: 8, startGap: 12, start: 200, square: 40,
+    avail: 2000, gap: 8, startGap: 12, start: { full: 200, compact: 60 }, square: 40,
     colunas: { full: 120, compact: 40 }, filtros: { full: 110, compact: 40 }, audit: { full: 130, compact: 40 }, primary: { full: 170, compact: 40 },
     extra: 0, search: true, searchMin: 140, searchMax: 320, menu: true, selection: { counter: 165, inline: [40, 40, 40] },
   }
   it('o último degrau vale quando nada cabe', () => {
-    expect(planFit({ ...base, avail: 100 })).toMatchObject({ lupa: true, fold: { audit: true, density: true, colunas: true }, selectionFolded: 3 })
+    expect(planFit({ ...base, avail: 100 })).toMatchObject({ lupa: true, fold: { audit: true, density: true, colunas: true }, selectionFolded: 3, startCompact: true })
+  })
+  it('a visão compacta é o último degrau: não entra enquanto a lupa basta', () => {
+    // Degrau da lupa: 200 + 12 + (40 + zona(165 + 8 + 40) + 40 + 40 + 3×8) = 569 (Filtros nunca sai).
+    for (const avail of [2000, 1000, 700, 569]) expect(planFit({ ...base, avail }).startCompact).toBe(false)
+    expect(planFit({ ...base, avail: 569 })).toMatchObject({ lupa: true, slack: 0 })
+    expect(planFit({ ...base, avail: 568 })).toMatchObject({ lupa: true, startCompact: true, slack: 139 }) // 568 - (60 + 12 + 357)
+  })
+  it('sem largura compacta menor, não há degrau da visão', () => {
+    expect(planFit({ ...base, start: { full: 200, compact: 200 }, avail: 100 })).toMatchObject({ lupa: true, startCompact: false })
   })
   it('sem seleção não reserva nada', () => {
     expect(planFit({ ...base, selection: undefined, avail: 1018 }).level).toBe(0)

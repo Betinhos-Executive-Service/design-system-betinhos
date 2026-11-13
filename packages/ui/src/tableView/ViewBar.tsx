@@ -230,7 +230,7 @@ export function ViewBar({ view, columns, catalog, pinnable, children, onError, f
     const box = (key: string) => sizes.get(key) ?? { full: square, compact: square }
     const inline = inSelection && selection ? inlineActions(selection) : []
     const plan = planFit({
-      avail, gap, startGap: cssGap(bar, 12), start: sizes.get('view')?.full ?? 0, square,
+      avail, gap, startGap: cssGap(bar, 12), start: sizes.get('view') ?? { full: 0, compact: 0 }, square,
       colunas: box('colunas'),
       filtros: filters ? box('filtros') : undefined,
       audit: onAudit ? box('audit') : undefined,
@@ -265,6 +265,7 @@ export function ViewBar({ view, columns, catalog, pinnable, children, onError, f
   const primaryLabel = plan?.primaryLabel ?? true
   const fold = plan?.fold ?? { audit: false, density: false, colunas: false }
   const lupa = plan?.lupa ?? false
+  const startCompact = plan?.startCompact ?? false
   const inlineCount = selection ? inlineActions(selection).length : 0
   const selShown = fit?.sel?.shown ?? inlineCount
   const floating = lupa && searchOpen !== null
@@ -312,8 +313,9 @@ export function ViewBar({ view, columns, catalog, pinnable, children, onError, f
       align="start"
       actions={actions}
       trigger={(props) => (
-        <button {...props} type="button" data-vb="view" className="bt-viewbar__trigger" title={dirty ? DIRTY_HINT : undefined} aria-label={`Visão: ${active.name}${dirty ? ` (alterada: ${DIRTY_HINT})` : ''}. Trocar ou salvar visão`}>
-          {active.scope === 'padrao' ? null : <span className="bt-viewbar__scope" aria-hidden="true">{scopeIcon(active)}</span>}
+        <button {...props} type="button" data-vb="view" className={`bt-viewbar__trigger${startCompact ? ' is-compact' : ''}`} title={startCompact ? `${active.name}${dirty ? ` (alterada). ${DIRTY_HINT}` : ''}` : dirty ? DIRTY_HINT : undefined} aria-label={`Visão: ${active.name}${dirty ? ` (alterada: ${DIRTY_HINT})` : ''}. Trocar ou salvar visão`}>
+          {/* Ícone da visão (padrão = lista): na padrão só aparece no modo compacto (§10.9.1). */}
+          {active.scope === 'padrao' && !slotted ? null : <span className={`bt-viewbar__scope${active.scope === 'padrao' ? ' bt-viewbar__scope--compact' : ''}`} aria-hidden="true">{scopeIcon(active)}</span>}
           <span className="bt-viewbar__name">{active.name}</span>
           <span className="bt-viewbar__chevron" aria-hidden="true">{icons.chevronDown}</span>
           {dirty ? <span className="bt-viewbar__dirty" aria-hidden="true">Alterada</span> : null}
