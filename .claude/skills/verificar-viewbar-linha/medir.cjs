@@ -1,15 +1,15 @@
 // Verificação da linha de comando (ViewBar com espaços nomeados) na vitrine: uma linha, sem sobreposição, fixos parados com
 // 0/1/3 selecionados, nenhum texto cortado (inclusive o rodapé do celular e o placeholder da busca), sem vão nem fio junto a
-// espaço vazio na superfície, superfície com a altura e o topo da ação principal (1.27.2), sem erro de console. Uso: node medir.cjs <url> <pasta-de-saida>
+// espaço vazio na superfície, sem faixa vazia no trecho da seleção (1.32), superfície com a altura e o topo da ação principal (1.27.2), sem erro de console. Uso: node medir.cjs <url> <pasta-de-saida>
 // PLAYWRIGHT: caminho do pacote playwright (ex.: o do @playwright/cli global); CHROME_EXE: Chromium já instalado (opcional);
 // SCHEME: light (padrão) ou dark, emula prefers-color-scheme (o DS só tem tema claro: o escuro tem de sair igual, sem quebra).
-// WIDTHS / COUNTS: listas separadas por vírgula que trocam as larguras (padrão 390…1920, com 1024) e as linhas marcadas (0,1,3).
+// WIDTHS / COUNTS: listas separadas por vírgula que trocam as larguras (padrão 390…1920, com 900 e 1024) e as linhas marcadas (0,1,3).
 const { chromium } = require(process.env.PLAYWRIGHT || 'playwright')
 const fs = require('fs')
 const path = require('path')
 const url = process.argv[2] || 'http://localhost:36490/'
 const out = process.argv[3] || '.'
-const WIDTHS = (process.env.WIDTHS || '390,600,820,821,1000,1024,1280,1440,1920').split(',').map(Number)
+const WIDTHS = (process.env.WIDTHS || '390,600,820,821,900,1000,1024,1280,1440,1920').split(',').map(Number)
 const COUNTS = (process.env.COUNTS || '0,1,3').split(',').map(Number)
 
 const measure = () => {
@@ -84,6 +84,20 @@ const measure = () => {
       const hole = b.left - a.right - (a.el && b.el ? step : 0)
       if (hole > 0.5) holes.push(`${(a.el?.classList.contains('bt-viewbar__sep') || b.el?.classList.contains('bt-viewbar__sep')) ? 'FIO JUNTO A VAZIO' : 'vão'} ${Math.round(hole)}px (${a.el ? label(a.el) : 'início'}→${b.el ? label(b.el) : 'fim'})`)
     }
+    // Faixa vazia dentro do trecho da seleção (1.32): o tingido abraça ✕, contador e ações; nada de espaço depois do último
+    // item nem entre itens além do gap do trecho.
+    const seg = surface.querySelector('.bt-viewbar__zone > .bt-selection')
+    if (seg && visible(seg)) {
+      const kids = [...seg.children].filter(visible).map((el) => el.getBoundingClientRect())
+      const gr = seg.getBoundingClientRect()
+      const gs = getComputedStyle(seg)
+      const g = parseFloat(gs.columnGap) || 0
+      const ends = [{ right: gr.left + parseFloat(gs.paddingLeft) }, ...kids, { left: gr.right - parseFloat(gs.paddingRight) }]
+      for (let i = 0; i + 1 < ends.length; i += 1) {
+        const hole = ends[i + 1].left - ends[i].right - (i && i + 2 < ends.length ? g : 0)
+        if (hole > 0.5) holes.push(`FAIXA VAZIA NA SELEÇÃO ${Math.round(hole)}px`)
+      }
+    }
   }
   // Altura única (1.27.2): superfície e ação principal com o mesmo topo e a mesma altura (±0,5 px); a visão centrada na
   // mesma linha; itens da superfície sem passar da altura interna; botões do rodapé do celular com uma altura só.
@@ -132,6 +146,7 @@ const measure = () => {
     selTexto: !bar.querySelector('.bt-viewbar__end [data-vb^="sel:"].is-compact'),
     noMenu: ['colunas', 'densidade', 'auditoria'].filter((k) => fixed[k] === null),
     lupa: Boolean([...bar.querySelectorAll('button[aria-label="Buscar"]')].find(visible)),
+    busca: Math.round(bar.querySelector('.bt-viewbar__search:not([hidden]):not(.is-floating)')?.getBoundingClientRect().width ?? 0),
     visaoCompacta: Boolean(bar.querySelector('[data-vb="view"].is-compact')),
     selo: bar.querySelector('.bt-viewbar__more .bt-viewbar__badge, .bt-viewbar__more .bt-viewbar__count')?.textContent ?? '',
     // Peça única (1.27): uma superfície, a principal fora dela, nenhuma pílula no contador.
@@ -179,7 +194,7 @@ const measure = () => {
   console.log('|---|---|---|---|---|---|---|---|---|---|---|---|')
   for (const r of rows) {
     const s = r.state
-    const estado = [s.texto ? 'fixos c/ texto' : 'fixos só ícone', s.principalTexto ? 'principal c/ texto' : 'principal só ícone', r.count ? (s.rodape ? 'seleção no rodapé' : `seleção ${s.selInline} inline${s.selTexto ? ' c/ texto' : ' só ícone'}`) : null, s.noMenu.length ? `no ⋮: ${s.noMenu.join(', ')}` : null, s.lupa ? 'lupa' : 'busca', s.visaoCompacta ? 'visão só ícone' : null, s.selo ? `selo ${s.selo}` : null, s.superficie ? null : 'SUPERFÍCIE ERRADA', s.pilula ? 'PÍLULA' : null].filter(Boolean).join('; ')
+    const estado = [s.texto ? 'fixos c/ texto' : 'fixos só ícone', s.principalTexto ? 'principal c/ texto' : 'principal só ícone', r.count ? (s.rodape ? 'seleção no rodapé' : `seleção ${s.selInline} inline${s.selTexto ? ' c/ texto' : ' só ícone'}`) : null, s.noMenu.length ? `no ⋮: ${s.noMenu.join(', ')}` : null, s.lupa ? 'lupa' : `busca ${s.busca}px`, s.visaoCompacta ? 'visão só ícone' : null, s.selo ? `selo ${s.selo}` : null, s.superficie ? null : 'SUPERFÍCIE ERRADA', s.pilula ? 'PÍLULA' : null].filter(Boolean).join('; ')
     console.log(`| ${r.width} | ${r.count} | ${r.barW} | ${r.barH} | ${r.oneLine ? 'sim' : 'NÃO'} | ${r.overlaps.length ? r.overlaps.join(' ') : 'nenhuma'} | ${r.outside.length ? r.outside.join(' ') : '—'} | ${r.cut.length ? r.cut.join(', ') : 'nenhum'} | ${r.holes.length ? r.holes.join(' ') : 'nenhum'} | ${r.altura.length ? r.altura.join(', ') : 'sim'} | ${r.fixosParados ? 'sim' : 'NÃO'} | ${estado}${r.pageScroll ? ' (ROLAGEM HORIZONTAL)' : ''} |`)
   }
   console.log(`Erros de console: ${errors.length ? errors.join(' | ') : 'nenhum'}`)

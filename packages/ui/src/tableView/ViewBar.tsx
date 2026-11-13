@@ -14,7 +14,7 @@ import { COLUMN_FILTER_EVENT } from './ColumnMenu'
 import { countActiveFilters, emptyFilters, readFilters, storedFilters, type FilterField, type TableFilters } from './filters'
 import { FiltersPanel, type FiltersPanelTab } from './FiltersPanel'
 import { SelectionBar, SelectionInline, countLabel, inlineActions, selectionOverflow, type ViewBarSelection } from './Selection'
-import { fitSelection, planFit, type FitPlan, type FitSize } from './viewBarFit'
+import { fitZone, planFit, type FitPlan, type FitSize, type ZoneFit } from './viewBarFit'
 import { icons } from './icons'
 import type { TableViewEntry } from './store'
 import type { TableDensity } from '../components/Table'
@@ -71,11 +71,13 @@ const DENSITIES: { value: TableDensity; label: string; icon: ReactNode }[] = [
   { value: 'minimal', label: 'Mínima', icon: icons.rowsMinimal },
 ]
 
-/** Largura da busca no espaço flexível (§10.9.1). */
+/** Largura da busca no espaço flexível (§10.9.1). Os fixos recolhem para manter `SEARCH_MIN`; com linhas marcadas a caixa
+ * ainda fica até `SEARCH_COMPACT` (ícone + texto legível) antes de virar lupa (1.32). `SEARCH_MAX` é a busca aberta pela lupa. */
 const SEARCH_MIN = 140
+const SEARCH_COMPACT = 96
 const SEARCH_MAX = 320
 
-type Fit = { plan: FitPlan; sel: { labels: boolean; shown: number } | null }
+type Fit = { plan: FitPlan; zone: ZoneFit | null }
 
 const cssPx = (element: Element | null, read: (style: CSSStyleDeclaration) => number, fallback: number) => {
   const value = element ? read(getComputedStyle(element)) : NaN
@@ -285,12 +287,13 @@ export function ViewBar({ view, columns, catalog, pinnable, children, onError, f
       tools: hasTools ? sizes.get('tools') : undefined,
       primary: hasPrimary ? sizes.get('primary') : undefined,
       extra: hasExtra ? sizes.get('extra')?.full ?? 0 : 0,
-      search: hasSearch, searchMin: SEARCH_MIN, searchMax: SEARCH_MAX,
+      search: hasSearch, searchMin: SEARCH_MIN,
       menu: Boolean(more?.length) || selection !== undefined,
-      selection: inSelection ? { counter: sizes.get('sel-count-sample')?.full ?? 0, inline: inline.map((action) => box(`sel:${action.id}`).compact) } : undefined,
+      selection: inSelection ? { counter: sizes.get('sel-count-sample')?.full ?? 0 } : undefined,
     })
-    const sel = inSelection ? fitSelection(plan.selectionSpace, sizes.get('sel-count')?.full ?? 0, inline.map((action) => box(`sel:${action.id}`)), gap) : null
-    const next: Fit = { plan, sel }
+    // Seleção e busca dividem a zona; as ações da seleção nunca tiram espaço dos fixos (1.32).
+    const zone = inSelection ? fitZone(plan.flex, selecting ? sizes.get('sel-count')?.full ?? 0 : 0, inline.map((action) => box(`sel:${action.id}`)), gap, hasSearch ? { min: SEARCH_MIN, compact: SEARCH_COMPACT, square } : null) : null
+    const next: Fit = { plan, zone }
     setFit((prev) => (prev && JSON.stringify(prev) === JSON.stringify(next) ? prev : next))
   }
   // Antes da pintura: o primeiro quadro já sai no degrau certo.
@@ -313,11 +316,11 @@ export function ViewBar({ view, columns, catalog, pinnable, children, onError, f
   const labels = plan?.labels ?? true
   const primaryLabel = plan?.primaryLabel ?? true
   const fold = plan?.fold ?? { audit: false, density: false, colunas: false }
-  // Sem linhas marcadas a busca ocupa a reserva da seleção (1.27.1); a lupa só fica se nem assim a busca cabe.
-  const lupa = (selecting ? plan?.lupa : plan?.lupaIdle) ?? false
+  // Com reserva da seleção, quem decide caixa ou lupa é a divisão da zona (sem linhas marcadas a busca ocupa a reserva).
+  const lupa = (fit?.zone ? fit.zone.search === 'lupa' : plan?.lupa) ?? false
   const startCompact = plan?.startCompact ?? false
   const inlineCount = selection ? inlineActions(selection).length : 0
-  const selShown = fit?.sel?.shown ?? inlineCount
+  const selShown = fit?.zone?.shown ?? inlineCount
   const floating = lupa && searchOpen !== null
 
   // Ação principal só ícone: o rótulo continua como nome acessível e vira a dica (`title`) se a tela não deu uma.
@@ -496,9 +499,10 @@ export function ViewBar({ view, columns, catalog, pinnable, children, onError, f
   // os itens. Sem nada visível dentro, a zona não ganha fios (nunca fio ao lado de vazio).
   const zoneGrows = inSelection || (hasSearch && !lupa)
   const zoneShown = hasSearch || hasExtra || (inSelection && selecting)
-  // Com linhas marcadas e sem a caixa da busca na zona (lupa ou sem busca), nada mais estica: o trecho da seleção ocupa a
-  // sobra, para nunca sobrar vão entre o fio e a seleção (1.28.0).
-  const zoneFill = inSelection && selecting && !(hasSearch && !lupa)
+  // O trecho da seleção abraça o conteúdo e a sobra vai para a busca: a caixa estica e, no degrau da lupa, a lupa também
+  // (1.32). Só sem busca o trecho ocupa a sobra, para não sobrar vão entre o fio e a seleção.
+  const zoneFill = inSelection && selecting && !hasSearch
+  const lupaFill = inSelection && lupa
   // Superfície única (§10.9.1): os grupos na ordem, com um fio entre cada par visível. Grupo dobrado continua no DOM
   // (escondido, para ser medido) e sem fio.
   const groups: Array<[string, boolean, ReactNode]> = [
@@ -528,11 +532,11 @@ export function ViewBar({ view, columns, catalog, pinnable, children, onError, f
       </div>
     ) : null],
     ['zone', zoneShown, (
-        <div className={`bt-viewbar__zone${zoneFill ? ' is-fill' : ''}`}>
-          {inSelection && selection ? <SelectionInline selection={selection} shown={selShown} compact={!(fit?.sel?.labels ?? true)} /> : null}
+        <div className={['bt-viewbar__zone', zoneFill && 'is-fill', lupaFill && 'is-lupa-fill'].filter(Boolean).join(' ')}>
+          {inSelection && selection ? <SelectionInline selection={selection} shown={selShown} compact={!(fit?.zone?.labels ?? true)} /> : null}
           {hasSearch ? (
             <>
-              {lupa ? <Button ref={lupaRef} variant="secondary" size={size} icon={icons.search} aria-label="Buscar" title="Buscar" aria-expanded={floating} onClick={() => (floating ? setSearchOpen(null) : openSearch())} /> : null}
+              {lupa ? <Button ref={lupaRef} variant="secondary" size={size} icon={icons.search} className="bt-viewbar__lupa" aria-label="Buscar" title="Buscar" aria-expanded={floating} onClick={() => (floating ? setSearchOpen(null) : openSearch())} /> : null}
               <div ref={searchRef} className={['bt-viewbar__search', floating && 'is-floating', searchStyle && 'is-sized'].filter(Boolean).join(' ')} hidden={lupa && !floating} style={searchStyle} onBlur={onSearchBlur} onKeyDown={onSearchKeyDown}>
                 {search}
               </div>

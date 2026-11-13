@@ -121,11 +121,14 @@ body.bt-columns-grabbing, body.bt-columns-grabbing * { cursor: grabbing !importa
 @media (hover: hover) and (pointer: fine) {
   .bt-viewbar__surface .bt-button--secondary:hover:not(:disabled), .bt-viewbar__surface .bt-button--ghost:hover:not(:disabled), .bt-viewbar__surface > [data-vb="tools"] .bt-button:hover:not(:disabled) { background-color: var(--bt-color-surface-soft); }
 }
-/* A seleção ocupa só a sobra reservada antes da busca: nunca empurra a busca nem os fixos. */
+/* O trecho da seleção abraça o conteúdo (✕, contador, ações que couberem); a sobra da zona vai para a busca (1.32). */
 .bt-viewbar__zone > .bt-selection { flex: 0 1 auto; min-width: 0; }
 .bt-viewbar__zone > .bt-selection > * { flex-shrink: 0; }
-/* Sem a caixa da busca na zona (lupa ou sem busca), o trecho da seleção ocupa a sobra: nunca vão entre o fio e ele (1.28.0). */
+/* Sem busca na zona, o trecho da seleção ocupa a sobra: nunca vão entre o fio e ele (1.28.0). */
 .bt-viewbar__zone.is-fill > .bt-selection { flex-grow: 1; }
+/* Degrau da lupa com reserva da seleção (1.32): a lupa ocupa a sobra da zona, então o trecho da seleção fica sem faixa
+   vazia e a zona sem vão. */
+.bt-viewbar__zone.is-lupa-fill > .bt-viewbar__lupa { flex: 1 1 0; }
 .bt-viewbar__search { display: flex; flex: 0 1 320px; min-width: 140px; }
 .bt-viewbar__search.is-sized { flex: none; min-width: 0; }
 /* Na zona, a busca ocupa o que a seleção não usa (sem seleção, a reserva inteira): começa logo depois do fio anterior. */
