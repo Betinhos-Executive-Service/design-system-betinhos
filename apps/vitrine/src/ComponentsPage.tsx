@@ -622,7 +622,7 @@ function TableViewShowcase() {
     const value = (row: OcorrenciaFiltro) => String(row[sort.key as keyof OcorrenciaFiltro] ?? '')
     return [...filtered].sort((a, b) => value(a).localeCompare(value(b), 'pt-BR') * (sort.dir === 'asc' ? 1 : -1))
   }, [sort, filters, busca])
-  // §10.9.6: uma lista de ações para a linha de comando, o menu "Ações", a barra do celular e o clique direito.
+  // §10.9.6: uma lista de ações para a linha de comando, o ⋮, a barra do celular e o clique direito.
   const acoesSelecao = (ids: string[]): SelectionAction[] => {
     const linhas = OCORRENCIAS_FILTRO.filter((r) => ids.includes(r.id))
     const concluidas = linhas.filter((r) => r.status === 'success').length
@@ -635,7 +635,7 @@ function TableViewShowcase() {
   }
   const selecao = { count: selected.size, onClear: () => setSelected(new Set()), actions: acoesSelecao([...selected]) }
   return (
-    <Section name="Visões, colunas e filtros" summary="§10.9.1 e §10.9.2: seletor de visão como título; Colunas e Filtros abrem painéis; o título de cada coluna abre o menu (ordenar, Filtrar por…, fixar, ocultar); chips dos filtros ativos. Seleção de linhas (clique, Ctrl/⌘, Shift, Esc) e clique direito sobre a seleção. Linhas entre colunas ligadas (`columnLines`) e cabeçalho fixo com rolagem por dentro (`stickyHeader`, `maxHeight`). Dados de exemplo com 'hoje' = 15/10/2026.">
+    <Section name="Visões, colunas e filtros" summary="§10.9.1 e §10.9.2: seletor de visão como título; Colunas e Filtros abrem painéis; o título de cada coluna abre o menu (ordenar, Filtrar por…, fixar, ocultar); chips dos filtros ativos. A linha de comando fica numa linha só e encolhe medindo o espaço (texto some, depois itens vão para o ⋮). Seleção de linhas (clique, Ctrl/⌘, Shift, Esc) e clique direito sobre a seleção. Linhas entre colunas ligadas (`columnLines`) e cabeçalho fixo com rolagem por dentro (`stickyHeader`, `maxHeight`). Dados de exemplo com 'hoje' = 15/10/2026.">
       <ViewBar
         view={view}
         columns={OCORRENCIA_DEFS}
@@ -645,7 +645,8 @@ function TableViewShowcase() {
         onAudit={() => toast({ tone: 'info', message: selected.size ? `Auditoria de ${selected.size} ocorrência(s)` : 'Auditoria da tabela' })}
         search={<SearchBox placeholder="Filtrar por palavra-chave" aria-label="Filtrar por palavra-chave" value={busca} onChange={setBusca} />}
         more={[{ id: 'exportar', label: 'Exportar CSV', onSelect: () => toast({ message: 'Exportado.' }) }]}
-        primary={<Button icon={<Plus size={16} />}>Nova ocorrência</Button>}
+        // Tudo em `primary` nunca sai da linha: o Atualizar (só ícone) fica sempre visível; "Nova ocorrência" perde o texto sem espaço.
+        primary={<><Button variant="secondary" icon={<RefreshCw size={16} />} aria-label="Atualizar" title="Atualizar" onClick={() => toast({ tone: 'info', message: 'Lista atualizada.' })} /><Button icon={<Plus size={16} />}>Nova ocorrência</Button></>}
         selection={selecao}
       />
       <Table<Ocorrencia>

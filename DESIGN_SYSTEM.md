@@ -1,6 +1,6 @@
 # Betinhos Design System
 
-**Versão:** 1.25.0
+**Versão:** 1.26.0
 
 **Status:** fonte oficial inicial
 
@@ -746,7 +746,16 @@ Comandos da linha:
 
 - Botões secundários com ícone e rótulo: "Colunas" (`Columns3`) e "Filtros" (`Filter`, com o número de condições ativas). Depois deles, o botão só de ícone "Densidade das linhas" (`Rows3`/`Rows4`/`Rows5`) abre um menu com Confortável, Compacta e Mínima (linha de 32 px, uma linha de texto por célula, botões da linha com 24 px); a escolha fica no navegador, por tela (`view.density`/`view.setDensity` de `useTableView`, repassada à `Table` em `view.density`). Busca por palavra-chave com largura fixa à direita. Em mobile os rótulos podem virar só ícone, com `aria-label`. O filtro por coluna não tem botão na linha de comando: mora no menu do título de cada coluna (§10.9.2).
 - A ação primária da lista, quando existir, é a última à direita e é a única primária da página.
-- **Lugares fixos** (`ViewBar` com `search`, `more`, `primary` e `selection`): visão · Colunas · Filtros · Auditoria · espaço flexível (busca) · "⋮ Mais ações" · ação primária. Acima de 820 px a linha não quebra: a busca encolhe até 140 px. O espaço flexível é container e nunca empurra os lugares fixos: com a linha abaixo de 1120 px, Colunas, Filtros e Auditoria viram só ícone (o rótulo fica como nome acessível), nos dois estados. Só o espaço flexível muda com a seleção (§10.9.6). `children` sem esses espaços mantém o desenho antigo.
+- **Lugares fixos** (`ViewBar` com `search`, `more`, `primary` e `selection`): visão · Colunas · Filtros · Densidade · Auditoria · espaço flexível (seleção reservada, busca, `children`) · "⋮ Mais ações" · ação primária. **Sempre uma linha**, no desktop e no celular. O `ViewBar` mede de verdade (ResizeObserver na barra e a largura natural de cada item, com e sem texto, medida em cópias numa camada invisível), sem breakpoint fixo. O que é fixo depende só da largura, nunca da seleção: marcar linhas não move nem esconde controle fixo; a seleção é quem cede espaço.
+- **Ordem de encolhimento** quando falta espaço (o texto volta assim que houver espaço):
+  1. ações `inline` da seleção perdem o texto;
+  2. Colunas, Filtros e Auditoria perdem o texto;
+  3. a ação primária perde o texto (o rótulo fica como nome acessível e vira `title`);
+  4. ações `inline` da seleção vão para o ⋮, da direita para a esquerda;
+  5. Auditoria, depois Densidade, depois Colunas vão para o ⋮ (itens que abrem o próprio painel; a Densidade vira o grupo "Densidade das linhas");
+  6. a busca vira lupa: o clique abre a busca por cima da linha, alinhada à lupa; ela fecha quando perde o foco vazia (Esc com o campo vazio também fecha).
+- **Nunca saem da linha:** seletor de visão, Filtros, busca/lupa, ⋮ e tudo o que está em `primary`. Comando da tela que precisa ficar sempre visível (ex.: Atualizar só ícone) vai em `primary`, junto da ação primária; em `primary` só perde o texto o botão que tem ícone e texto. `children` fica depois da busca e não encolhe. Se nem o último degrau cabe, o nome da visão encolhe com reticências (nome inteiro no `aria-label`).
+- A busca ocupa de 140 a 320 px com a sobra da linha, sem invadir a reserva da seleção (contador + ações `inline` só ícone). `children` sem esses espaços (modo legado) mantém o desenho antigo, sem medir.
 
 Painel de colunas:
 
@@ -863,12 +872,13 @@ Toda lista de registros tem o botão "Auditoria" na linha de comando, e todo dra
 
 Com linhas marcadas, a linha de comando entra no modo seleção. Prop `selection` do `ViewBar`: `{ count, onClear, actions, label? }`.
 
-- **Nada pula:** visão, Colunas, Filtros, Auditoria, "⋮" e a ação primária ficam onde estavam e continuam funcionando (dá para filtrar sem perder a seleção). Só o espaço da busca troca para os comandos da seleção.
+- **Nada pula:** visão, Colunas, Filtros, Densidade, Auditoria, busca, "⋮" e a ação primária ficam onde estavam e continuam funcionando (dá para filtrar e buscar sem perder a seleção). A seleção entra no espaço reservado antes da busca, medido com as `actions` da tela: passe as mesmas ações com ou sem seleção.
 - **Contador:** pílula `action-soft` com "✕" (ghost, `aria-label` "Limpar seleção") e "N selecionados" em `role="status"`. Não usa `StatusBadge`, para não se confundir com os selos da página.
-- **Ações** (`SelectionAction`): `inline` põe o botão na linha (secundário; `tone: 'danger'` vira `danger`): até 3 a partir de 1280 px, 1 abaixo disso; com o espaço flexível abaixo de 580 px elas viram só ícone (nome no `title` e no leitor de tela). O resto fica em "Ações ▾", sem repetir o que já está na linha.
+- **Ações** (`SelectionAction`): `inline` põe o botão na linha (secundário; `tone: 'danger'` vira `danger`) enquanto couber: primeiro perdem o texto (nome no `title` e no leitor de tela), depois vão para o ⋮ da direita para a esquerda (§10.9.1). Não há botão "Ações ▾".
+- **Menu único (⋮):** com seleção, o ⋮ abre com o grupo "N selecionados" em cima (as ações da seleção que não estão na linha, na ordem da tela, inertes com o motivo) e as ações da tela (`more`) embaixo, seguidas do que saiu da linha (Colunas, Auditoria, Densidade). O ⋮ não muda de lugar e ganha um selo com a quantidade de ações da seleção que estão dentro dele (`aria-label` "Mais ações (N da seleção)"). Sem seleção, é o ⋮ de sempre.
 - **Inertes:** `single` exige exatamente um registro ("Selecione exatamente um registro."); `blocked` traz o motivo da tela (ex.: ativos e inativos misturados). Na linha o botão fica com `aria-disabled`, `title` e o motivo em `aria-describedby`: continua focável e o clique não faz nada. No menu o item fica desabilitado com o motivo numa segunda linha (`MenuAction.description`), nunca cortado. Ação que só cabe num estado (Ativar ou Desativar) é uma só, com `blocked` quando a seleção mistura estados, em vez de dois botões inertes.
-- **Uma lista só:** `selectionMenuActions(selection)` devolve os mesmos itens para o `ContextMenu`/`rowActions` (§10.9.3). Linha de comando, "Ações", barra do celular e clique direito nunca divergem; nenhuma ação existe só num deles. Ação da seleção não se repete no "⋮".
-- **Celular (até 820 px):** a linha de cima não muda; a seleção vira barra fixa no rodapé (`bt-selectionbar`) com o contador numa linha e, embaixo, até 2 ações `inline` e "Mais" com o resto; enquanto houver seleção, ela cobre a `BottomNav` (camada logo acima de `--bt-z-index-mobile-navigation`, abaixo de drawer e popover). A altura fica em `--bt-selectionbar-height`; a lista usa `padding-bottom: var(--bt-selectionbar-height, 0)` para o último item não ficar embaixo da barra.
+- **Uma lista só:** `selectionMenuActions(selection)` devolve os mesmos itens para o `ContextMenu`/`rowActions` (§10.9.3). Linha de comando, ⋮, barra do celular e clique direito nunca divergem; nenhuma ação existe só num deles, e nenhuma aparece duas vezes entre a linha e o ⋮.
+- **Celular (até 820 px):** a linha de cima fica numa linha só com a mesma priorização (§10.9.1) e não muda com a seleção; a seleção vira barra fixa no rodapé (`bt-selectionbar`) com o contador numa linha e, embaixo, até 2 ações `inline` e "Mais", que abre o mesmo menu único do ⋮ (resto da seleção em cima, ações da tela e o que saiu da linha embaixo); enquanto houver seleção, ela cobre a `BottomNav` (camada logo acima de `--bt-z-index-mobile-navigation`, abaixo de drawer e popover). A altura fica em `--bt-selectionbar-height`; a lista usa `padding-bottom: var(--bt-selectionbar-height, 0)` para o último item não ficar embaixo da barra.
 
 ### 10.9.5 Grade editável (edição na célula)
 
@@ -1262,7 +1272,7 @@ Este bloco permite implementação mesmo quando os arquivos auxiliares não acom
 
 <!-- GENERATED:TOKENS_CSS:START -->
 ```css
-/* Betinhos Design System 1.25.0.
+/* Betinhos Design System 1.26.0.
  * GENERATED from design-tokens.json. Do not edit this file manually.
  */
 :root {
@@ -1554,6 +1564,13 @@ O padrão de mercado não é apenas um PDF de marca. É um produto versionado: t
 ---
 
 ## 20. Changelog
+
+### 1.26.0 — 13/11/2026
+
+- §10.9.1 e §10.9.6 **Linha de comando por prioridade**: o `ViewBar` com espaços nomeados mede a largura disponível e a largura natural de cada item (com e sem texto) e encolhe numa ordem fixa (texto da seleção, texto de Colunas/Filtros/Auditoria, texto da principal, seleção para o ⋮, Auditoria/Densidade/Colunas para o ⋮, busca vira lupa). Sempre uma linha, também no celular. Saem as container queries de 1120/580 px e o limite de 3/1 ações `inline` por largura.
+- O que é fixo depende só da largura: a seleção tem espaço reservado antes da busca e cede espaço; marcar linhas não move nem esconde nada. A busca e `children` continuam na linha com seleção.
+- Menu único: sai o botão "Ações ▾"; o ⋮ abre com o grupo "N selecionados" em cima e as ações da tela embaixo, com selo da quantidade de ações da seleção dentro dele. O "Mais" da barra do rodapé abre o mesmo menu.
+- `primary` nunca sai da linha: aceita vários botões (ex.: Atualizar só ícone + a ação primária); sem espaço, o botão com texto vira só ícone e ganha `title`.
 
 ### 1.25.0 — 12/11/2026
 
