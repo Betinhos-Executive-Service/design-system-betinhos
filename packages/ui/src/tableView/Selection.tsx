@@ -45,11 +45,13 @@ export function selectionMenuActions(selection: Pick<ViewBarSelection, 'count' |
 
 type ButtonSize = 'default' | 'touch'
 
-function SelectionButton({ action, count, size, compact = false, hidden = false }: { action: SelectionAction; count: number; size: ButtonSize; compact?: boolean; hidden?: boolean }) {
+function SelectionButton({ action, count, size, compact = false, hidden = false, ghost = false }: { action: SelectionAction; count: number; size: ButtonSize; compact?: boolean; hidden?: boolean; ghost?: boolean }) {
   const reason = selectionBlock(action, count)
   const reasonId = useId()
-  const variant = action.tone === 'danger' ? 'danger' : 'secondary'
-  const className = compact ? 'is-compact' : undefined
+  const danger = action.tone === 'danger'
+  // Na superfície do ViewBar (desktop) a ação é ghost; o CSS de lá pinta o ícone da perigosa.
+  const variant = ghost ? 'ghost' : danger ? 'danger' : 'secondary'
+  const className = [compact && 'is-compact', danger && 'bt-selection__danger'].filter(Boolean).join(' ') || undefined
   // title: sem espaço o botão vira só ícone e o nome aparece no hover; o rótulo continua como nome acessível.
   if (reason == null) return <Button variant={variant} size={size} icon={action.icon} className={className} hidden={hidden} data-vb={`sel:${action.id}`} title={action.label} onClick={action.onSelect}>{action.label}</Button>
   // aria-disabled (não disabled): continua focável, o leitor de tela lê o motivo e o clique não faz nada.
@@ -61,7 +63,7 @@ function SelectionButton({ action, count, size, compact = false, hidden = false 
   )
 }
 
-/** Contador com "✕": o que diferencia o modo seleção dos selos da página. */
+/** "✕" e o contador em texto simples (sem pílula nem selo), para não se confundir com os selos da página. */
 function SelectionCount({ selection, size }: { selection: ViewBarSelection; size: ButtonSize }) {
   return (
     <span className="bt-selection__count" data-vb="sel-count">
@@ -83,19 +85,17 @@ export function selectionOverflow(selection: ViewBarSelection, shown: number): M
   return selectionMenuActions({ count: selection.count, actions: rest }).map((action) => ({ ...action, group }))
 }
 
-/** Comandos da seleção na linha de comando (desktop): contador e as ações inline que couberem (`shown`); com `compact`, só
- * ícone. Fica no DOM com 0 marcados (escondido) para a linha medir a reserva. */
+/** Comandos da seleção na linha de comando (desktop): trecho tingido dentro da superfície do ViewBar, com o contador e as
+ * ações inline que couberem (`shown`); com `compact`, só ícone. Fica no DOM com 0 marcados (escondido) para a linha medir
+ * a reserva. */
 export function SelectionInline({ selection, shown, compact }: { selection: ViewBarSelection; shown: number; compact: boolean }) {
   return (
     <div className="bt-selection" role="group" aria-label="Comandos da seleção" hidden={selection.count <= 0}>
       <SelectionCount selection={selection} size="default" />
-      {inlineActions(selection).map((action, index) => <SelectionButton key={action.id} action={action} count={selection.count} size="default" compact={compact} hidden={index >= shown} />)}
+      {inlineActions(selection).map((action, index) => <SelectionButton key={action.id} action={action} count={selection.count} size="default" compact={compact} hidden={index >= shown} ghost />)}
     </div>
   )
 }
-
-/** Selo com a quantidade de ações da seleção dentro do menu. */
-export const menuBadge = (count: number) => (count > 0 ? <span className="bt-viewbar__count bt-viewbar__badge" aria-hidden="true">{count}</span> : null)
 
 /** Barra fixa no rodapé do celular (até 820 px): contador e até 2 ações; "Mais" abre o mesmo menu do ⋮ (o resto da
  * seleção em cima, `menu` embaixo). Publica a altura em `--bt-selectionbar-height`. */
@@ -122,7 +122,7 @@ export function SelectionBar({ selection, menu = [] }: { selection: ViewBarSelec
         {actions.length ? (
           <Menu
             actions={actions}
-            trigger={(props) => <Button {...props} variant="secondary" size="touch" icon={icons.more} iconEnd={menuBadge(rest.length)} aria-label={rest.length ? `Mais ações (${rest.length} da seleção)` : 'Mais ações'}>Mais</Button>}
+            trigger={(props) => <Button {...props} variant="secondary" size="touch" icon={icons.more} aria-label={rest.length ? `Mais ações (${rest.length} da seleção)` : 'Mais ações'}>Mais</Button>}
           />
         ) : null}
       </div>

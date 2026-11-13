@@ -78,6 +78,14 @@ describe('SelectionBar (celular)', () => {
     expect(out).toContain('>Desativar<')
     expect(out).not.toContain('>Copiar<')
     expect(out).toContain('aria-label="Mais ações (3 da seleção)"')
-    expect(out).toContain('bt-viewbar__badge')
+    // Sem selo numérico no "Mais" e contador em texto simples, como no desktop (1.27).
+    expect(out).not.toContain('bt-viewbar__badge')
+    expect(out).toMatch(/<span role="status" class="bt-selection__label">2 selecionados<\/span>/)
+  })
+  it('no desktop, ações inline são ghost e a perigosa leva a marca de ícone em danger', () => {
+    const out = renderToStaticMarkup(<SelectionInline selection={sel(1)} shown={4} compact={false} />)
+    expect(out).toMatch(/class="bt-button bt-button--ghost[^"]*bt-selection__danger[^"]*"[^>]*data-vb="sel:desativar"/)
+    expect(out).not.toContain('bt-button--danger')
+    expect(out).not.toContain('bt-button--secondary')
   })
 })

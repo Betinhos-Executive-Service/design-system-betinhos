@@ -2,6 +2,9 @@
  * Quanto cabe na linha de comando com espaços nomeados (§10.9.1/§10.9.6). Função pura: recebe as larguras medidas e
  * devolve o primeiro degrau de encolhimento em que tudo cabe numa linha. O que é fixo depende só da largura; a seleção
  * tem espaço reservado (contador + ações inline só ícone), então marcar linhas nunca mexe nos controles fixos.
+ *
+ * Desenho "peça única" (1.27): visão | superfície [Colunas · Filtros · Densidade · Auditoria · espaço flexível · ⋮ ·
+ * ferramentas] | ação principal. Dentro da superfície, um fio separa cada grupo visível; o fio conta como item da linha.
  */
 
 export type FitSize = { full: number; compact: number }
@@ -9,10 +12,16 @@ export type FitSize = { full: number; compact: number }
 export type FitInput = {
   /** Largura da barra. */
   avail: number
-  /** Espaço entre os comandos da direita. */
+  /** Espaço entre os itens dentro da superfície (botões, fios, seleção e busca). */
   gap: number
-  /** Espaço entre o seletor de visão e os comandos. */
+  /** Espaço entre o seletor de visão e a superfície. */
   startGap: number
+  /** Espaço entre a superfície e a ação principal. */
+  endGap: number
+  /** Padding + borda da superfície, somando os dois lados. */
+  frame: number
+  /** Largura do fio entre grupos (com o respiro lateral dele). */
+  sep: number
   /** Seletor de visão: com o nome e compacto (ícone da visão + chevron). */
   start: FitSize
   /** Botão só ícone (Densidade, ⋮, lupa). */
@@ -20,6 +29,9 @@ export type FitInput = {
   colunas: FitSize
   filtros?: FitSize
   audit?: FitSize
+  /** Itens secundários de `primary` (secondary, ghost ou só ícone): dentro da superfície, depois do ⋮. */
+  tools?: FitSize
+  /** Ação principal (o resto de `primary`): fora da superfície, à direita. */
   primary?: FitSize
   /** `children` no modo de espaços nomeados (nunca encolhe). */
   extra: number
@@ -37,7 +49,7 @@ export type FitPlan = {
   level: number
   /** Colunas, Filtros e Auditoria com texto. */
   labels: boolean
-  /** Ação principal com texto. */
+  /** Ação principal (e os itens de `primary` dentro da superfície) com texto. */
   primaryLabel: boolean
   /** Ações inline da seleção que a reserva já manda para o ⋮ (da direita para a esquerda). */
   selectionFolded: number
@@ -79,8 +91,10 @@ function required(input: FitInput, plan: Omit<FitPlan, 'level' | 'searchWidth' |
   end.push(sum(zone, gap))
   const anyFold = plan.fold.audit || plan.fold.density || plan.fold.colunas
   if (input.menu || anyFold) end.push(input.square)
-  if (input.primary) end.push(plan.primaryLabel ? input.primary.full : input.primary.compact)
-  return { total: (plan.startCompact ? input.start.compact : input.start.full) + input.startGap + sum(end, gap), reserved }
+  if (input.tools) end.push(plan.primaryLabel ? input.tools.full : input.tools.compact)
+  const surface = input.frame + sum(end.flatMap((part, index) => (index ? [input.sep, part] : [part])), gap)
+  const primary = input.primary ? input.endGap + (plan.primaryLabel ? input.primary.full : input.primary.compact) : 0
+  return { total: (plan.startCompact ? input.start.compact : input.start.full) + input.startGap + surface + primary, reserved }
 }
 
 /** Degraus na ordem do §10.9.1: texto da seleção (não mexe nos fixos), texto de Colunas/Filtros/Auditoria, texto da
@@ -92,7 +106,7 @@ export function planFit(input: FitInput): FitPlan {
   const push = (next: Partial<typeof plan>) => { plan = { ...plan, ...next, fold: { ...plan.fold, ...next.fold } }; steps.push(plan) }
   steps.push(plan)
   if (input.colunas.full > input.colunas.compact || (input.filtros && input.filtros.full > input.filtros.compact) || (input.audit && input.audit.full > input.audit.compact)) push({ labels: false })
-  if (input.primary && input.primary.full > input.primary.compact) push({ primaryLabel: false })
+  if ([input.primary, input.tools].some((size) => size && size.full > size.compact)) push({ primaryLabel: false })
   for (let i = 1; i <= (input.selection?.inline.length ?? 0); i += 1) push({ selectionFolded: i })
   if (input.audit) push({ fold: { ...plan.fold, audit: true } })
   push({ fold: { ...plan.fold, density: true } })
