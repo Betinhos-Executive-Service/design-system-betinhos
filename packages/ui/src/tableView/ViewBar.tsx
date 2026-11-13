@@ -484,6 +484,9 @@ export function ViewBar({ view, columns, catalog, pinnable, children, onError, f
   // os itens. Sem nada visível dentro, a zona não ganha fios (nunca fio ao lado de vazio).
   const zoneGrows = inSelection || (hasSearch && !lupa)
   const zoneShown = hasSearch || hasExtra || (inSelection && selecting)
+  // Com linhas marcadas e sem a caixa da busca na zona (lupa ou sem busca), nada mais estica: o trecho da seleção ocupa a
+  // sobra, para nunca sobrar vão entre o fio e a seleção (1.28.0).
+  const zoneFill = inSelection && selecting && !(hasSearch && !lupa)
   // Superfície única (§10.9.1): os grupos na ordem, com um fio entre cada par visível. Grupo dobrado continua no DOM
   // (escondido, para ser medido) e sem fio.
   const groups: Array<[string, boolean, ReactNode]> = [
@@ -513,7 +516,7 @@ export function ViewBar({ view, columns, catalog, pinnable, children, onError, f
       </div>
     ) : null],
     ['zone', zoneShown, (
-        <div className="bt-viewbar__zone">
+        <div className={`bt-viewbar__zone${zoneFill ? ' is-fill' : ''}`}>
           {inSelection && selection ? <SelectionInline selection={selection} shown={selShown} compact={!(fit?.sel?.labels ?? true)} /> : null}
           {hasSearch ? (
             <>

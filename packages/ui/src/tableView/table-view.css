@@ -124,6 +124,8 @@ body.bt-columns-grabbing, body.bt-columns-grabbing * { cursor: grabbing !importa
 /* A seleção ocupa só a sobra reservada antes da busca: nunca empurra a busca nem os fixos. */
 .bt-viewbar__zone > .bt-selection { flex: 0 1 auto; min-width: 0; }
 .bt-viewbar__zone > .bt-selection > * { flex-shrink: 0; }
+/* Sem a caixa da busca na zona (lupa ou sem busca), o trecho da seleção ocupa a sobra: nunca vão entre o fio e ele (1.28.0). */
+.bt-viewbar__zone.is-fill > .bt-selection { flex-grow: 1; }
 .bt-viewbar__search { display: flex; flex: 0 1 320px; min-width: 140px; }
 .bt-viewbar__search.is-sized { flex: none; min-width: 0; }
 /* Na zona, a busca ocupa o que a seleção não usa (sem seleção, a reserva inteira): começa logo depois do fio anterior. */

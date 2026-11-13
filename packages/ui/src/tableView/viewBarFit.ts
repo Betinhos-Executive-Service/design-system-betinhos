@@ -103,8 +103,9 @@ function required(input: FitInput, plan: Step) {
 }
 
 /** Degraus na ordem do §10.9.1: texto da seleção (não mexe nos fixos), texto de Colunas/Filtros/Auditoria, texto da
- * principal, ações da seleção para o ⋮, Auditoria/Densidade/Colunas para o ⋮, a busca vira lupa e, por último, o seletor
- * de visão fica compacto (só quando nada antes coube). */
+ * principal, Auditoria/Densidade/Colunas para o ⋮, ações da seleção para o ⋮ (da direita para a esquerda; 1.28: com linhas
+ * marcadas elas valem mais que as ferramentas), a busca vira lupa e, por último, o seletor de visão fica compacto (só quando
+ * nada antes coube). */
 export function planFit(input: FitInput): FitPlan {
   const steps: Step[] = []
   let plan = { labels: true, primaryLabel: true, selectionFolded: 0, fold: { audit: false, density: false, colunas: false }, lupa: false, startCompact: false }
@@ -112,10 +113,10 @@ export function planFit(input: FitInput): FitPlan {
   steps.push(plan)
   if (input.colunas.full > input.colunas.compact || (input.filtros && input.filtros.full > input.filtros.compact) || (input.audit && input.audit.full > input.audit.compact)) push({ labels: false })
   if ([input.primary, input.tools].some((size) => size && size.full > size.compact)) push({ primaryLabel: false })
-  for (let i = 1; i <= (input.selection?.inline.length ?? 0); i += 1) push({ selectionFolded: i })
   if (input.audit) push({ fold: { ...plan.fold, audit: true } })
   push({ fold: { ...plan.fold, density: true } })
   push({ fold: { ...plan.fold, colunas: true } })
+  for (let i = 1; i <= (input.selection?.inline.length ?? 0); i += 1) push({ selectionFolded: i })
   if (input.search) push({ lupa: true })
   if (input.start.full > input.start.compact) push({ startCompact: true })
 
