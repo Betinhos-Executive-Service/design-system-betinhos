@@ -1,8 +1,9 @@
 import { useCallback, useContext, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type HTMLAttributes, type KeyboardEvent, type PointerEvent, type ReactNode, type Ref } from 'react'
-import { isExtraColumn, moveVisibleColumn, pinColumn, resizeColumn, unpinColumn, sortBy, toggleColumn, visibleColumns, type ViewColumnDef, type ViewConfig } from '../tableView/config'
+import { isExtraColumn, moveVisibleColumn, pinColumn, resizeColumn, setGroup, unpinColumn, sortBy, toggleColumn, visibleColumns, type ViewColumnDef, type ViewConfig } from '../tableView/config'
 import { ColumnFilter } from '../tableView/ColumnFilter'
-import { COLUMN_FILTER_EVENT, ColumnMenu } from '../tableView/ColumnMenu'
+import { COLUMN_FILTER_EVENT, ColumnMenu, type ColumnGroupBy } from '../tableView/ColumnMenu'
 import type { LookupSearch } from '../tableView/FilterEditors'
+import { groupableFields } from '../tableView/grouping'
 import type { FilterCondition, FilterField } from '../tableView/filters'
 import { icons } from '../tableView/icons'
 import { TableGroupContext } from '../tableView/TableGroups'
@@ -58,6 +59,11 @@ export type TableView = {
   extraCell?: (rowKey: string, key: string) => ReactNode
   /** Liga "Fixar coluna" no menu do título; a escolha vai na visão (`pinned`). Passe o mesmo `pinnable` ao `ViewBar`. */
   pinnable?: boolean
+  /**
+   * Liga "Agrupar" no menu do título (§10.9.1) nas colunas de escolha, relação, Sim/Não e data de `quickFilters.fields`;
+   * a escolha vai na visão (`group`). Só em lista que desenha os grupos (`TableGroups`) e passa `groupFields` ao `ViewBar`.
+   */
+  groupable?: boolean
   /**
    * Larguras proporcionais: a coluna que o usuário não redimensionou cresce com a tela na proporção da sua largura
    * (`minmax(Npx, Nfr)`), e a largura vira o mínimo. Redimensionada ou fixa, fica em px. Padrão: todas em px.
@@ -645,6 +651,16 @@ function ViewHead<Row>({ placed, defs, view, chevron, cellClass, quick, pinRoom,
     moveBy(key, event.key === 'ArrowRight' ? 1 : -1)
   }
 
+  const groupFields = view.groupable && quick ? groupableFields(quick.fields) : []
+  const current = view.config.group
+  const groupMenu = (key: string) => {
+    const field = groupFields.find((f) => f.key === key)
+    if (!field) return undefined
+    const date = field.kind === 'date'
+    const active: ColumnGroupBy | null = current?.key !== key ? null : date ? current.by ?? 'month' : 'value'
+    return { date, active, onChange: (next: ColumnGroupBy | null) => update((config) => setGroup(config, next === null ? null : next === 'value' ? { key } : { key, by: next })) }
+  }
+
   return (
     <>
     <div ref={headRef} className="bt-table__head" role="row">
@@ -680,6 +696,7 @@ function ViewHead<Row>({ placed, defs, view, chevron, cellClass, quick, pinRoom,
               pinned={pinned}
               onTogglePin={view.pinnable ? () => togglePin(column.key, label, pinned) : undefined}
               canPin={pinned || width <= pinRoom}
+              group={groupMenu(column.key)}
             />
             <span
               className="bt-table__resize"

@@ -1,9 +1,9 @@
 {
   "$schema": "https://www.designtokens.org/schemas/2025.10/format.json",
-  "$description": "Betinhos Design System 1.33.0. Identidade operacional premium extraída do Módulo Qualidade.",
+  "$description": "Betinhos Design System 1.34.0. Identidade operacional premium extraída do Módulo Qualidade.",
   "$extensions": {
     "com.betinhos.design-system": {
-      "version": "1.33.0",
+      "version": "1.34.0",
       "updated": "2026-11-13",
       "source": "Módulo Qualidade",
       "theme": "light-only",
