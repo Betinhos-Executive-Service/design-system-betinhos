@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState, type FocusEvent, type KeyboardEvent, type ReactNode } from 'react'
+import { Children, Fragment, cloneElement, isValidElement, useEffect, useLayoutEffect, useRef, useState, type FocusEvent, type KeyboardEvent, type ReactElement, type ReactNode } from 'react'
 import { useOptionalToast } from '../components/Alert'
 import { AuditButton } from '../components/Audit'
 import { Button } from '../components/Button'
@@ -13,7 +13,7 @@ import type { LookupSearch } from './FilterEditors'
 import { COLUMN_FILTER_EVENT } from './ColumnMenu'
 import { countActiveFilters, emptyFilters, readFilters, storedFilters, type FilterField, type TableFilters } from './filters'
 import { FiltersPanel, type FiltersPanelTab } from './FiltersPanel'
-import { SelectionBar, SelectionInline, countLabel, inlineActions, menuBadge, selectionOverflow, type ViewBarSelection } from './Selection'
+import { SelectionBar, SelectionInline, countLabel, inlineActions, selectionOverflow, type ViewBarSelection } from './Selection'
 import { fitSelection, planFit, type FitPlan, type FitSize } from './viewBarFit'
 import { icons } from './icons'
 import type { TableViewEntry } from './store'
@@ -43,8 +43,10 @@ export type ViewBarProps = {
   /** "⋮ Mais ações": comandos raros da tela (atalhos, modo de exibição). Fica no mesmo lugar com ou sem seleção; em cima
    * entram as ações da seleção que não couberam na linha e, embaixo, Colunas, Auditoria e Densidade quando saem da linha. */
   more?: MenuAction[]
-  /** A ação primária da lista (§10.9.1): sempre a última à direita. Nada aqui sai da linha; sem espaço, botão com ícone perde
-   * o texto (fica no nome acessível e no `title`). Ex.: `<><Button icon={…} aria-label="Atualizar" /><Button icon={…}>Criar</Button></>`. */
+  /** A ação primária da lista (§10.9.1): sempre a última à direita, fora da superfície. Nada aqui sai da linha; sem espaço,
+   * botão com ícone perde o texto (fica no nome acessível e no `title`). Botão `secondary`/`ghost` ou só ícone (ex.: Atualizar)
+   * entra na superfície, depois do ⋮; o resto (botão primário, o padrão do `Button`) fica fora.
+   * Ex.: `<><Button variant="secondary" icon={…} aria-label="Atualizar" /><Button icon={…}>Criar</Button></>`. */
   primary?: ReactNode
   /** Modo seleção (§10.9.6): com `count > 0`, contador e ações `inline` entram no espaço reservado antes da busca; o que não
    * couber vai para o ⋮. Passe as mesmas `actions` com ou sem seleção (a reserva é medida com elas). No celular, barra no rodapé. */
@@ -75,9 +77,31 @@ const SEARCH_MAX = 320
 
 type Fit = { plan: FitPlan; sel: { labels: boolean; shown: number } | null }
 
-const cssGap = (element: Element | null, fallback: number) => {
-  const value = element ? parseFloat(getComputedStyle(element).columnGap) : NaN
+const cssPx = (element: Element | null, read: (style: CSSStyleDeclaration) => number, fallback: number) => {
+  const value = element ? read(getComputedStyle(element)) : NaN
   return Number.isFinite(value) ? value : fallback
+}
+const cssGap = (element: Element | null, fallback: number) => cssPx(element, (style) => parseFloat(style.columnGap), fallback)
+const cssFrame = (element: Element | null, fallback: number) => cssPx(element, (style) => parseFloat(style.paddingLeft) + parseFloat(style.paddingRight) + parseFloat(style.borderLeftWidth) + parseFloat(style.borderRightWidth), fallback)
+
+/** Separa `primary` (§10.9.1): botão `secondary`/`ghost` ou só ícone vai para a superfície (depois do ⋮); o resto (botão
+ * primário, padrão do `Button`) fica fora, à direita. Só o `Button` do DS é lido: outro componente fica fora. Fragmentos são
+ * abertos; o prefixo da chave evita chaves repetidas entre fragmentos aninhados. */
+function splitPrimary(node: ReactNode) {
+  type Props = { variant?: string; children?: ReactNode }
+  const flat = (value: ReactNode, prefix = ''): ReactNode[] => Children.toArray(value).flatMap((child) => {
+    if (!isValidElement(child)) return [child]
+    if (child.type === Fragment) return flat((child as ReactElement<Props>).props.children, `${prefix}${String(child.key)}/`)
+    return [prefix ? cloneElement(child, { key: `${prefix}${String(child.key)}` }) : child]
+  })
+  const tools: ReactNode[] = []
+  const main: ReactNode[] = []
+  for (const child of flat(node)) {
+    const props = isValidElement(child) && child.type === Button ? (child as ReactElement<Props>).props : null
+    const tool = props != null && (props.variant === 'secondary' || props.variant === 'ghost' || props.children == null || props.children === false)
+    ;(tool ? tools : main).push(child)
+  }
+  return { tools, main }
 }
 
 const cloneFor = (element: HTMLElement, compact: boolean) => {
@@ -91,21 +115,31 @@ const cloneFor = (element: HTMLElement, compact: boolean) => {
 }
 
 /** Larguras naturais de cada item `[data-vb]`, com e sem texto, medidas em cópias numa camada invisível da própria barra
- * (mesmo CSS). Medir cópias, e não os itens, deixa a medida igual em qualquer degrau: não há laço nem piscada. */
+ * (mesmo CSS). Medir cópias, e não os itens, deixa a medida igual em qualquer degrau: não há laço nem piscada. Cada cópia
+ * fica num contêiner com a classe do original (superfície ou fim da linha), para herdar as mesmas regras de altura. */
 function measureItems(bar: HTMLElement, layer: HTMLElement, sampleCounter: string) {
   const copies: Array<[string, HTMLElement, HTMLElement]> = []
+  const box = (className: string) => Object.assign(document.createElement('div'), { className })
+  const surfaceBox = box('bt-viewbar__surface')
+  const endBox = box('bt-viewbar__end')
+  const loose: HTMLElement[] = []
   bar.querySelectorAll<HTMLElement>('[data-vb]').forEach((element) => {
-    if (layer.contains(element)) return
     const key = element.dataset.vb ?? ''
-    copies.push([key, cloneFor(element, false), cloneFor(element, true)])
+    // Itens com a mesma chave (os fios) são iguais: mede um só.
+    if (layer.contains(element) || copies.some(([seen]) => seen === key)) return
+    const pair: [string, HTMLElement, HTMLElement] = [key, cloneFor(element, false), cloneFor(element, true)]
+    const extra: Array<[string, HTMLElement, HTMLElement]> = []
     if (key === 'sel-count') {
       const sample = cloneFor(element, false)
       const label = sample.querySelector('.bt-selection__label')
       if (label) label.textContent = sampleCounter
-      copies.push(['sel-count-sample', sample, sample])
+      extra.push(['sel-count-sample', sample, sample])
     }
+    const target = element.closest('.bt-viewbar__surface') ? surfaceBox : element.closest('.bt-viewbar__end') ? endBox : null
+    for (const [, full, compact] of [pair, ...extra]) for (const copy of full === compact ? [full] : [full, compact]) (target ? target.append(copy) : loose.push(copy))
+    copies.push(pair, ...extra)
   })
-  layer.replaceChildren(...copies.flatMap(([, full, compact]) => (full === compact ? [full] : [full, compact])))
+  layer.replaceChildren(...loose, surfaceBox, endBox)
   const width = (element: HTMLElement) => Math.ceil(element.getBoundingClientRect().width)
   const sizes = new Map<string, FitSize>(copies.map(([key, full, compact]) => [key, { full: width(full), compact: width(compact) }]))
   layer.replaceChildren()
@@ -208,14 +242,15 @@ export function ViewBar({ view, columns, catalog, pinnable, children, onError, f
   // Medida e degrau de encolhimento (§10.9.1). Só no modo de espaços nomeados; o legado não mede nada.
   const barRef = useRef<HTMLDivElement>(null)
   const layerRef = useRef<HTMLDivElement>(null)
-  const primaryRef = useRef<HTMLDivElement>(null)
   const searchRef = useRef<HTMLDivElement>(null)
   const lupaRef = useRef<HTMLButtonElement>(null)
   const [fit, setFit] = useState<Fit | null>(null)
   const [searchOpen, setSearchOpen] = useState<{ right: number; width: number } | null>(null)
   const inSelection = selection !== undefined && !mobile
   const hasSearch = search != null && search !== false
-  const hasPrimary = primary != null && primary !== false
+  const split = splitPrimary(primary)
+  const hasPrimary = split.main.length > 0
+  const hasTools = split.tools.length > 0
   const hasExtra = children != null && children !== false
   const measure = useRef<() => void>(() => undefined)
   measure.current = () => {
@@ -225,15 +260,18 @@ export function ViewBar({ view, columns, catalog, pinnable, children, onError, f
     const avail = bar.getBoundingClientRect().width
     if (!avail) return // escondida (aba, display: none): mantém o último degrau
     const sizes = measureItems(bar, layer, countLabel({ count: 88, label: selection?.label }))
-    const gap = cssGap(bar.querySelector('.bt-viewbar__end'), 8)
-    const square = sizes.get('density')?.full || (mobile ? 44 : 40)
+    const surface = bar.querySelector('.bt-viewbar__surface')
+    const gap = cssGap(surface, 2)
+    const square = sizes.get('density')?.full || (mobile ? 44 : 34)
     const box = (key: string) => sizes.get(key) ?? { full: square, compact: square }
     const inline = inSelection && selection ? inlineActions(selection) : []
     const plan = planFit({
-      avail, gap, startGap: cssGap(bar, 12), start: sizes.get('view') ?? { full: 0, compact: 0 }, square,
+      avail, gap, startGap: cssGap(bar, 12), endGap: cssGap(bar.querySelector('.bt-viewbar__end'), 8), frame: cssFrame(surface, 6),
+      sep: sizes.get('sep')?.full ?? 9, start: sizes.get('view') ?? { full: 0, compact: 0 }, square,
       colunas: box('colunas'),
       filtros: filters ? box('filtros') : undefined,
       audit: onAudit ? box('audit') : undefined,
+      tools: hasTools ? sizes.get('tools') : undefined,
       primary: hasPrimary ? sizes.get('primary') : undefined,
       extra: hasExtra ? sizes.get('extra')?.full ?? 0 : 0,
       search: hasSearch, searchMin: SEARCH_MIN, searchMax: SEARCH_MAX,
@@ -272,7 +310,7 @@ export function ViewBar({ view, columns, catalog, pinnable, children, onError, f
 
   // Ação principal só ícone: o rótulo continua como nome acessível e vira a dica (`title`) se a tela não deu uma.
   useLayoutEffect(() => {
-    primaryRef.current?.querySelectorAll<HTMLElement>('.bt-button').forEach((button) => {
+    barRef.current?.querySelectorAll<HTMLElement>('.bt-viewbar__end > [data-vb="primary"] .bt-button, .bt-viewbar__surface > [data-vb="tools"] .bt-button').forEach((button) => {
       const text = button.querySelector('.bt-button__label')?.textContent?.trim()
       if (!primaryLabel && text && !button.title) { button.title = text; button.dataset.vbTitle = '' }
       else if (primaryLabel && button.dataset.vbTitle !== undefined) { button.removeAttribute('title'); delete button.dataset.vbTitle }
@@ -440,32 +478,35 @@ export function ViewBar({ view, columns, catalog, pinnable, children, onError, f
   )
 
   const searchStyle = floating && searchOpen ? { right: searchOpen.right, width: searchOpen.width } : plan && !lupa && plan.searchWidth ? { width: plan.searchWidth } : undefined
-  return (
-    <>
-    <div ref={barRef} className={`bt-viewbar bt-viewbar--slots${selecting ? ' is-selecting' : ''}`}>
-      <div className="bt-viewbar__start">{viewMenu}</div>
-      <div className="bt-viewbar__end">
-        <div className={slot(!labels)} data-vb="colunas" hidden={fold.colunas}>
-          <Button variant="secondary" size={size} icon={icons.columns} aria-haspopup="dialog" title={labels ? undefined : 'Colunas'} onClick={() => setPanel(true)}>Colunas</Button>
-        </div>
-        {filters ? (
-          <div className={slot(!labels)} data-vb="filtros">
-            <Button variant="secondary" size={size} icon={icons.filter} iconEnd={activeCount ? <span className="bt-viewbar__count">{activeCount}</span> : null} aria-haspopup="dialog" title={labels ? undefined : `Filtros${activeCount ? ` (${activeCount})` : ''}`} onClick={() => setFiltersTab('coluna')}>Filtros</Button>
-          </div>
-        ) : null}
-        <div className="bt-viewbar__slot" hidden={fold.density}>
-          <Menu
-            actions={densityActions}
-            trigger={(props) => (
-              <Button {...props} variant="secondary" size={size} icon={densityIcon} data-vb="density" aria-label="Densidade das linhas" title="Densidade das linhas" />
-            )}
-          />
-        </div>
-        {onAudit ? (
-          <div className={slot(!labels)} data-vb="audit" hidden={fold.audit}>
-            <AuditButton size={size} onClick={onAudit} />
-          </div>
-        ) : null}
+  // Superfície única (§10.9.1): os grupos na ordem, com um fio entre cada par visível. Grupo dobrado continua no DOM
+  // (escondido, para ser medido) e sem fio.
+  const groups: Array<[string, boolean, ReactNode]> = [
+    ['colunas', !fold.colunas, (
+      <div className={slot(!labels)} data-vb="colunas" hidden={fold.colunas}>
+        <Button variant="secondary" size={size} icon={icons.columns} aria-haspopup="dialog" title={labels ? undefined : 'Colunas'} onClick={() => setPanel(true)}>Colunas</Button>
+      </div>
+    )],
+    ['filtros', true, filters ? (
+      <div className={slot(!labels)} data-vb="filtros">
+        <Button variant="secondary" size={size} icon={icons.filter} iconEnd={activeCount ? <span className="bt-viewbar__count">{activeCount}</span> : null} aria-haspopup="dialog" title={labels ? undefined : `Filtros${activeCount ? ` (${activeCount})` : ''}`} onClick={() => setFiltersTab('coluna')}>Filtros</Button>
+      </div>
+    ) : null],
+    ['density', !fold.density, (
+      <div className="bt-viewbar__slot" hidden={fold.density}>
+        <Menu
+          actions={densityActions}
+          trigger={(props) => (
+            <Button {...props} variant="secondary" size={size} icon={densityIcon} data-vb="density" aria-label="Densidade das linhas" title="Densidade das linhas" />
+          )}
+        />
+      </div>
+    )],
+    ['audit', !fold.audit, onAudit ? (
+      <div className={slot(!labels)} data-vb="audit" hidden={fold.audit}>
+        <AuditButton size={size} onClick={onAudit} />
+      </div>
+    ) : null],
+    ['zone', true, (
         <div className="bt-viewbar__zone">
           {inSelection && selection ? <SelectionInline selection={selection} shown={selShown} compact={!(fit?.sel?.labels ?? true)} /> : null}
           {hasSearch ? (
@@ -478,15 +519,31 @@ export function ViewBar({ view, columns, catalog, pinnable, children, onError, f
           ) : null}
           {hasExtra ? <div className="bt-viewbar__slot" data-vb="extra">{children}</div> : null}
         </div>
-        {menuShown ? (
-          <Menu
-            actions={menuItems}
-            trigger={(props) => (
-              <Button {...props} variant="secondary" size={size} icon={icons.more} iconEnd={menuBadge(selItems.length)} className="bt-viewbar__more" disabled={!menuItems.length} aria-label={selItems.length ? `Mais ações (${selItems.length} da seleção)` : 'Mais ações'} title="Mais ações" />
-            )}
-          />
-        ) : null}
-        {hasPrimary ? <div ref={primaryRef} className={slot(!primaryLabel)} data-vb="primary">{primary}</div> : null}
+    )],
+    ['menu', true, menuShown ? (
+      <Menu
+        actions={menuItems}
+        trigger={(props) => (
+          <Button {...props} variant="secondary" size={size} icon={icons.more} className="bt-viewbar__more" disabled={!menuItems.length} aria-label={selItems.length ? `Mais ações (${selItems.length} da seleção)` : 'Mais ações'} title="Mais ações" />
+        )}
+      />
+    ) : null],
+    ['tools', true, hasTools ? <div className={slot(!primaryLabel)} data-vb="tools">{split.tools}</div> : null],
+  ]
+  let seen = false
+  const surfaceItems = groups.map(([key, visible, node]) => {
+    if (node == null) return null
+    const sep = visible && seen
+    if (visible) seen = true
+    return <Fragment key={key}>{sep ? <span className="bt-viewbar__sep" data-vb="sep" aria-hidden="true" /> : null}{node}</Fragment>
+  })
+  return (
+    <>
+    <div ref={barRef} className={`bt-viewbar bt-viewbar--slots${selecting ? ' is-selecting' : ''}`}>
+      <div className="bt-viewbar__start">{viewMenu}</div>
+      <div className="bt-viewbar__end">
+        <div className="bt-viewbar__surface">{surfaceItems}</div>
+        {hasPrimary ? <div className={slot(!primaryLabel)} data-vb="primary">{split.main}</div> : null}
       </div>
       <div ref={layerRef} className="bt-viewbar__measure" aria-hidden="true" />
       {selecting && mobile && selection ? <SelectionBar selection={selection} menu={[...(more ?? []), ...foldItems]} /> : null}

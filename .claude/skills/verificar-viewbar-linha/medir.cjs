@@ -1,6 +1,7 @@
 // Verificação da linha de comando (ViewBar com espaços nomeados) na vitrine: uma linha, sem sobreposição, fixos parados com
 // 0/1/3 selecionados, nenhum texto cortado, sem erro de console. Uso: node medir.cjs <url> <pasta-de-saida>
-// PLAYWRIGHT: caminho do pacote playwright (ex.: o do @playwright/cli global); CHROME_EXE: Chromium já instalado (opcional).
+// PLAYWRIGHT: caminho do pacote playwright (ex.: o do @playwright/cli global); CHROME_EXE: Chromium já instalado (opcional);
+// SCHEME: light (padrão) ou dark, emula prefers-color-scheme (o DS só tem tema claro: o escuro tem de sair igual, sem quebra).
 const { chromium } = require(process.env.PLAYWRIGHT || 'playwright')
 const fs = require('fs')
 const path = require('path')
@@ -49,7 +50,10 @@ const measure = () => {
     noMenu: ['colunas', 'densidade', 'auditoria'].filter((k) => fixed[k] === null),
     lupa: fixed.lupa !== null,
     visaoCompacta: Boolean(bar.querySelector('[data-vb="view"].is-compact')),
-    selo: bar.querySelector('.bt-viewbar__more .bt-viewbar__badge')?.textContent ?? '',
+    selo: bar.querySelector('.bt-viewbar__more .bt-viewbar__badge, .bt-viewbar__more .bt-viewbar__count')?.textContent ?? '',
+    // Peça única (1.27): uma superfície, a principal fora dela, nenhuma pílula no contador.
+    superficie: bar.querySelectorAll('.bt-viewbar__surface').length === 1 && !bar.querySelector('.bt-viewbar__surface [data-vb="primary"]'),
+    pilula: [...bar.querySelectorAll('.bt-selection__count')].some((el) => getComputedStyle(el).backgroundColor !== 'rgba(0, 0, 0, 0)'),
     rodape: Boolean(document.querySelector('.bt-selectionbar')),
   }
   return { barW: Math.round(br.width), barH: Math.round(br.height), oneLine, overlaps, outside, cut, fixed, state, pageScroll: document.documentElement.scrollWidth > window.innerWidth }
@@ -60,7 +64,7 @@ const measure = () => {
   const rows = []
   const errors = []
   for (const width of WIDTHS) {
-    const ctx = await browser.newContext({ viewport: { width, height: 900 }, hasTouch: width <= 820 })
+    const ctx = await browser.newContext({ viewport: { width, height: 900 }, hasTouch: width <= 820, colorScheme: process.env.SCHEME || 'light' })
     const page = await ctx.newPage()
     page.on('console', (m) => { if (m.type() === 'error') errors.push(`${width}px: ${m.text()}`) })
     page.on('pageerror', (e) => errors.push(`${width}px: ${e.message}`))
@@ -75,7 +79,7 @@ const measure = () => {
       await page.waitForTimeout(150)
       const m = await page.evaluate(measure)
       rows.push({ width, count, ...m })
-      await section.locator('.bt-viewbar--slots').screenshot({ path: path.join(out, `viewbar-${width}-${count}.png`) })
+      await section.locator('.bt-viewbar--slots').screenshot({ path: path.join(out, `viewbar-${process.env.SCHEME || 'light'}-${width}-${count}.png`) })
     }
     await ctx.close()
   }
@@ -91,7 +95,7 @@ const measure = () => {
   console.log('|---|---|---|---|---|---|---|---|---|---|')
   for (const r of rows) {
     const s = r.state
-    const estado = [s.texto ? 'fixos c/ texto' : 'fixos só ícone', s.principalTexto ? 'principal c/ texto' : 'principal só ícone', r.count ? (s.rodape ? 'seleção no rodapé' : `seleção ${s.selInline} inline${s.selTexto ? ' c/ texto' : ' só ícone'}`) : null, s.noMenu.length ? `no ⋮: ${s.noMenu.join(', ')}` : null, s.lupa ? 'lupa' : 'busca', s.visaoCompacta ? 'visão só ícone' : null, s.selo ? `selo ${s.selo}` : null].filter(Boolean).join('; ')
+    const estado = [s.texto ? 'fixos c/ texto' : 'fixos só ícone', s.principalTexto ? 'principal c/ texto' : 'principal só ícone', r.count ? (s.rodape ? 'seleção no rodapé' : `seleção ${s.selInline} inline${s.selTexto ? ' c/ texto' : ' só ícone'}`) : null, s.noMenu.length ? `no ⋮: ${s.noMenu.join(', ')}` : null, s.lupa ? 'lupa' : 'busca', s.visaoCompacta ? 'visão só ícone' : null, s.selo ? `selo ${s.selo}` : null, s.superficie ? null : 'SUPERFÍCIE ERRADA', s.pilula ? 'PÍLULA' : null].filter(Boolean).join('; ')
     console.log(`| ${r.width} | ${r.count} | ${r.barW} | ${r.barH} | ${r.oneLine ? 'sim' : 'NÃO'} | ${r.overlaps.length ? r.overlaps.join(' ') : 'nenhuma'} | ${r.outside.length ? r.outside.join(' ') : '—'} | ${r.cut.length ? r.cut.join(', ') : 'nenhum'} | ${r.fixosParados ? 'sim' : 'NÃO'} | ${estado}${r.pageScroll ? ' (ROLAGEM HORIZONTAL)' : ''} |`)
   }
   console.log(`Erros de console: ${errors.length ? errors.join(' | ') : 'nenhum'}`)

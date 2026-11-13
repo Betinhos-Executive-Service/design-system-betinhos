@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react'
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { Button } from '../components/Button'
 import { SearchBox } from '../components/SearchBox'
@@ -26,9 +26,11 @@ const actions: SelectionAction[] = [
   { id: 'excluir', label: 'Excluir', icon, tone: 'danger', onSelect: noop },
 ]
 
-// Larguras simuladas (px): cheio / só ícone. Gaps caem no padrão do ViewBar (8 entre comandos, 12 depois da visão).
+// Larguras simuladas (px): cheio / só ícone. Gaps e moldura caem no padrão do ViewBar (2 dentro da superfície, 12 depois
+// da visão, 8 antes da principal, moldura 6); cada fio entre grupos tem 9.
 const SIZES: Record<string, [number, number]> = {
   view: [200, 60], colunas: [120, 40], filtros: [110, 40], density: [40, 40], audit: [130, 40], primary: [170, 40],
+  sep: [9, 9],
   'sel:abrir': [100, 40], 'sel:copiar': [100, 40], 'sel:concluir': [100, 40],
 }
 let barWidth = 1800
@@ -54,10 +56,18 @@ beforeEach(() => {
     const w = width(this)
     return { width: w, height: 40, top: 0, left: 0, right: w, bottom: 40, x: 0, y: 0, toJSON: noop } as DOMRect
   })
+  // O jsdom não carrega o CSS: gaps e moldura da superfície como no table-view.css (gap 2, padding 2, borda 1).
+  const computed = window.getComputedStyle.bind(window)
+  vi.spyOn(window, 'getComputedStyle').mockImplementation((element: Element) => {
+    if (element.classList.contains('bt-viewbar__surface')) return { columnGap: '2px', paddingLeft: '2px', paddingRight: '2px', borderLeftWidth: '1px', borderRightWidth: '1px' } as CSSStyleDeclaration
+    if (element.classList.contains('bt-viewbar__end')) return { columnGap: '8px' } as CSSStyleDeclaration
+    if (element.classList.contains('bt-viewbar')) return { columnGap: '12px' } as CSSStyleDeclaration
+    return computed(element)
+  })
 })
 afterEach(() => { cleanup(); vi.unstubAllGlobals(); vi.restoreAllMocks() })
 
-function Lista({ count, onAudit = noop, legacy = false }: { count: number; onAudit?: () => void; legacy?: boolean }) {
+function Lista({ count, onAudit = noop, legacy = false, primary = <Button icon={icon}>Nova ocorrência</Button> }: { count: number; onAudit?: () => void; legacy?: boolean; primary?: ReactNode }) {
   const [store] = useState(() => createMemoryViewStore())
   const view = useTableView({ tela: 'fit', columns: defs, store, storage })
   if (legacy) return <ViewBar view={view} columns={defs} filters={{ fields }} onAudit={onAudit}><Button>Atualizar</Button></ViewBar>
@@ -69,7 +79,7 @@ function Lista({ count, onAudit = noop, legacy = false }: { count: number; onAud
       onAudit={onAudit}
       search={<SearchBox aria-label="Buscar" value="" onChange={noop} />}
       more={[{ id: 'exportar', label: 'Exportar CSV', onSelect: noop }]}
-      primary={<Button icon={icon}>Nova ocorrência</Button>}
+      primary={primary}
       selection={{ count, onClear: noop, actions }}
     />
   )
@@ -96,21 +106,23 @@ const state = (container: HTMLElement) => ({
 })
 
 describe('ViewBar: encolhimento medido (§10.9.1)', () => {
-  // Com tudo cheio: 200 + 12 + (120 + 110 + 40 + 130 + zona(165 + 3×48 + 8 + 140) + 40 + 170 + 6×8) = 1327.
+  // Com tudo cheio: 200 + 12 + superfície(6 + 120 + 110 + 40 + 130 + zona(165 + 3×42 + 2 + 140) + 40 + 5 fios×9 + 10×2)
+  // + 8 + 170 = 1334. Cada grupo dobrado tira ele, um fio e dois gaps (40 + 9 + 4 = 53).
   const cases: Array<[number, Partial<ReturnType<typeof state>>]> = [
     [1800, { labels: true, primaryLabel: true, selShown: 3, selLabels: true, startCompact: false }],
     [1400, { labels: true, primaryLabel: true, selShown: 3, selLabels: false }], // 1. a seleção perde o texto primeiro
-    [1327, { labels: true, selShown: 3, selLabels: false }],
-    [1326, { labels: false, primaryLabel: true, selShown: 3 }], // 2. Colunas, Filtros e Auditoria só ícone
-    [1086, { labels: false, primaryLabel: false, selShown: 3 }], // 3. a principal só ícone
-    [956, { primaryLabel: false, selShown: 2, audit: true }], // 4. seleção para o ⋮, da direita para a esquerda
-    [861, { selShown: 1 }],
-    [812, { selShown: 0, audit: false, density: true }], // 5. Auditoria, depois Densidade, depois Colunas
-    [764, { audit: false, density: false, colunas: true }],
-    [716, { colunas: false, lupa: false }],
-    [668, { colunas: false, lupa: true, filtros: true, startCompact: false }], // 6. a busca vira lupa; Filtros nunca sai
-    [569, { lupa: true, startCompact: false }],
-    [568, { lupa: true, startCompact: true }], // 7. só quando nem a lupa basta: a visão fica só ícone + chevron
+    [1334, { labels: true, selShown: 3, selLabels: false }],
+    [1333, { labels: false, primaryLabel: true, selShown: 3 }], // 2. Colunas, Filtros e Auditoria só ícone
+    [1093, { labels: false, primaryLabel: false, selShown: 3 }], // 3. a principal só ícone
+    [963, { primaryLabel: false, selShown: 2, audit: true }], // 4. seleção para o ⋮, da direita para a esquerda
+    [921, { selShown: 1 }],
+    [879, { selShown: 0, audit: true }],
+    [837, { selShown: 0, audit: false, density: true }], // 5. Auditoria, depois Densidade, depois Colunas
+    [784, { audit: false, density: false, colunas: true }],
+    [731, { colunas: false, lupa: false }],
+    [678, { colunas: false, lupa: true, filtros: true, startCompact: false }], // 6. a busca vira lupa; Filtros nunca sai
+    [579, { lupa: true, startCompact: false }],
+    [578, { lupa: true, startCompact: true }], // 7. só quando nem a lupa basta: a visão fica só ícone + chevron
     [324, { lupa: true, startCompact: true, filtros: true }],
   ]
   it.each(cases)('em %ipx', async (px, expected) => {
@@ -129,7 +141,7 @@ describe('ViewBar: encolhimento medido (§10.9.1)', () => {
   })
 
   it('marcar linhas não muda nada fixo: mesmo degrau com 0, 1 e 3 selecionados', async () => {
-    for (const px of [1800, 1326, 956, 716]) {
+    for (const px of [1800, 1333, 963, 731]) {
       const fixed = (container: HTMLElement) => { const { selShown: _s, selLabels: _l, ...rest } = state(container); return rest }
       const snapshots = []
       for (const count of [0, 1, 3]) {
@@ -144,7 +156,7 @@ describe('ViewBar: encolhimento medido (§10.9.1)', () => {
 
   it('a busca usa a sobra até 320 px, sem invadir a reserva da seleção', async () => {
     const { container } = await at(1400, 0)
-    expect(container.querySelector<HTMLElement>('.bt-viewbar__search')!.style.width).toBe('213px')
+    expect(container.querySelector<HTMLElement>('.bt-viewbar__search')!.style.width).toBe('206px')
   })
 
   it('a ação principal só ícone ganha title com o rótulo, e perde quando o texto volta', async () => {
@@ -184,12 +196,71 @@ describe('ViewBar: encolhimento medido (§10.9.1)', () => {
   })
 })
 
+describe('ViewBar: peça única (1.27)', () => {
+  const inside = (container: HTMLElement, selector: string) => Boolean(container.querySelector(`.bt-viewbar__surface ${selector}`))
+  it('tudo menos a visão e a ação principal numa superfície, com um fio entre cada grupo visível', async () => {
+    const { container } = await at(1800, 0)
+    expect(container.querySelectorAll('.bt-viewbar__surface')).toHaveLength(1)
+    for (const selector of ['[data-vb="colunas"]', '[data-vb="filtros"]', '[data-vb="density"]', '[data-vb="audit"]', '.bt-viewbar__search', '.bt-viewbar__more']) expect(inside(container, selector)).toBe(true)
+    expect(inside(container, '[data-vb="view"]')).toBe(false)
+    expect(inside(container, '[data-vb="primary"]')).toBe(false)
+    expect(container.querySelector('.bt-viewbar__end > [data-vb="primary"]')).not.toBeNull()
+    // Colunas | Filtros | Densidade | Auditoria | espaço flexível | ⋮ → 5 fios.
+    expect(container.querySelectorAll('.bt-viewbar__surface > .bt-viewbar__sep')).toHaveLength(5)
+  })
+  it('grupo dobrado sai sem deixar fio sobrando', async () => {
+    const { container } = await at(731, 0) // Auditoria, Densidade e Colunas no ⋮
+    expect(container.querySelectorAll('.bt-viewbar__surface > .bt-viewbar__sep')).toHaveLength(2) // Filtros | zona | ⋮
+    expect(container.querySelector('.bt-viewbar__surface > :not([hidden])')!.classList.contains('bt-viewbar__sep')).toBe(false)
+  })
+  it('seleção como trecho dentro da superfície: ✕, contador em texto simples e ações ghost; sem pílula nem selo', async () => {
+    const { container } = await at(1800, 3)
+    const segment = container.querySelector<HTMLElement>('.bt-viewbar__surface .bt-viewbar__zone > .bt-selection')!
+    expect(segment.hidden).toBe(false)
+    expect(within(segment).getByRole('button', { name: 'Limpar seleção' })).toBeTruthy()
+    const label = segment.querySelector('.bt-selection__label')!
+    expect(label.textContent).toBe('3 selecionados')
+    expect(label.children).toHaveLength(0)
+    for (const button of segment.querySelectorAll('[data-vb^="sel:"]')) expect(button.classList.contains('bt-button--ghost')).toBe(true)
+    expect(container.querySelector('.bt-viewbar__badge')).toBeNull()
+  })
+  it('primary: o botão primário fica fora; secondary, ghost e só ícone entram na superfície depois do ⋮', async () => {
+    barWidth = 1800
+    const { container } = render(<Lista count={0} primary={<><Button variant="secondary" icon={icon} aria-label="Atualizar" /><Button icon={icon}>Nova ocorrência</Button><Button variant="ghost">Ajuda</Button><Button icon={icon} aria-label="Importar" /></>} />)
+    await act(async () => {})
+    const tools = container.querySelector<HTMLElement>('.bt-viewbar__surface > [data-vb="tools"]')!
+    expect([...tools.querySelectorAll('.bt-button')].map((b) => b.getAttribute('aria-label') ?? b.textContent)).toEqual(['Atualizar', 'Ajuda', 'Importar'])
+    expect(tools.previousElementSibling?.classList.contains('bt-viewbar__sep')).toBe(true)
+    expect(tools.previousElementSibling?.previousElementSibling?.querySelector('.bt-viewbar__more')).not.toBeNull()
+    const main = container.querySelector<HTMLElement>('.bt-viewbar__end > [data-vb="primary"]')!
+    expect([...main.querySelectorAll('.bt-button')].map((b) => b.textContent)).toEqual(['Nova ocorrência'])
+  })
+  it('componente da tela (não Button) fica fora; fragmentos aninhados não repetem chave', async () => {
+    barWidth = 1800
+    const error = vi.spyOn(console, 'error').mockImplementation(noop)
+    const Criar = () => <Button icon={icon}>Criar</Button>
+    const { container } = render(<Lista count={0} primary={<><Button variant="ghost">A</Button><><Button variant="ghost">B</Button></><Criar /></>} />)
+    await act(async () => {})
+    expect(container.querySelector('.bt-viewbar__end > [data-vb="primary"]')!.textContent).toBe('Criar')
+    expect([...container.querySelectorAll('[data-vb="tools"] .bt-button')].map((b) => b.textContent)).toEqual(['A', 'B'])
+    expect(error.mock.calls.some(([message]) => String(message).includes('same key'))).toBe(false)
+  })
+  it('só secondary em primary: nada fora da superfície', async () => {
+    barWidth = 1800
+    const { container } = render(<Lista count={0} primary={<Button variant="secondary" icon={icon} aria-label="Atualizar" />} />)
+    await act(async () => {})
+    expect(container.querySelector('[data-vb="primary"]')).toBeNull()
+    expect(container.querySelector('.bt-viewbar__surface > [data-vb="tools"]')).not.toBeNull()
+  })
+})
+
 describe('ViewBar: menu único do ⋮ (§10.9.6)', () => {
-  it('sem "Ações ▾"; a seleção que não coube em cima, as da tela embaixo, selo com a quantidade', async () => {
-    await at(956)
+  it('sem "Ações ▾"; a seleção que não coube em cima, as da tela embaixo; ⋮ sem selo, com a quantidade no aria-label', async () => {
+    await at(963)
     expect(screen.queryByRole('button', { name: /^Ações/ })).toBeNull()
     const trigger = screen.getByRole('button', { name: 'Mais ações (2 da seleção)' })
-    expect(trigger.querySelector('.bt-viewbar__badge')?.textContent).toBe('2')
+    expect(trigger.textContent).toBe('')
+    expect(trigger.querySelector('.bt-viewbar__badge, .bt-viewbar__count')).toBeNull()
     fireEvent.click(trigger)
     const menu = screen.getByRole('menu', { hidden: true })
     const items = within(menu).getAllByRole('menuitem', { hidden: true })
@@ -204,7 +275,7 @@ describe('ViewBar: menu único do ⋮ (§10.9.6)', () => {
     render(<Lista count={0} onAudit={onAudit} />)
     await act(async () => {})
     const trigger = screen.getByRole('button', { name: 'Mais ações' })
-    expect(trigger.querySelector('.bt-viewbar__badge')).toBeNull()
+    expect(trigger.textContent).toBe('')
     fireEvent.click(trigger)
     const menu = screen.getByRole('menu', { hidden: true })
     expect(within(menu).getAllByRole('menuitem', { hidden: true }).map((i) => i.textContent)).toEqual(['Exportar CSV', 'Colunas', 'Auditoria'])
@@ -254,7 +325,7 @@ describe('ViewBar: modo legado (children sem espaços nomeados)', () => {
 
 describe('planFit / fitSelection', () => {
   const base: FitInput = {
-    avail: 2000, gap: 8, startGap: 12, start: { full: 200, compact: 60 }, square: 40,
+    avail: 2000, gap: 2, startGap: 12, endGap: 8, frame: 6, sep: 9, start: { full: 200, compact: 60 }, square: 40,
     colunas: { full: 120, compact: 40 }, filtros: { full: 110, compact: 40 }, audit: { full: 130, compact: 40 }, primary: { full: 170, compact: 40 },
     extra: 0, search: true, searchMin: 140, searchMax: 320, menu: true, selection: { counter: 165, inline: [40, 40, 40] },
   }
@@ -262,16 +333,29 @@ describe('planFit / fitSelection', () => {
     expect(planFit({ ...base, avail: 100 })).toMatchObject({ lupa: true, fold: { audit: true, density: true, colunas: true }, selectionFolded: 3, startCompact: true })
   })
   it('a visão compacta é o último degrau: não entra enquanto a lupa basta', () => {
-    // Degrau da lupa: 200 + 12 + (40 + zona(165 + 8 + 40) + 40 + 40 + 3×8) = 569 (Filtros nunca sai).
-    for (const avail of [2000, 1000, 700, 569]) expect(planFit({ ...base, avail }).startCompact).toBe(false)
-    expect(planFit({ ...base, avail: 569 })).toMatchObject({ lupa: true, slack: 0 })
-    expect(planFit({ ...base, avail: 568 })).toMatchObject({ lupa: true, startCompact: true, slack: 139 }) // 568 - (60 + 12 + 357)
+    // Degrau da lupa: 200 + 12 + superfície(6 + 40 + zona(165 + 2 + 40) + 40 + 2 fios×9 + 4×2) + 8 + 40 = 579 (Filtros nunca sai).
+    for (const avail of [2000, 1000, 700, 579]) expect(planFit({ ...base, avail }).startCompact).toBe(false)
+    expect(planFit({ ...base, avail: 579 })).toMatchObject({ lupa: true, slack: 0 })
+    expect(planFit({ ...base, avail: 578 })).toMatchObject({ lupa: true, startCompact: true, slack: 139 }) // 578 - (60 + 12 + 319 + 48)
   })
   it('sem largura compacta menor, não há degrau da visão', () => {
     expect(planFit({ ...base, start: { full: 200, compact: 200 }, avail: 100 })).toMatchObject({ lupa: true, startCompact: false })
   })
   it('sem seleção não reserva nada', () => {
-    expect(planFit({ ...base, selection: undefined, avail: 1018 }).level).toBe(0)
+    // 1334 − reserva (291) − 1 gap = 1041.
+    expect(planFit({ ...base, selection: undefined, avail: 1041 }).level).toBe(0)
+    expect(planFit({ ...base, selection: undefined, avail: 1040 }).level).toBe(1)
+  })
+  it('fios contam como itens: grupo a mais custa ele, um fio e dois gaps', () => {
+    const without = planFit({ ...base, audit: undefined, avail: 5000 }).slack
+    expect(planFit({ ...base, avail: 5000 }).slack).toBe(without - (130 + 9 + 2 * 2))
+  })
+  it('itens de primary na superfície (tools) perdem o texto no mesmo degrau da principal, depois dos fixos', () => {
+    // Sem principal fora (−178) e com tools de 120 na superfície (+ fio + 2 gaps = 133): 1334 − 178 + 133 = 1289.
+    const input = { ...base, primary: undefined, tools: { full: 120, compact: 40 } }
+    expect(planFit({ ...input, avail: 1289 })).toMatchObject({ labels: true, primaryLabel: true })
+    expect(planFit({ ...input, avail: 1288 })).toMatchObject({ labels: false, primaryLabel: true })
+    expect(planFit({ ...input, avail: 1289 - 240 - 1 })).toMatchObject({ labels: false, primaryLabel: false })
   })
   it('a seleção perde o texto antes de ir para o ⋮', () => {
     const inline = [{ full: 100, compact: 40 }, { full: 100, compact: 40 }]
