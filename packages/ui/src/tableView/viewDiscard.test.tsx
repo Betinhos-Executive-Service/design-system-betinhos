@@ -92,3 +92,17 @@ it('falha do store devolve a visão e avisa', async () => {
   expect(screen.getByText(/Não foi possível excluir a visão\. Sem permissão\./)).toBeTruthy()
   expect(screen.getByRole('menuitemradio', { name: /Minhas pendentes/, hidden: true })).toBeTruthy()
 })
+
+it('estado sem discard (adaptador da tela) mantém a visão pessoal no diálogo "Excluir visão…"', async () => {
+  function SemLixeira({ store }: { store: ReturnType<typeof createMemoryViewStore> }) {
+    const { discard: _, ...view } = useTableView({ tela: 'teste', columns: defs, store, storage: null })
+    return <ViewBar view={view} columns={defs} />
+  }
+  render(<ToastProvider><SemLixeira store={seed()} /></ToastProvider>)
+  await act(async () => {})
+  openMenu()
+  fireEvent.click(screen.getByRole('menuitemradio', { name: /Minhas pendentes/, hidden: true }))
+  openMenu()
+  expect(trash('Minhas pendentes')).toBeNull()
+  expect(screen.getByRole('menuitem', { name: /Excluir visão…/, hidden: true })).toBeTruthy()
+})
