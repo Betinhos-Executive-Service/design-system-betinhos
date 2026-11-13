@@ -649,7 +649,7 @@ function TableViewShowcase() {
         columnLines
         stickyHeader
         maxHeight={agrupado ? undefined : '420px'}
-        selection={{ selected, onChange: setSelected, all: todas, label: (row) => `Selecionar ${row.id}` }}
+        selection={{ selected, onChange: setSelected, all: todas, scope: agrupado ? linhas : undefined, label: (row) => `Selecionar ${row.id}` }}
         onRowClick={(row) => toast({ tone: 'info', message: `Abrir ${row.id}: ${row.titulo}` })}
         rowActions={(_row, sel) => selectionMenuActions({ count: sel.length, actions: acoesSelecao(sel.map((r) => r.id)) })}
         empty={<EmptyState icon={<SearchX />} title="Nenhum registro com estes filtros" action={<Button variant="secondary" onClick={() => view.setConfig((c) => ({ ...c, filters: {} }))}>Limpar filtros</Button>} />}

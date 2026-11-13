@@ -88,6 +88,11 @@ export type TableSelection<Row> = {
    * "Selecionar todas", o intervalo do Shift e o lote do clique direito usam estas. Padrão: `rows`.
    */
   all?: Row[]
+  /**
+   * Linhas que o checkbox do cabeçalho marca e desmarca, sem mexer no resto da seleção (o grupo de uma tabela do
+   * Agrupar por, com `all` = a lista inteira). Padrão: `all`, e o cabeçalho substitui a seleção.
+   */
+  scope?: Row[]
 }
 
 export type TableProps<Row> = Omit<HTMLAttributes<HTMLDivElement>, 'children'> & {
@@ -306,8 +311,20 @@ export function Table<Row>({ columns: own, rows, rowKey, onRowClick, severity, e
   const anchor = useRef<string | null>(null)
   const listed = selection?.all ?? rows
   const keys = selection ? listed.map(rowKey) : []
-  const selectedCount = selection ? keys.filter((k) => selection.selected.has(k)).length : 0
-  const allSelected = keys.length > 0 && selectedCount === keys.length
+  const headKeys = selection?.scope ? selection.scope.map(rowKey) : keys
+  const selectedCount = selection ? headKeys.filter((k) => selection.selected.has(k)).length : 0
+  const allSelected = headKeys.length > 0 && selectedCount === headKeys.length
+  const toggleHead = () => {
+    if (!selection) return
+    if (selection.scope) {
+      // Preserva a seleção dos outros grupos, mas larga chaves que saíram da lista (filtro), como o cabeçalho sem `scope`.
+      const listedKeys = new Set(keys)
+      const next = new Set([...selection.selected].filter((k) => listedKeys.has(k)))
+      for (const k of headKeys) { if (allSelected) next.delete(k); else next.add(k) }
+      selection.onChange(next)
+    } else selection.onChange(allSelected ? new Set() : new Set(keys))
+    anchor.current = null
+  }
   const select = (key: string, mode: 'only' | 'toggle' | 'range') => {
     if (!selection) return
     selection.onChange(nextSelection(selection.selected, keys, key, anchor.current, mode))
@@ -320,11 +337,11 @@ export function Table<Row>({ columns: own, rows, rowKey, onRowClick, severity, e
   const headCheck = selection ? leadCell(
     <Checkbox
       className="bt-table__check"
-      label="Selecionar linhas carregadas"
+      label={selection.scope ? 'Selecionar linhas do grupo' : 'Selecionar linhas carregadas'}
       checked={allSelected}
       ref={(node) => { if (node) node.indeterminate = selectedCount > 0 && !allSelected }}
-      disabled={!keys.length}
-      onChange={() => { selection.onChange(allSelected ? new Set() : new Set(keys)); anchor.current = null }}
+      disabled={!headKeys.length}
+      onChange={toggleHead}
     />, 'columnheader') : null
   const cellClass = (column: TableColumn<Row>, index: number) => ['bt-table__cell',
     !view && column.hideBelow && `bt-table__cell--hide-${column.hideBelow}`,
