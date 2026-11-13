@@ -3,13 +3,14 @@
 // espaço vazio na superfície, superfície com a altura e o topo da ação principal (1.27.2), sem erro de console. Uso: node medir.cjs <url> <pasta-de-saida>
 // PLAYWRIGHT: caminho do pacote playwright (ex.: o do @playwright/cli global); CHROME_EXE: Chromium já instalado (opcional);
 // SCHEME: light (padrão) ou dark, emula prefers-color-scheme (o DS só tem tema claro: o escuro tem de sair igual, sem quebra).
+// WIDTHS / COUNTS: listas separadas por vírgula que trocam as larguras (padrão 390…1920, com 1024) e as linhas marcadas (0,1,3).
 const { chromium } = require(process.env.PLAYWRIGHT || 'playwright')
 const fs = require('fs')
 const path = require('path')
 const url = process.argv[2] || 'http://localhost:36490/'
 const out = process.argv[3] || '.'
-const WIDTHS = [390, 600, 820, 821, 1000, 1280, 1440, 1920]
-const COUNTS = [0, 1, 3]
+const WIDTHS = (process.env.WIDTHS || '390,600,820,821,1000,1024,1280,1440,1920').split(',').map(Number)
+const COUNTS = (process.env.COUNTS || '0,1,3').split(',').map(Number)
 
 const measure = () => {
   const section = [...document.querySelectorAll('section.showcase')].find((s) => s.querySelector('h2')?.textContent === 'Visões, colunas e filtros')
@@ -55,15 +56,23 @@ const measure = () => {
     const scarce = box <= 141 || Boolean(bar.querySelector('.bt-viewbar__end [data-vb="colunas"].is-compact, .bt-viewbar__end [data-vb="colunas"][hidden]'))
     if (need > room + 0.5) cut.push(scarce ? `placeholder (espaço escasso, ${Math.round(box)} px)` : `PLACEHOLDER com ${Math.round(box)} px`)
   }
-  // Vãos na superfície (1.27.1): entre itens vizinhos só o gap; fio nunca ao lado de espaço vazio.
+  // Vãos na superfície (1.27.1; estrito na 1.28.0): entre itens consecutivos só o gap da superfície (±0,5 px), nas pontas só
+  // o recuo; fio nunca ao lado de espaço vazio, nem dois fios seguidos, nem fio na ponta; item ou fio recolhido não ocupa nada.
   const surface = bar.querySelector('.bt-viewbar__surface')
   const holes = []
   if (surface) {
     const items = []
+    const collapsed = (el) => { if (el.getBoundingClientRect().width > 0) holes.push(`RECOLHIDO OCUPA ${Math.round(el.getBoundingClientRect().width)}px (${name(el)})`) }
     for (const child of surface.children) {
-      if (child.classList.contains('bt-viewbar__zone')) { for (const z of child.children) if (visible(z)) items.push(z) }
+      if (child.classList.contains('bt-viewbar__zone')) { for (const z of child.children) if (z.hidden) collapsed(z); else if (visible(z) && !z.classList.contains('is-floating')) items.push(z) }
+      else if (child.hidden) collapsed(child)
       else if (visible(child)) items.push(child)
     }
+    const isSep = (el) => el?.classList.contains('bt-viewbar__sep')
+    items.forEach((el, i) => {
+      if (isSep(el) && (i === 0 || i === items.length - 1)) holes.push('FIO NA PONTA')
+      if (isSep(el) && isSep(items[i + 1])) holes.push('FIOS SEGUIDOS')
+    })
     const sr = surface.getBoundingClientRect()
     const cs = getComputedStyle(surface)
     const inner = { left: sr.left + parseFloat(cs.paddingLeft) + parseFloat(cs.borderLeftWidth), right: sr.right - parseFloat(cs.paddingRight) - parseFloat(cs.borderRightWidth) }
@@ -73,7 +82,7 @@ const measure = () => {
     for (let i = 0; i + 1 < edges.length; i += 1) {
       const a = edges[i], b = edges[i + 1]
       const hole = b.left - a.right - (a.el && b.el ? step : 0)
-      if (hole > 4) holes.push(`${(a.el?.classList.contains('bt-viewbar__sep') || b.el?.classList.contains('bt-viewbar__sep')) ? 'FIO JUNTO A VAZIO' : 'vão'} ${Math.round(hole)}px (${a.el ? label(a.el) : 'início'}→${b.el ? label(b.el) : 'fim'})`)
+      if (hole > 0.5) holes.push(`${(a.el?.classList.contains('bt-viewbar__sep') || b.el?.classList.contains('bt-viewbar__sep')) ? 'FIO JUNTO A VAZIO' : 'vão'} ${Math.round(hole)}px (${a.el ? label(a.el) : 'início'}→${b.el ? label(b.el) : 'fim'})`)
     }
   }
   // Altura única (1.27.2): superfície e ação principal com o mesmo topo e a mesma altura (±0,5 px); a visão centrada na

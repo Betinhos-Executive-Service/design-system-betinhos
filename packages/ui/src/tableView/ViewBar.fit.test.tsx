@@ -119,12 +119,14 @@ describe('ViewBar: encolhimento medido (§10.9.1)', () => {
     [1334, { labels: true, selShown: 3, selLabels: false }],
     [1333, { labels: false, primaryLabel: true, selShown: 3 }], // 2. Colunas, Filtros e Auditoria só ícone
     [1093, { labels: false, primaryLabel: false, selShown: 3 }], // 3. a principal só ícone
-    [963, { primaryLabel: false, selShown: 2, audit: true }], // 4. seleção para o ⋮, da direita para a esquerda
-    [921, { selShown: 1 }],
-    [879, { selShown: 0, audit: true }],
-    [837, { selShown: 0, audit: false, density: true }], // 5. Auditoria, depois Densidade, depois Colunas
-    [784, { audit: false, density: false, colunas: true }],
-    [731, { colunas: false, lupa: false }],
+    // 4. Auditoria, depois Densidade, depois Colunas para o ⋮ (−53 cada); a seleção fica inteira na linha (1.28.0).
+    [963, { primaryLabel: false, selShown: 3, audit: false, density: true }],
+    [910, { selShown: 3, audit: false, density: false, colunas: true }],
+    [857, { selShown: 3, density: false, colunas: false }],
+    [804, { selShown: 2, colunas: false }], // 5. só então a seleção vai para o ⋮, da direita para a esquerda (−42 cada)
+    [762, { selShown: 1 }],
+    [720, { selShown: 0, lupa: false }],
+    [679, { selShown: 0, lupa: false }],
     [678, { colunas: false, lupa: true, filtros: true, startCompact: false }], // 6. a busca vira lupa; Filtros nunca sai
     [579, { lupa: true, startCompact: false }],
     [578, { lupa: true, startCompact: true }], // 7. só quando nem a lupa basta: a visão fica só ícone + chevron
@@ -186,6 +188,28 @@ describe('ViewBar: encolhimento medido (§10.9.1)', () => {
     const busy = await at(668, 1)
     expect(state(busy.container).lupa).toBe(true)
     expect(fixed(busy.container)).toEqual(before)
+  })
+
+  it('com linhas marcadas, as ferramentas vão para o ⋮ antes das ações da seleção (1.28.0)', async () => {
+    // 857 px: Auditoria, Densidade e Colunas no ⋮; as 3 ações inline continuam na linha, só ícone.
+    const { container } = await at(857, 3)
+    expect(state(container)).toMatchObject({ audit: false, density: false, colunas: false, selShown: 3, selLabels: false })
+    fireEvent.click(screen.getByRole('button', { name: 'Mais ações (1 da seleção)' }))
+    const menu = screen.getByRole('menu', { hidden: true })
+    expect(within(menu).getAllByRole('menuitem', { hidden: true }).map((i) => i.textContent)).toEqual(['Excluir', 'Exportar CSV', 'Colunas', 'Auditoria'])
+  })
+
+  it('zona sem caixa de busca (lupa) com linhas marcadas: o trecho da seleção ocupa a sobra, sem vão antes dele (1.28.0)', async () => {
+    const busy = await at(668, 1)
+    expect(state(busy.container).lupa).toBe(true)
+    expect(busy.container.querySelector('.bt-viewbar__zone')!.classList.contains('is-fill')).toBe(true)
+    busy.unmount()
+    // Com a caixa da busca ela é quem estica; sem seleção, nada a preencher.
+    for (const [px, count] of [[1800, 1], [668, 0]]) {
+      const { container, unmount } = await at(px, count)
+      expect(container.querySelector('.bt-viewbar__zone')!.classList.contains('is-fill')).toBe(false)
+      unmount()
+    }
   })
 
   it('a ação principal só ícone ganha title com o rótulo, e perde quando o texto volta', async () => {
@@ -285,7 +309,7 @@ describe('ViewBar: peça única (1.27)', () => {
 
 describe('ViewBar: menu único do ⋮ (§10.9.6)', () => {
   it('sem "Ações ▾"; a seleção que não coube em cima, as da tela embaixo; ⋮ sem selo, com a quantidade no aria-label', async () => {
-    await at(963)
+    await at(804) // 1.28.0: a seleção só vai para o ⋮ depois de Auditoria, Densidade e Colunas
     expect(screen.queryByRole('button', { name: /^Ações/ })).toBeNull()
     const trigger = screen.getByRole('button', { name: 'Mais ações (2 da seleção)' })
     expect(trigger.textContent).toBe('')
@@ -293,7 +317,7 @@ describe('ViewBar: menu único do ⋮ (§10.9.6)', () => {
     fireEvent.click(trigger)
     const menu = screen.getByRole('menu', { hidden: true })
     const items = within(menu).getAllByRole('menuitem', { hidden: true })
-    expect(items.map((i) => i.textContent)).toEqual(['ConcluirHá concluídas na seleção.', 'Excluir', 'Exportar CSV'])
+    expect(items.map((i) => i.textContent)).toEqual(['ConcluirHá concluídas na seleção.', 'Excluir', 'Exportar CSV', 'Colunas', 'Auditoria'])
     expect(menu.querySelector('.bt-menu__group')?.textContent).toBe('3 selecionados')
     expect((items[0] as HTMLButtonElement).disabled).toBe(true) // inerte, com o motivo na segunda linha
   })
