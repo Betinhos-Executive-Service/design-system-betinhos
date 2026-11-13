@@ -1,6 +1,6 @@
 # Betinhos Design System
 
-**Versão:** 1.27.0
+**Versão:** 1.27.1
 
 **Status:** fonte oficial inicial
 
@@ -758,7 +758,7 @@ Comandos da linha:
   6. a busca vira lupa: o clique abre a busca por cima da linha, alinhada à lupa; ela fecha quando perde o foco vazia (Esc com o campo vazio também fecha);
   7. só quando nada antes coube (ex.: celular de 390 px), o seletor de visão fica compacto: ícone da visão (padrão = lista `Table`; pública = `Users`; pessoal = `User`) e chevron. O nome sai da linha e fica no `aria-label`, no `title` e no menu do seletor; o selo "Alterada" também sai e vai para o `title`. A largura compacta é medida como a dos outros itens.
 - **Nunca saem da linha:** seletor de visão, Filtros, busca/lupa, ⋮ e tudo o que está em `primary`. Comando da tela que precisa ficar sempre visível (ex.: Atualizar só ícone) vai em `primary`, junto da ação primária; em `primary` só perde o texto o botão que tem ícone e texto. `children` fica depois da busca e não encolhe. O seletor de visão nunca sai, mas é o último a encolher (degrau 7); nenhum texto da linha é cortado com reticências.
-- A busca ocupa de 140 a 320 px com a sobra da linha, sem invadir a reserva da seleção (contador + ações `inline` só ícone). Na medida, cada fio conta como um item da linha (largura dele + gaps), assim como o recuo e a borda da superfície e o espaço até a ação principal; as cópias medidas ficam em contêineres com a classe da superfície, para terem a mesma altura (e a mesma largura nos botões quadrados). `children` sem esses espaços (modo legado) mantém o desenho antigo, sem medir.
+- A busca tem no mínimo 140 px e, com linhas marcadas, cresce até 320 px com a sobra antes de a seleção usá-la; a reserva da seleção (contador + ações `inline` só ícone) entra na conta dos degraus. **Sem linhas marcadas, a busca ocupa a reserva**: começa logo depois do fio anterior e vai até o ⋮, sem vão nem fio extra (no degrau da lupa, volta a ser caixa se a reserva somada à lupa chega a 140 px). Ao marcar linhas, o trecho da seleção entra antes da busca e só a largura da busca muda; os fixos ficam parados. **Nunca há fio ao lado de espaço vazio** nem vão dentro da superfície: só com a lupa (sem reserva, ex.: celular), a superfície abraça os itens e a sobra fica entre a visão e a superfície; zona vazia não ganha fios. Na medida, cada fio conta como um item da linha (largura dele + gaps), assim como o recuo e a borda da superfície e o espaço até a ação principal; as cópias medidas ficam em contêineres com a classe da superfície, para terem a mesma altura (e a mesma largura nos botões quadrados). `children` sem esses espaços (modo legado) mantém o desenho antigo, sem medir.
 
 Painel de colunas:
 
@@ -882,7 +882,7 @@ Com linhas marcadas, a linha de comando entra no modo seleção. Prop `selection
 - **Menu único (⋮):** com seleção, o ⋮ abre com o grupo "N selecionados" em cima (as ações da seleção que não estão na linha, na ordem da tela, inertes com o motivo) e as ações da tela (`more`) embaixo, seguidas do que saiu da linha (Colunas, Auditoria, Densidade). O ⋮ não muda de lugar e não ganha selo numérico: a quantidade de ações da seleção que estão dentro dele fica no `aria-label` ("Mais ações (N da seleção)"). Sem seleção, é o ⋮ de sempre. O "Mais" da barra do celular segue a mesma regra.
 - **Inertes:** `single` exige exatamente um registro ("Selecione exatamente um registro."); `blocked` traz o motivo da tela (ex.: ativos e inativos misturados). Na linha o botão fica com `aria-disabled`, `title` e o motivo em `aria-describedby`: continua focável e o clique não faz nada. No menu o item fica desabilitado com o motivo numa segunda linha (`MenuAction.description`), nunca cortado. Ação que só cabe num estado (Ativar ou Desativar) é uma só, com `blocked` quando a seleção mistura estados, em vez de dois botões inertes.
 - **Uma lista só:** `selectionMenuActions(selection)` devolve os mesmos itens para o `ContextMenu`/`rowActions` (§10.9.3). Linha de comando, ⋮, barra do celular e clique direito nunca divergem; nenhuma ação existe só num deles, e nenhuma aparece duas vezes entre a linha e o ⋮.
-- **Celular (até 820 px):** a linha de cima é a mesma peça única (com botões de 44 px; a superfície e a ação principal sobem juntas) e fica numa linha só com a mesma priorização (§10.9.1, inclusive o seletor de visão compacto quando nem a lupa basta) e não muda com a seleção; a seleção vira barra fixa no rodapé (`bt-selectionbar`) com o contador em texto simples numa linha e, embaixo, até 2 ações `inline` e "Mais", que abre o mesmo menu único do ⋮ (resto da seleção em cima, ações da tela e o que saiu da linha embaixo); enquanto houver seleção, ela cobre a `BottomNav` (camada logo acima de `--bt-z-index-mobile-navigation`, abaixo de drawer e popover). A altura fica em `--bt-selectionbar-height`; a lista usa `padding-bottom: var(--bt-selectionbar-height, 0)` para o último item não ficar embaixo da barra.
+- **Celular (até 820 px):** a linha de cima é a mesma peça única (com botões de 44 px; a superfície e a ação principal sobem juntas) e fica numa linha só com a mesma priorização (§10.9.1, inclusive o seletor de visão compacto quando nem a lupa basta) e não muda com a seleção; a seleção vira barra fixa no rodapé (`bt-selectionbar`) com o contador em texto simples numa linha e, embaixo, até 2 ações `inline` e "Mais" (dividem a largura; nenhum rótulo é cortado: o botão cujo texto não cabe, medido, vira só ícone quadrado com o nome no `title` e no `aria-label`, começando pelo mais largo, e a sobra volta aos outros), que abre o mesmo menu único do ⋮ (resto da seleção em cima, ações da tela e o que saiu da linha embaixo); enquanto houver seleção, ela cobre a `BottomNav` (camada logo acima de `--bt-z-index-mobile-navigation`, abaixo de drawer e popover). A altura fica em `--bt-selectionbar-height`; a lista usa `padding-bottom: var(--bt-selectionbar-height, 0)` para o último item não ficar embaixo da barra.
 
 ### 10.9.5 Grade editável (edição na célula)
 
@@ -1276,7 +1276,7 @@ Este bloco permite implementação mesmo quando os arquivos auxiliares não acom
 
 <!-- GENERATED:TOKENS_CSS:START -->
 ```css
-/* Betinhos Design System 1.27.0.
+/* Betinhos Design System 1.27.1.
  * GENERATED from design-tokens.json. Do not edit this file manually.
  */
 :root {
@@ -1568,6 +1568,12 @@ O padrão de mercado não é apenas um PDF de marca. É um produto versionado: t
 ---
 
 ## 20. Changelog
+
+### 1.27.1 — 13/11/2026
+
+- §10.9.1 **Busca ocupa a reserva**: sem linhas marcadas, a busca ocupa o espaço reservado à seleção (antes ficava um vão entre Auditoria e a busca, com um fio solto, e a busca espremida cortava o placeholder). Ao marcar linhas, o trecho da seleção entra antes da busca e só a busca encolhe; Colunas, Filtros, Densidade, Auditoria, ⋮, itens de `primary` e a ação principal não se movem. No degrau da lupa, a caixa volta sem seleção se couber na reserva (`planFit` devolve `lupaIdle`).
+- §10.9.1 **Sem vão na superfície**: só com a lupa (celular), a superfície abraça os itens (`is-hug`) e a sobra fica fora dela; antes, a lupa ficava no meio de um bloco largo. Zona vazia não ganha fio.
+- §10.9.6 **Rodapé do celular sem texto cortado**: os botões da `bt-selectionbar` são medidos; o que não cabe com o rótulo (ex.: "Copiar Serviços") vira só ícone com `title` e `aria-label`, e devolve a largura aos outros (`fitBarActions`). Vale para qualquer ação do rodapé, inclusive "Mais".
 
 ### 1.27.0 — 13/11/2026
 

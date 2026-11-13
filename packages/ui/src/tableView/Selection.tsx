@@ -1,7 +1,8 @@
-import { useEffect, useId, useRef } from 'react'
+import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react'
 import { Button } from '../components/Button'
 import { Menu, type MenuAction } from '../components/Menu'
 import { icons } from './icons'
+import { fitBarActions } from './viewBarFit'
 
 /** Ação sobre as linhas marcadas (§10.9.6). A mesma lista alimenta a linha de comando, o menu ⋮, a barra do celular e o clique direito. */
 export type SelectionAction = Omit<MenuAction, 'disabled' | 'title' | 'description'> & {
@@ -53,11 +54,11 @@ function SelectionButton({ action, count, size, compact = false, hidden = false,
   const variant = ghost ? 'ghost' : danger ? 'danger' : 'secondary'
   const className = [compact && 'is-compact', danger && 'bt-selection__danger'].filter(Boolean).join(' ') || undefined
   // title: sem espaço o botão vira só ícone e o nome aparece no hover; o rótulo continua como nome acessível.
-  if (reason == null) return <Button variant={variant} size={size} icon={action.icon} className={className} hidden={hidden} data-vb={`sel:${action.id}`} title={action.label} onClick={action.onSelect}>{action.label}</Button>
+  if (reason == null) return <Button variant={variant} size={size} icon={action.icon} className={className} hidden={hidden} data-vb={`sel:${action.id}`} data-sb={action.id} title={action.label} onClick={action.onSelect}>{action.label}</Button>
   // aria-disabled (não disabled): continua focável, o leitor de tela lê o motivo e o clique não faz nada.
   return (
     <>
-      <Button variant={variant} size={size} icon={action.icon} className={['bt-selection__blocked', className].filter(Boolean).join(' ')} hidden={hidden} data-vb={`sel:${action.id}`} aria-disabled="true" aria-describedby={reasonId} title={reason} onClick={(event) => event.preventDefault()}>{action.label}</Button>
+      <Button variant={variant} size={size} icon={action.icon} className={['bt-selection__blocked', className].filter(Boolean).join(' ')} hidden={hidden} data-vb={`sel:${action.id}`} data-sb={action.id} aria-disabled="true" aria-describedby={reasonId} title={reason} onClick={(event) => event.preventDefault()}>{action.label}</Button>
       <span id={reasonId} hidden>{reason}</span>
     </>
   )
@@ -97,32 +98,72 @@ export function SelectionInline({ selection, shown, compact }: { selection: View
   )
 }
 
+/** Larguras naturais (com texto) dos botões da barra, medidas em cópias sem `is-compact` numa camada invisível da própria
+ * barra (mesmo CSS); a camada é esvaziada na mesma tarefa. */
+function naturalWidths(bar: HTMLElement, buttons: HTMLElement[]) {
+  const layer = document.createElement('div')
+  layer.className = 'bt-selectionbar__measure'
+  layer.setAttribute('aria-hidden', 'true')
+  const copies = buttons.map((button) => {
+    const copy = button.cloneNode(true) as HTMLElement
+    copy.classList.remove('is-compact')
+    copy.removeAttribute('id')
+    return copy
+  })
+  layer.append(...copies)
+  bar.append(layer)
+  const widths = copies.map((copy) => Math.ceil(copy.getBoundingClientRect().width))
+  layer.remove()
+  return widths
+}
+
 /** Barra fixa no rodapé do celular (até 820 px): contador e até 2 ações; "Mais" abre o mesmo menu do ⋮ (o resto da
- * seleção em cima, `menu` embaixo). Publica a altura em `--bt-selectionbar-height`. */
+ * seleção em cima, `menu` embaixo). Nenhum rótulo é cortado: o botão cujo texto não cabe vira só ícone (nome no `title` e
+ * no `aria-label`), medido como a linha de cima. Publica a altura em `--bt-selectionbar-height`. */
 export function SelectionBar({ selection, menu = [] }: { selection: ViewBarSelection; menu?: MenuAction[] }) {
   const ref = useRef<HTMLDivElement>(null)
+  const rowRef = useRef<HTMLDivElement>(null)
+  const [compact, setCompact] = useState<boolean[]>([])
+  const fit = useRef<() => void>(() => undefined)
+  fit.current = () => {
+    const bar = ref.current
+    const row = rowRef.current
+    if (!bar || !row) return
+    const avail = row.getBoundingClientRect().width
+    if (!avail) return
+    const buttons = [...row.querySelectorAll<HTMLElement>('[data-sb]')]
+    const style = getComputedStyle(row)
+    const gap = parseFloat(style.columnGap)
+    const square = Math.ceil(buttons[0]?.getBoundingClientRect().height ?? 0) || 44
+    const next = fitBarActions(avail, Number.isFinite(gap) ? gap : 8, naturalWidths(bar, buttons), square)
+    setCompact((prev) => (prev.length === next.length && prev.every((value, i) => value === next[i]) ? prev : next))
+  }
+  // Antes da pintura: o primeiro quadro já sai sem corte. Sem dependências: rótulos e ações mudam com a seleção.
+  useLayoutEffect(() => { fit.current() })
   useEffect(() => {
     const bar = ref.current
     const root = document.documentElement
     if (!bar) return
-    const publish = () => root.style.setProperty('--bt-selectionbar-height', `${bar.offsetHeight}px`)
+    const publish = () => { root.style.setProperty('--bt-selectionbar-height', `${bar.offsetHeight}px`); fit.current() }
     publish()
     const observer = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(publish)
     observer?.observe(bar)
+    void document.fonts?.ready.then(() => fit.current(), () => undefined)
     return () => { observer?.disconnect(); root.style.removeProperty('--bt-selectionbar-height') }
   }, [])
   const inline = inlineActions(selection).slice(0, 2)
   const rest = selectionOverflow(selection, 2)
   const actions = [...rest, ...menu.map((action) => (rest.length && action.group === undefined ? { ...action, group: '' } : action))]
+  const moreCompact = compact[inline.length] ?? false
   return (
     <div ref={ref} className="bt-selectionbar" role="group" aria-label="Comandos da seleção">
       <SelectionCount selection={selection} size="touch" />
-      <div className="bt-selectionbar__actions">
-        {inline.map((action) => <SelectionButton key={action.id} action={action} count={selection.count} size="touch" />)}
+      <div ref={rowRef} className="bt-selectionbar__actions">
+        {inline.map((action, index) => <SelectionButton key={action.id} action={action} count={selection.count} size="touch" compact={compact[index] ?? false} />)}
         {actions.length ? (
           <Menu
             actions={actions}
-            trigger={(props) => <Button {...props} variant="secondary" size="touch" icon={icons.more} aria-label={rest.length ? `Mais ações (${rest.length} da seleção)` : 'Mais ações'}>Mais</Button>}
+            trigger={(props) => <Button {...props} variant="secondary" size="touch" icon={icons.more} data-sb="more" className={moreCompact ? 'is-compact' : undefined} title={moreCompact ? 'Mais ações' : undefined} aria-label={rest.length ? `Mais ações (${rest.length} da seleção)` : 'Mais ações'}>Mais</Button>}
           />
         ) : null}
       </div>

@@ -64,6 +64,9 @@ export type FitPlan = {
   slack: number
   /** Espaço que a seleção pode ocupar (reserva + sobra que a busca não usou). */
   selectionSpace: number
+  /** Sem linhas marcadas a busca ocupa a reserva da seleção (1.27.1): lupa só se nem a reserva somada à lupa e à sobra
+   * chega à largura mínima da busca. Sem reserva, igual a `lupa`. */
+  lupaIdle: boolean
 }
 
 const sum = (parts: number[], gap: number) => (parts.length ? parts.reduce((a, b) => a + b, 0) + gap * (parts.length - 1) : 0)
@@ -75,7 +78,9 @@ function reservation(input: FitInput, folded: number) {
   return sum([sel.counter, ...shown], input.gap)
 }
 
-function required(input: FitInput, plan: Omit<FitPlan, 'level' | 'searchWidth' | 'slack' | 'selectionSpace'>) {
+type Step = Omit<FitPlan, 'level' | 'searchWidth' | 'slack' | 'selectionSpace' | 'lupaIdle'>
+
+function required(input: FitInput, plan: Step) {
   const { gap } = input
   const end: number[] = []
   if (!plan.fold.colunas) end.push(plan.labels ? input.colunas.full : input.colunas.compact)
@@ -94,14 +99,14 @@ function required(input: FitInput, plan: Omit<FitPlan, 'level' | 'searchWidth' |
   if (input.tools) end.push(plan.primaryLabel ? input.tools.full : input.tools.compact)
   const surface = input.frame + sum(end.flatMap((part, index) => (index ? [input.sep, part] : [part])), gap)
   const primary = input.primary ? input.endGap + (plan.primaryLabel ? input.primary.full : input.primary.compact) : 0
-  return { total: (plan.startCompact ? input.start.compact : input.start.full) + input.startGap + surface + primary, reserved }
+  return { total: (plan.startCompact ? input.start.compact : input.start.full) + input.startGap + surface + primary, reserved, zone: sum(zone, gap) }
 }
 
 /** Degraus na ordem do §10.9.1: texto da seleção (não mexe nos fixos), texto de Colunas/Filtros/Auditoria, texto da
  * principal, ações da seleção para o ⋮, Auditoria/Densidade/Colunas para o ⋮, a busca vira lupa e, por último, o seletor
  * de visão fica compacto (só quando nada antes coube). */
 export function planFit(input: FitInput): FitPlan {
-  const steps: Array<Omit<FitPlan, 'level' | 'searchWidth' | 'slack' | 'selectionSpace'>> = []
+  const steps: Step[] = []
   let plan = { labels: true, primaryLabel: true, selectionFolded: 0, fold: { audit: false, density: false, colunas: false }, lupa: false, startCompact: false }
   const push = (next: Partial<typeof plan>) => { plan = { ...plan, ...next, fold: { ...plan.fold, ...next.fold } }; steps.push(plan) }
   steps.push(plan)
@@ -117,15 +122,18 @@ export function planFit(input: FitInput): FitPlan {
   let level = steps.findIndex((step) => required(input, step).total <= input.avail + 0.5)
   if (level < 0) level = steps.length - 1
   const chosen = steps[level]
-  const { total, reserved } = required(input, chosen)
+  const { total, reserved, zone } = required(input, chosen)
   const slack = input.avail - total
   const extraSearch = input.search && !chosen.lupa ? Math.min(input.searchMax - input.searchMin, Math.max(0, slack)) : 0
+  // Busca sem seleção: a zona inteira (reserva, lupa e sobra) menos `children`.
+  const idleSearch = zone + Math.max(0, slack) - (input.extra ? input.extra + input.gap : 0)
   return {
     ...chosen,
     level,
     searchWidth: input.search && !chosen.lupa ? input.searchMin + extraSearch : 0,
     slack,
     selectionSpace: reserved + Math.max(0, slack - extraSearch),
+    lupaIdle: chosen.lupa && !(reserved > 0 && idleSearch >= input.searchMin - 0.5),
   }
 }
 
@@ -137,4 +145,19 @@ export function fitSelection(space: number, counter: number, inline: FitSize[], 
     if (sum([counter, ...inline.slice(0, shown).map((size) => size.compact)], gap) <= space + 0.5) return { labels: false, shown }
   }
   return { labels: false, shown: 0 }
+}
+
+/** Barra do rodapé do celular (§10.9.6): os botões dividem a largura em partes iguais; o que não couber com o rótulo vira só
+ * ícone (quadrado, nome no `title`/`aria-label`), começando pelo mais largo, e devolve a sobra aos outros. Nada é cortado.
+ * `widths` são as larguras naturais com texto; devolve, na mesma ordem, quem fica só ícone. */
+export function fitBarActions(avail: number, gap: number, widths: number[], square: number): boolean[] {
+  const compact = widths.map(() => false)
+  for (;;) {
+    const labeled = widths.map((_, i) => i).filter((i) => !compact[i])
+    if (!labeled.length) return compact
+    const share = (avail - gap * (widths.length - 1) - square * (widths.length - labeled.length)) / labeled.length
+    const widest = labeled.reduce((a, b) => (widths[b] > widths[a] ? b : a))
+    if (widths[widest] <= share + 0.5) return compact
+    compact[widest] = true
+  }
 }

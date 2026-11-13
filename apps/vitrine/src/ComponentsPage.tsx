@@ -628,7 +628,7 @@ function TableViewShowcase() {
     const concluidas = linhas.filter((r) => r.status === 'success').length
     return [
       { id: 'abrir', label: 'Abrir', icon: <Pencil size={16} />, single: true, inline: true, onSelect: () => toast({ tone: 'info', message: `Abrir ${ids[0]}` }) },
-      { id: 'copiar', label: 'Copiar', icon: <Copy size={16} />, inline: true, onSelect: () => toast({ message: `Copiadas: ${ids.join(', ')}` }) },
+      { id: 'copiar', label: 'Copiar ocorrências', icon: <Copy size={16} />, inline: true, onSelect: () => toast({ message: `Copiadas: ${ids.join(', ')}` }) },
       { id: 'concluir', label: 'Concluir', icon: <Check size={16} />, inline: true, blocked: concluidas ? 'Há ocorrências já concluídas na seleção.' : null, onSelect: () => toast({ tone: 'success', message: `${ids.length} concluída(s)` }) },
       { id: 'excluir', label: 'Excluir', icon: <Trash2 size={16} />, tone: 'danger', onSelect: () => toast({ tone: 'danger', message: `${ids.length} excluída(s)` }) },
     ]

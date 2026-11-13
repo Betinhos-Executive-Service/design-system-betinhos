@@ -10,7 +10,7 @@ import { selectionMenuActions, type SelectionAction } from './Selection'
 import { createMemoryViewStore } from './store'
 import { useTableView } from './useTableView'
 import { ViewBar } from './ViewBar'
-import { fitSelection, planFit, type FitInput } from './viewBarFit'
+import { fitBarActions, fitSelection, planFit, type FitInput } from './viewBarFit'
 
 type Row = { id: string; nome: string }
 const columns: TableColumn<Row>[] = [{ key: 'nome', header: 'Nome', cell: (r) => r.nome }]
@@ -32,14 +32,18 @@ const SIZES: Record<string, [number, number]> = {
   view: [200, 60], colunas: [120, 40], filtros: [110, 40], density: [40, 40], audit: [130, 40], primary: [170, 40],
   sep: [9, 9],
   'sel:abrir': [100, 40], 'sel:copiar': [100, 40], 'sel:concluir': [100, 40],
+  more: [90, 44],
 }
 let barWidth = 1800
+/** Largura da fileira de botões do rodapé do celular. */
+let rowWidth = 358
 let resize: (() => void) | null = null
 let mobile = false
 
 function width(element: Element) {
   if (element.classList.contains('bt-viewbar')) return barWidth
-  const key = (element as HTMLElement).dataset?.vb
+  if (element.classList.contains('bt-selectionbar__actions')) return rowWidth
+  const key = (element as HTMLElement).dataset?.vb ?? (element as HTMLElement).dataset?.sb
   if (!key) return 0
   // Contador: cresce com o texto ("3 selecionados" = 158, "88 selecionados" = 165).
   if (key === 'sel-count') return 60 + 7 * (element.querySelector('.bt-selection__label')?.textContent?.length ?? 0)
@@ -50,6 +54,7 @@ function width(element: Element) {
 beforeEach(() => {
   mobile = false
   barWidth = 1800
+  rowWidth = 358
   vi.stubGlobal('matchMedia', (query: string) => ({ matches: query.includes('max-width: 820px') ? mobile : false, media: query, addEventListener() {}, removeEventListener() {} }))
   vi.stubGlobal('ResizeObserver', class { constructor(callback: () => void) { resize = callback } observe() {} disconnect() {} })
   vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function (this: HTMLElement) {
@@ -154,9 +159,33 @@ describe('ViewBar: encolhimento medido (§10.9.1)', () => {
     }
   })
 
-  it('a busca usa a sobra até 320 px, sem invadir a reserva da seleção', async () => {
-    const { container } = await at(1400, 0)
-    expect(container.querySelector<HTMLElement>('.bt-viewbar__search')!.style.width).toBe('206px')
+  it('sem seleção a busca ocupa a reserva: sem largura fixa, logo depois do fio de Auditoria, sem fio sobrando (1.27.1)', async () => {
+    for (const count of [0, 1]) {
+      const { container, unmount } = await at(1400, count)
+      const search = container.querySelector<HTMLElement>('.bt-viewbar__search')!
+      // Largura vem do CSS (ocupa o que a seleção não usa); nada de largura fixa que deixe vão.
+      expect(search.style.width).toBe('')
+      expect(search.classList.contains('is-sized')).toBe(false)
+      expect(container.querySelector('.bt-viewbar__surface')!.classList.contains('is-hug')).toBe(false)
+      // Colunas | Filtros | Densidade | Auditoria | zona | ⋮: 5 fios com ou sem seleção; a seleção entra antes da busca.
+      expect(container.querySelectorAll('.bt-viewbar__surface > .bt-viewbar__sep')).toHaveLength(5)
+      const zone = container.querySelector('.bt-viewbar__zone')!
+      expect(zone.firstElementChild!.classList.contains('bt-selection')).toBe(true)
+      expect((zone.firstElementChild as HTMLElement).hidden).toBe(count === 0)
+      unmount()
+    }
+  })
+
+  it('degrau da lupa: sem seleção a busca volta a caixa na reserva; marcar linhas recolhe na lupa sem mover os fixos', async () => {
+    const fixed = (container: HTMLElement) => { const { selShown: _s, selLabels: _l, lupa: _p, ...rest } = state(container); return rest }
+    const idle = await at(668, 0)
+    expect(state(idle.container).lupa).toBe(false)
+    expect(idle.container.querySelector<HTMLElement>('.bt-viewbar__search')!.hidden).toBe(false)
+    const before = fixed(idle.container)
+    idle.unmount()
+    const busy = await at(668, 1)
+    expect(state(busy.container).lupa).toBe(true)
+    expect(fixed(busy.container)).toEqual(before)
   })
 
   it('a ação principal só ícone ganha title com o rótulo, e perde quando o texto volta', async () => {
@@ -186,7 +215,7 @@ describe('ViewBar: encolhimento medido (§10.9.1)', () => {
   })
 
   it('a lupa abre a busca, que fecha ao perder o foco vazia', async () => {
-    const { container } = await at(668, 0)
+    const { container } = await at(668, 1)
     fireEvent.click(screen.getByRole('button', { name: 'Buscar' }))
     const box = container.querySelector<HTMLElement>('.bt-viewbar__search')!
     expect(box.classList.contains('is-floating')).toBe(true)
@@ -291,6 +320,34 @@ describe('ViewBar: menu único do ⋮ (§10.9.6)', () => {
 })
 
 describe('ViewBar: celular (até 820 px)', () => {
+  it('só a lupa na zona: a superfície abraça os itens (sem vão entre Filtros e a lupa)', async () => {
+    mobile = true
+    const { container } = await at(390, 0)
+    expect(screen.getByRole('button', { name: 'Buscar' })).toBeTruthy()
+    expect(container.querySelector('.bt-viewbar__surface')!.classList.contains('is-hug')).toBe(true)
+  })
+  it('rodapé: rótulo que não cabe vira só ícone com title e nome acessível; com espaço, todos com texto', async () => {
+    mobile = true
+    SIZES['sel:copiar'] = [200, 44] // "Copiar Serviços"
+    try {
+      const { container, unmount } = await at(390, 1)
+      const bar = container.querySelector<HTMLElement>('.bt-selectionbar')!
+      const copiar = bar.querySelector<HTMLElement>('[data-sb="copiar"]')!
+      // (358 − 2×8) / 3 = 114 < 200: Copiar perde o texto; sobra (358 − 16 − 44) / 2 = 149 para Abrir (100) e Mais (90).
+      expect(copiar.classList.contains('is-compact')).toBe(true)
+      expect(copiar.title).toBe('Copiar')
+      expect(within(bar).getByRole('button', { name: 'Copiar' })).toBe(copiar)
+      expect(bar.querySelector('[data-sb="abrir"]')!.classList.contains('is-compact')).toBe(false)
+      expect(bar.querySelector('[data-sb="more"]')!.classList.contains('is-compact')).toBe(false)
+      expect(bar.querySelector('.bt-selectionbar__measure')).toBeNull()
+      unmount()
+      rowWidth = 800
+      const wide = await at(820, 1)
+      expect(wide.container.querySelectorAll('.bt-selectionbar .is-compact')).toHaveLength(0)
+    } finally {
+      SIZES['sel:copiar'] = [100, 40]
+    }
+  })
   it('linha de cima sem seleção; barra do rodapé com 2 ações e Mais com o mesmo menu unificado', async () => {
     mobile = true
     const { container } = await at(390, 3)
@@ -356,6 +413,19 @@ describe('planFit / fitSelection', () => {
     expect(planFit({ ...input, avail: 1289 })).toMatchObject({ labels: true, primaryLabel: true })
     expect(planFit({ ...input, avail: 1288 })).toMatchObject({ labels: false, primaryLabel: true })
     expect(planFit({ ...input, avail: 1289 - 240 - 1 })).toMatchObject({ labels: false, primaryLabel: false })
+  })
+  it('sem seleção a busca ocupa a reserva: lupa só se nem reserva + lupa + sobra chegam ao mínimo', () => {
+    // Degrau da lupa em 579: zona = 165 + 2 + 40 = 207 ≥ 140 → caixa sem seleção.
+    expect(planFit({ ...base, avail: 579 })).toMatchObject({ lupa: true, lupaIdle: false })
+    expect(planFit({ ...base, selection: { counter: 60, inline: [] }, avail: 300 })).toMatchObject({ lupa: true, lupaIdle: true }) // 60 + 2 + 40 < 140
+    expect(planFit({ ...base, selection: undefined, avail: 400 })).toMatchObject({ lupa: true, lupaIdle: true })
+    expect(planFit({ ...base, avail: 2000 })).toMatchObject({ lupa: false, lupaIdle: false })
+  })
+  it('rodapé: o mais largo perde o texto primeiro e devolve a sobra aos outros', () => {
+    expect(fitBarActions(358, 8, [100, 200, 90], 44)).toEqual([false, true, false])
+    expect(fitBarActions(800, 8, [100, 200, 90], 44)).toEqual([false, false, false])
+    expect(fitBarActions(200, 8, [100, 200, 90], 44)).toEqual([true, true, false]) // (200 − 16 − 88) = 96 ≥ 90
+    expect(fitBarActions(100, 8, [100, 200, 90], 44)).toEqual([true, true, true])
   })
   it('a seleção perde o texto antes de ir para o ⋮', () => {
     const inline = [{ full: 100, compact: 40 }, { full: 100, compact: 40 }]
