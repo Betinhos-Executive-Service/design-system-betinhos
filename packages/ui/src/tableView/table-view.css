@@ -67,32 +67,41 @@ body.bt-columns-grabbing, body.bt-columns-grabbing * { cursor: grabbing !importa
 .bt-viewbar__chevron { display: inline-grid; flex: 0 0 auto; color: var(--bt-color-text-secondary); transition: transform var(--bt-duration-fast) var(--bt-ease-out); }
 .bt-viewbar__trigger[aria-expanded='true'] .bt-viewbar__chevron { transform: rotate(180deg); }
 .bt-viewbar__dirty { flex: 0 0 auto; color: var(--bt-color-text-secondary); font-family: var(--bt-font-family-sans); font-size: var(--bt-font-size-12); font-weight: var(--bt-font-weight-semibold); letter-spacing: 0; }
-/* Linha com espaços nomeados (search/more/primary/selection): visão | Colunas, Filtros, Auditoria | espaço flexível | ⋮ | primária.
-   Só o espaço flexível muda com a seleção; o resto não sai do lugar. Acima de 820 px não quebra linha: a busca encolhe. */
-.bt-viewbar--slots .bt-viewbar__start { flex: 0 1 auto; }
-.bt-viewbar--slots .bt-viewbar__end { flex: 1 1 0; flex-wrap: nowrap; min-width: 0; }
-.bt-viewbar__zone { display: flex; flex: 1 1 auto; align-items: center; justify-content: flex-end; gap: var(--bt-space-2); min-width: 0; }
-.bt-viewbar__zone > .bt-control--search { flex: 0 1 320px; min-width: 140px; }
-.bt-viewbar--slots .bt-viewbar__end > *, .bt-viewbar__zone > :not(.bt-control--search) { flex-shrink: 0; }
+/* Linha com espaços nomeados (search/more/primary/selection): visão | Colunas, Filtros, Densidade, Auditoria | espaço
+   flexível (seleção reservada + busca + children) | ⋮ | primária. Sempre uma linha: o ViewBar mede cada item (com e sem
+   texto) e escolhe o degrau de encolhimento (§10.9.1); o que é fixo depende só da largura, nunca da seleção. */
+.bt-viewbar--slots { position: relative; flex-wrap: nowrap; }
+.bt-viewbar--slots [hidden] { display: none !important; }
+.bt-viewbar--slots .bt-viewbar__start { flex: 0 1 auto; min-width: 0; }
+/* Último recurso, quando nem o degrau final cabe: o nome da visão encolhe com reticências (nome inteiro no aria-label). */
+.bt-viewbar--slots .bt-viewbar__start > .bt-menu { display: flex; min-width: 0; max-width: 100%; }
+.bt-viewbar--slots .bt-viewbar__trigger, .bt-viewbar--slots .bt-viewbar__name { min-width: 0; }
+/* O fim nunca fica menor que o conteúdo do degrau escolhido: quem cede é o início. */
+.bt-viewbar--slots .bt-viewbar__end { flex: 1 1 0; flex-wrap: nowrap; min-width: auto; }
+.bt-viewbar--slots .bt-viewbar__end > * { flex-shrink: 0; }
 .bt-viewbar--slots .bt-button { white-space: nowrap; }
-/* O espaço flexível é container: a largura vem da linha, nunca do conteúdo, então a seleção não empurra Colunas/Filtros/Auditoria.
-   Sem espaço, os comandos com ícone viram só ícone; o rótulo continua como nome acessível. */
-.bt-viewbar--slots { container: bt-viewbar / inline-size; }
-.bt-viewbar--slots .bt-viewbar__zone { container: bt-viewbar-zone / inline-size; }
-@container bt-viewbar (max-width: 1119px) {
-  .bt-viewbar__end > .bt-button--secondary:has(> svg) { padding: 0; aspect-ratio: 1; }
-  .bt-viewbar__end > .bt-button--secondary:has(> svg) > .bt-button__label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
-}
-@container bt-viewbar-zone (max-width: 579px) {
-  .bt-selection > .bt-button:has(> svg) { padding: 0; aspect-ratio: 1; }
-  .bt-selection > .bt-button:has(> svg) > .bt-button__label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
-}
-@media (max-width: 820px) {
-  .bt-viewbar--slots .bt-viewbar__start { flex: 1 0 100%; }
-  .bt-viewbar--slots .bt-viewbar__end { flex-wrap: wrap; }
-  .bt-viewbar__zone { flex: 1 1 100%; order: 1; }
-  .bt-viewbar__zone > .bt-control--search { flex: 1 1 auto; }
-}
+.bt-viewbar__slot { display: flex; align-items: center; gap: var(--bt-space-2); }
+.bt-viewbar--slots .bt-viewbar__end > .bt-viewbar__zone { display: flex; flex: 1 1 0; align-items: center; justify-content: flex-end; gap: var(--bt-space-2); min-width: 0; }
+.bt-viewbar__zone > * { flex-shrink: 0; }
+/* A seleção ocupa só a sobra reservada antes da busca: nunca empurra a busca nem os fixos. */
+.bt-viewbar__zone > .bt-selection { flex: 1 1 0; justify-content: flex-end; min-width: 0; }
+.bt-viewbar__zone > .bt-selection > * { flex-shrink: 0; }
+.bt-viewbar__search { display: flex; flex: 0 1 320px; min-width: 140px; }
+.bt-viewbar__search.is-sized { flex: none; min-width: 0; }
+.bt-viewbar__search > * { flex: 1 1 auto; width: 100%; min-width: 0; }
+.bt-viewbar__search.is-floating { position: absolute; top: 50%; z-index: 3; transform: translateY(-50%); border-radius: var(--bt-radius-md); box-shadow: 0 0 0 var(--bt-space-1) var(--bt-color-surface); animation: bt-viewbar-search-in var(--bt-duration-fast) var(--bt-ease-out); }
+@keyframes bt-viewbar-search-in { from { opacity: 0; } }
+/* Só ícone: o rótulo vira nome acessível (fora da tela) e o botão fica quadrado. */
+.bt-viewbar .is-compact .bt-button:has(> svg), .bt-viewbar .bt-button.is-compact:has(> svg) { position: relative; padding: 0; aspect-ratio: 1; }
+.bt-viewbar .is-compact .bt-button:has(> svg) > .bt-button__label, .bt-viewbar .bt-button.is-compact:has(> svg) > .bt-button__label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.bt-viewbar--slots .bt-button > .bt-viewbar__count { margin-left: 0; }
+.bt-viewbar .is-compact .bt-button > .bt-viewbar__count, .bt-viewbar__badge { position: absolute; top: -6px; right: -6px; margin: 0; pointer-events: none; }
+.bt-viewbar__more { position: relative; }
+.bt-selectionbar .bt-viewbar__badge { position: static; }
+/* Camada de medida: cópias dos itens com o mesmo CSS, fora do fluxo e invisíveis; esvaziada na mesma tarefa. */
+.bt-viewbar__measure { position: fixed; top: 0; left: 0; display: flex; align-items: center; width: max-content; visibility: hidden; pointer-events: none; contain: layout style; }
+.bt-viewbar__measure > * { flex: none; max-width: none; }
+@media (prefers-reduced-motion: reduce) { .bt-viewbar__search.is-floating { animation: none; } }
 
 /* Modo seleção (§10.9.6). */
 .bt-selection { display: flex; align-items: center; gap: var(--bt-space-2); min-width: 0; }

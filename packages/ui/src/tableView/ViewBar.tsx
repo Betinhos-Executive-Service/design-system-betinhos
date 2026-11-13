@@ -1,4 +1,4 @@
-import { useRef, useState, type ReactNode } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState, type FocusEvent, type KeyboardEvent, type ReactNode } from 'react'
 import { useOptionalToast } from '../components/Alert'
 import { AuditButton } from '../components/Audit'
 import { Button } from '../components/Button'
@@ -13,7 +13,8 @@ import type { LookupSearch } from './FilterEditors'
 import { COLUMN_FILTER_EVENT } from './ColumnMenu'
 import { countActiveFilters, emptyFilters, readFilters, storedFilters, type FilterField, type TableFilters } from './filters'
 import { FiltersPanel, type FiltersPanelTab } from './FiltersPanel'
-import { SelectionBar, SelectionCommands, type ViewBarSelection } from './Selection'
+import { SelectionBar, SelectionInline, countLabel, inlineActions, menuBadge, selectionOverflow, type ViewBarSelection } from './Selection'
+import { fitSelection, planFit, type FitPlan, type FitSize } from './viewBarFit'
 import { icons } from './icons'
 import type { TableViewEntry } from './store'
 import type { TableDensity } from '../components/Table'
@@ -33,16 +34,20 @@ export type ViewBarProps = {
   catalog?: ColumnCatalog
   /** Liga as colunas fixas no painel (seção "Fixas" e alfinete). Passe o mesmo `pinnable` à `view` do `Table`. */
   pinnable?: boolean
-  /** Comandos da tela depois de Colunas, Filtros e Auditoria. Com `search`, `more`, `primary` ou `selection`, use para o que
-   * sobrar (selo, Atualizar); sai da linha enquanto houver seleção. */
+  /** Comandos da tela depois de Colunas, Filtros e Auditoria. Com `search`, `more`, `primary` ou `selection`, fica depois da
+   * busca e nunca encolhe nem sai da linha (selo, aviso). Comando que precisa ficar sempre visível vai em `primary`. */
   children?: ReactNode
-  /** Busca por palavra-chave (`SearchBox`). Ocupa o espaço flexível da linha; com seleção, dá lugar aos comandos dela. */
+  /** Busca por palavra-chave (`SearchBox`): de 140 a 320 px no espaço flexível. Sem espaço vira lupa, que abre a busca por
+   * cima da linha e fecha quando ela perde o foco vazia. Nunca sai da linha, nem com seleção. */
   search?: ReactNode
-  /** "⋮ Mais ações": comandos raros da tela (atalhos, modo de exibição). Fica no mesmo lugar com ou sem seleção. */
+  /** "⋮ Mais ações": comandos raros da tela (atalhos, modo de exibição). Fica no mesmo lugar com ou sem seleção; em cima
+   * entram as ações da seleção que não couberam na linha e, embaixo, Colunas, Auditoria e Densidade quando saem da linha. */
   more?: MenuAction[]
-  /** A ação primária da lista (§10.9.1): sempre a última à direita, com ou sem seleção. */
+  /** A ação primária da lista (§10.9.1): sempre a última à direita. Nada aqui sai da linha; sem espaço, botão com ícone perde
+   * o texto (fica no nome acessível e no `title`). Ex.: `<><Button icon={…} aria-label="Atualizar" /><Button icon={…}>Criar</Button></>`. */
   primary?: ReactNode
-  /** Modo seleção (§10.9.6): com `count > 0`, o espaço da busca vira contador, ações da seleção e "Ações"; no celular, barra no rodapé. */
+  /** Modo seleção (§10.9.6): com `count > 0`, contador e ações `inline` entram no espaço reservado antes da busca; o que não
+   * couber vai para o ⋮. Passe as mesmas `actions` com ou sem seleção (a reserva é medida com elas). No celular, barra no rodapé. */
   selection?: ViewBarSelection
   /** Liga o botão "Auditoria" (§10.9.4), depois de "Filtros": abre as alterações recentes da tabela (ou da seleção). */
   onAudit?: () => void
@@ -64,6 +69,49 @@ const DENSITIES: { value: TableDensity; label: string; icon: ReactNode }[] = [
   { value: 'minimal', label: 'Mínima', icon: icons.rowsMinimal },
 ]
 
+/** Largura da busca no espaço flexível (§10.9.1). */
+const SEARCH_MIN = 140
+const SEARCH_MAX = 320
+
+type Fit = { plan: FitPlan; sel: { labels: boolean; shown: number } | null }
+
+const cssGap = (element: Element | null, fallback: number) => {
+  const value = element ? parseFloat(getComputedStyle(element).columnGap) : NaN
+  return Number.isFinite(value) ? value : fallback
+}
+
+const cloneFor = (element: HTMLElement, compact: boolean) => {
+  const copy = element.cloneNode(true) as HTMLElement
+  copy.hidden = false
+  copy.removeAttribute('style')
+  copy.removeAttribute('id')
+  copy.classList.toggle('is-compact', compact)
+  copy.querySelectorAll('[id]').forEach((node) => node.removeAttribute('id'))
+  return copy
+}
+
+/** Larguras naturais de cada item `[data-vb]`, com e sem texto, medidas em cópias numa camada invisível da própria barra
+ * (mesmo CSS). Medir cópias, e não os itens, deixa a medida igual em qualquer degrau: não há laço nem piscada. */
+function measureItems(bar: HTMLElement, layer: HTMLElement, sampleCounter: string) {
+  const copies: Array<[string, HTMLElement, HTMLElement]> = []
+  bar.querySelectorAll<HTMLElement>('[data-vb]').forEach((element) => {
+    if (layer.contains(element)) return
+    const key = element.dataset.vb ?? ''
+    copies.push([key, cloneFor(element, false), cloneFor(element, true)])
+    if (key === 'sel-count') {
+      const sample = cloneFor(element, false)
+      const label = sample.querySelector('.bt-selection__label')
+      if (label) label.textContent = sampleCounter
+      copies.push(['sel-count-sample', sample, sample])
+    }
+  })
+  layer.replaceChildren(...copies.flatMap(([, full, compact]) => (full === compact ? [full] : [full, compact])))
+  const width = (element: HTMLElement) => Math.ceil(element.getBoundingClientRect().width)
+  const sizes = new Map<string, FitSize>(copies.map(([key, full, compact]) => [key, { full: width(full), compact: width(compact) }]))
+  layer.replaceChildren()
+  return sizes
+}
+
 type Mode = 'create' | 'rename' | 'delete' | 'publish' | null
 
 const scopeIcon = (entry: TableViewEntry) => (entry.scope === 'publica' ? icons.users : entry.scope === 'pessoal' ? icons.user : icons.table)
@@ -75,7 +123,6 @@ const messageOf = (error: unknown) => (error instanceof Error && error.message ?
  */
 export function ViewBar({ view, columns, catalog, pinnable, children, onError, filters, onAudit, search, more, primary, selection }: ViewBarProps) {
   const mobile = useMediaQuery('(max-width: 820px)')
-  const wide = useMediaQuery('(min-width: 1280px)')
   // Com os espaços nomeados a linha tem lugar fixo para cada coisa; só `children` soltos mantém o desenho antigo.
   const slotted = search !== undefined || more !== undefined || primary !== undefined || selection !== undefined
   const selecting = selection != null && selection.count > 0
@@ -154,58 +201,129 @@ export function ViewBar({ view, columns, catalog, pinnable, children, onError, f
     if (!handled) setFiltersTab('coluna')
   }
 
-  return (
-    <>
-    <div className={slotted ? `bt-viewbar bt-viewbar--slots${selecting ? ' is-selecting' : ''}` : 'bt-viewbar'}>
-      <div className="bt-viewbar__start">
-        <Menu
-          align="start"
-          actions={actions}
-          trigger={(props) => (
-            <button {...props} type="button" className="bt-viewbar__trigger" title={dirty ? DIRTY_HINT : undefined} aria-label={`Visão: ${active.name}${dirty ? ` (alterada: ${DIRTY_HINT})` : ''}. Trocar ou salvar visão`}>
-              {active.scope === 'padrao' ? null : <span className="bt-viewbar__scope" aria-hidden="true">{scopeIcon(active)}</span>}
-              <span className="bt-viewbar__name">{active.name}</span>
-              <span className="bt-viewbar__chevron" aria-hidden="true">{icons.chevronDown}</span>
-              {dirty ? <span className="bt-viewbar__dirty" aria-hidden="true">Alterada</span> : null}
-            </button>
-          )}
-        />
-      </div>
-      <div className="bt-viewbar__end">
-        <Button variant="secondary" size={mobile ? 'touch' : 'default'} icon={icons.columns} aria-haspopup="dialog" aria-label={mobile ? 'Colunas' : undefined} onClick={() => setPanel(true)}>
-          {mobile ? null : 'Colunas'}
-        </Button>
-        {filters ? (
-          <>
-            <Button variant="secondary" size={mobile ? 'touch' : 'default'} icon={icons.filter} aria-haspopup="dialog" aria-label={mobile ? `Filtros${activeCount ? ` (${activeCount})` : ''}` : undefined} onClick={() => setFiltersTab('coluna')}>
-              {mobile ? null : <>Filtros{activeCount ? <span className="bt-viewbar__count">{activeCount}</span> : null}</>}
-            </Button>
-          </>
-        ) : null}
-        <Menu
-          actions={DENSITIES.map((d) => ({ id: `densidade-${d.value}`, label: d.label, icon: d.icon, group: 'Densidade das linhas', selected: view.density === d.value, onSelect: () => view.setDensity(d.value) }))}
-          trigger={(props) => (
-            <Button {...props} variant="secondary" size={mobile ? 'touch' : 'default'} icon={DENSITIES.find((d) => d.value === view.density)?.icon ?? icons.rows} aria-label="Densidade das linhas" title="Densidade das linhas" />
-          )}
-        />
-        {onAudit ? <AuditButton iconOnly={mobile} size={mobile ? 'touch' : 'default'} onClick={onAudit} /> : null}
-        {slotted ? (
-          <>
-            <div className="bt-viewbar__zone">
-              {selecting && !mobile ? <SelectionCommands selection={selection} maxInline={wide ? 3 : 1} /> : <>{search}{children}</>}
-            </div>
-            {more?.length ? (
-              <Menu
-                actions={more}
-                trigger={(props) => <Button {...props} variant="secondary" size={mobile ? 'touch' : 'default'} icon={icons.more} aria-label="Mais ações" title="Mais ações" />}
-              />
-            ) : null}
-            {primary}
-          </>
-        ) : children}
-      </div>
-      {selecting && mobile ? <SelectionBar selection={selection} /> : null}
+  const densityActions: MenuAction[] = DENSITIES.map((d) => ({ id: `densidade-${d.value}`, label: d.label, icon: d.icon, group: 'Densidade das linhas', selected: view.density === d.value, onSelect: () => view.setDensity(d.value) }))
+  const densityIcon = DENSITIES.find((d) => d.value === view.density)?.icon ?? icons.rows
+  const size = mobile ? 'touch' : 'default'
 
+  // Medida e degrau de encolhimento (§10.9.1). Só no modo de espaços nomeados; o legado não mede nada.
+  const barRef = useRef<HTMLDivElement>(null)
+  const layerRef = useRef<HTMLDivElement>(null)
+  const primaryRef = useRef<HTMLDivElement>(null)
+  const searchRef = useRef<HTMLDivElement>(null)
+  const lupaRef = useRef<HTMLButtonElement>(null)
+  const [fit, setFit] = useState<Fit | null>(null)
+  const [searchOpen, setSearchOpen] = useState<{ right: number; width: number } | null>(null)
+  const inSelection = selection !== undefined && !mobile
+  const hasSearch = search != null && search !== false
+  const hasPrimary = primary != null && primary !== false
+  const hasExtra = children != null && children !== false
+  const measure = useRef<() => void>(() => undefined)
+  measure.current = () => {
+    const bar = barRef.current
+    const layer = layerRef.current
+    if (!slotted || !bar || !layer) return
+    const avail = bar.getBoundingClientRect().width
+    if (!avail) return // escondida (aba, display: none): mantém o último degrau
+    const sizes = measureItems(bar, layer, countLabel({ count: 88, label: selection?.label }))
+    const gap = cssGap(bar.querySelector('.bt-viewbar__end'), 8)
+    const square = sizes.get('density')?.full || (mobile ? 44 : 40)
+    const box = (key: string) => sizes.get(key) ?? { full: square, compact: square }
+    const inline = inSelection && selection ? inlineActions(selection) : []
+    const plan = planFit({
+      avail, gap, startGap: cssGap(bar, 12), start: sizes.get('view')?.full ?? 0, square,
+      colunas: box('colunas'),
+      filtros: filters ? box('filtros') : undefined,
+      audit: onAudit ? box('audit') : undefined,
+      primary: hasPrimary ? sizes.get('primary') : undefined,
+      extra: hasExtra ? sizes.get('extra')?.full ?? 0 : 0,
+      search: hasSearch, searchMin: SEARCH_MIN, searchMax: SEARCH_MAX,
+      menu: Boolean(more?.length) || selection !== undefined,
+      selection: inSelection ? { counter: sizes.get('sel-count-sample')?.full ?? 0, inline: inline.map((action) => box(`sel:${action.id}`).compact) } : undefined,
+    })
+    const sel = inSelection ? fitSelection(plan.selectionSpace, sizes.get('sel-count')?.full ?? 0, inline.map((action) => box(`sel:${action.id}`)), gap) : null
+    const next: Fit = { plan, sel }
+    setFit((prev) => (prev && JSON.stringify(prev) === JSON.stringify(next) ? prev : next))
+  }
+  // Antes da pintura: o primeiro quadro já sai no degrau certo.
+  useLayoutEffect(() => { measure.current() })
+  useEffect(() => {
+    const bar = barRef.current
+    const layer = layerRef.current
+    if (!slotted || !bar) return
+    const run = () => measure.current()
+    const resize = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(run)
+    resize?.observe(bar)
+    // Texto que muda sem renderizar o ViewBar (contador dentro de `primary`, selo em `children`); ignora a camada de medida.
+    const mutation = typeof MutationObserver === 'undefined' ? null : new MutationObserver((records) => { if (records.some((record) => !layer?.contains(record.target))) run() })
+    mutation?.observe(bar, { childList: true, characterData: true, subtree: true })
+    void document.fonts?.ready.then(run, () => undefined)
+    return () => { resize?.disconnect(); mutation?.disconnect() }
+  }, [slotted])
+
+  const plan = fit?.plan
+  const labels = plan?.labels ?? true
+  const primaryLabel = plan?.primaryLabel ?? true
+  const fold = plan?.fold ?? { audit: false, density: false, colunas: false }
+  const lupa = plan?.lupa ?? false
+  const inlineCount = selection ? inlineActions(selection).length : 0
+  const selShown = fit?.sel?.shown ?? inlineCount
+  const floating = lupa && searchOpen !== null
+
+  // Ação principal só ícone: o rótulo continua como nome acessível e vira a dica (`title`) se a tela não deu uma.
+  useLayoutEffect(() => {
+    primaryRef.current?.querySelectorAll<HTMLElement>('.bt-button').forEach((button) => {
+      const text = button.querySelector('.bt-button__label')?.textContent?.trim()
+      if (!primaryLabel && text && !button.title) { button.title = text; button.dataset.vbTitle = '' }
+      else if (primaryLabel && button.dataset.vbTitle !== undefined) { button.removeAttribute('title'); delete button.dataset.vbTitle }
+    })
+  })
+  useEffect(() => { if (floating) searchRef.current?.querySelector<HTMLInputElement>('input')?.focus() }, [floating])
+  // Voltou espaço para a busca: a lupa some e a próxima vez que ela aparecer começa fechada.
+  useEffect(() => { if (!lupa) setSearchOpen(null) }, [lupa])
+  const openSearch = () => {
+    const bar = barRef.current?.getBoundingClientRect()
+    const anchor = lupaRef.current?.getBoundingClientRect()
+    if (!bar || !anchor) return
+    setSearchOpen({ right: Math.max(0, bar.right - anchor.right), width: Math.min(SEARCH_MAX, anchor.right - bar.left) })
+  }
+  const searchValue = () => searchRef.current?.querySelector<HTMLInputElement>('input')?.value ?? ''
+  const onSearchBlur = (event: FocusEvent<HTMLDivElement>) => {
+    if (!floating || event.currentTarget.contains(event.relatedTarget as Node | null)) return
+    if (!searchValue()) setSearchOpen(null)
+  }
+  const onSearchKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    if (floating && event.key === 'Escape' && !searchValue()) { event.preventDefault(); setSearchOpen(null); lupaRef.current?.focus() }
+  }
+
+  // Menu único do ⋮ (§10.9.6): seleção que não coube em cima, ações da tela e, embaixo, o que saiu da linha.
+  const selItems = selecting && !mobile && selection ? selectionOverflow(selection, selShown) : []
+  const screenItems = (more ?? []).map((action) => (selItems.length && action.group === undefined ? { ...action, group: '' } : action))
+  const foldItems: MenuAction[] = [
+    ...(fold.colunas ? [{ id: 'viewbar-colunas', label: 'Colunas', icon: icons.columns, group: 'Lista', onSelect: () => setPanel(true) }] : []),
+    ...(fold.audit && onAudit ? [{ id: 'viewbar-auditoria', label: 'Auditoria', icon: icons.history, group: 'Lista', onSelect: onAudit }] : []),
+    ...(fold.density ? densityActions : []),
+  ]
+  const menuItems = [...selItems, ...screenItems, ...foldItems]
+  const menuShown = Boolean(more?.length) || selection !== undefined || foldItems.length > 0
+  const slot = (compact: boolean) => (compact ? 'bt-viewbar__slot is-compact' : 'bt-viewbar__slot')
+
+  const viewMenu = (
+    <Menu
+      align="start"
+      actions={actions}
+      trigger={(props) => (
+        <button {...props} type="button" data-vb="view" className="bt-viewbar__trigger" title={dirty ? DIRTY_HINT : undefined} aria-label={`Visão: ${active.name}${dirty ? ` (alterada: ${DIRTY_HINT})` : ''}. Trocar ou salvar visão`}>
+          {active.scope === 'padrao' ? null : <span className="bt-viewbar__scope" aria-hidden="true">{scopeIcon(active)}</span>}
+          <span className="bt-viewbar__name">{active.name}</span>
+          <span className="bt-viewbar__chevron" aria-hidden="true">{icons.chevronDown}</span>
+          {dirty ? <span className="bt-viewbar__dirty" aria-hidden="true">Alterada</span> : null}
+        </button>
+      )}
+    />
+  )
+
+  const overlays = (
+    <>
       <ColumnsPanel
         open={panel}
         onClose={() => setPanel(false)}
@@ -262,29 +380,117 @@ export function ViewBar({ view, columns, catalog, pinnable, children, onError, f
           <p>A visão “{lastName.current}” será excluída{active.scope === 'publica' ? ' para todos' : ''} e não pode ser recuperada. Os registros não são afetados.</p>
         </div>
       </Dialog>
+    </>
+  )
+
+  const chips = filters && current ? (
+    <>
+      <FilterChips
+        filters={shown ?? current}
+        fields={filters.fields}
+        notApplied={filters.notApplied}
+        onChange={setFilters}
+        onEditQuick={editQuick}
+        onEditAdvanced={() => setFiltersTab('avancado')}
+      />
+      <FiltersPanel
+        open={filtersTab !== null}
+        initialTab={filtersTab ?? 'coluna'}
+        onClose={() => setFiltersTab(null)}
+        fields={filters.fields}
+        value={current}
+        search={filters.search}
+        countPreview={filters.countPreview}
+        onApply={setFilters}
+      />
+    </>
+  ) : null
+
+  // Modo legado (`children` sem espaços nomeados): o desenho de antes, sem medir.
+  if (!slotted) return (
+    <>
+    <div className="bt-viewbar">
+      <div className="bt-viewbar__start">{viewMenu}</div>
+      <div className="bt-viewbar__end">
+        <Button variant="secondary" size={size} icon={icons.columns} aria-haspopup="dialog" aria-label={mobile ? 'Colunas' : undefined} onClick={() => setPanel(true)}>
+          {mobile ? null : 'Colunas'}
+        </Button>
+        {filters ? (
+          <>
+            <Button variant="secondary" size={size} icon={icons.filter} aria-haspopup="dialog" aria-label={mobile ? `Filtros${activeCount ? ` (${activeCount})` : ''}` : undefined} onClick={() => setFiltersTab('coluna')}>
+              {mobile ? null : <>Filtros{activeCount ? <span className="bt-viewbar__count">{activeCount}</span> : null}</>}
+            </Button>
+          </>
+        ) : null}
+        <Menu
+          actions={densityActions}
+          trigger={(props) => (
+            <Button {...props} variant="secondary" size={size} icon={densityIcon} aria-label="Densidade das linhas" title="Densidade das linhas" />
+          )}
+        />
+        {onAudit ? <AuditButton iconOnly={mobile} size={size} onClick={onAudit} /> : null}
+        {children}
+      </div>
+      {overlays}
     </div>
-    {filters && current ? (
-      <>
-        <FilterChips
-          filters={shown ?? current}
-          fields={filters.fields}
-          notApplied={filters.notApplied}
-          onChange={setFilters}
-          onEditQuick={editQuick}
-          onEditAdvanced={() => setFiltersTab('avancado')}
-        />
-        <FiltersPanel
-          open={filtersTab !== null}
-          initialTab={filtersTab ?? 'coluna'}
-          onClose={() => setFiltersTab(null)}
-          fields={filters.fields}
-          value={current}
-          search={filters.search}
-          countPreview={filters.countPreview}
-          onApply={setFilters}
-        />
-      </>
-    ) : null}
+    {chips}
+    </>
+  )
+
+  const searchStyle = floating && searchOpen ? { right: searchOpen.right, width: searchOpen.width } : plan && !lupa && plan.searchWidth ? { width: plan.searchWidth } : undefined
+  return (
+    <>
+    <div ref={barRef} className={`bt-viewbar bt-viewbar--slots${selecting ? ' is-selecting' : ''}`}>
+      <div className="bt-viewbar__start">{viewMenu}</div>
+      <div className="bt-viewbar__end">
+        <div className={slot(!labels)} data-vb="colunas" hidden={fold.colunas}>
+          <Button variant="secondary" size={size} icon={icons.columns} aria-haspopup="dialog" title={labels ? undefined : 'Colunas'} onClick={() => setPanel(true)}>Colunas</Button>
+        </div>
+        {filters ? (
+          <div className={slot(!labels)} data-vb="filtros">
+            <Button variant="secondary" size={size} icon={icons.filter} iconEnd={activeCount ? <span className="bt-viewbar__count">{activeCount}</span> : null} aria-haspopup="dialog" title={labels ? undefined : `Filtros${activeCount ? ` (${activeCount})` : ''}`} onClick={() => setFiltersTab('coluna')}>Filtros</Button>
+          </div>
+        ) : null}
+        <div className="bt-viewbar__slot" hidden={fold.density}>
+          <Menu
+            actions={densityActions}
+            trigger={(props) => (
+              <Button {...props} variant="secondary" size={size} icon={densityIcon} data-vb="density" aria-label="Densidade das linhas" title="Densidade das linhas" />
+            )}
+          />
+        </div>
+        {onAudit ? (
+          <div className={slot(!labels)} data-vb="audit" hidden={fold.audit}>
+            <AuditButton size={size} onClick={onAudit} />
+          </div>
+        ) : null}
+        <div className="bt-viewbar__zone">
+          {inSelection && selection ? <SelectionInline selection={selection} shown={selShown} compact={!(fit?.sel?.labels ?? true)} /> : null}
+          {hasSearch ? (
+            <>
+              {lupa ? <Button ref={lupaRef} variant="secondary" size={size} icon={icons.search} aria-label="Buscar" title="Buscar" aria-expanded={floating} onClick={() => (floating ? setSearchOpen(null) : openSearch())} /> : null}
+              <div ref={searchRef} className={['bt-viewbar__search', floating && 'is-floating', searchStyle && 'is-sized'].filter(Boolean).join(' ')} hidden={lupa && !floating} style={searchStyle} onBlur={onSearchBlur} onKeyDown={onSearchKeyDown}>
+                {search}
+              </div>
+            </>
+          ) : null}
+          {hasExtra ? <div className="bt-viewbar__slot" data-vb="extra">{children}</div> : null}
+        </div>
+        {menuShown ? (
+          <Menu
+            actions={menuItems}
+            trigger={(props) => (
+              <Button {...props} variant="secondary" size={size} icon={icons.more} iconEnd={menuBadge(selItems.length)} className="bt-viewbar__more" disabled={!menuItems.length} aria-label={selItems.length ? `Mais ações (${selItems.length} da seleção)` : 'Mais ações'} title="Mais ações" />
+            )}
+          />
+        ) : null}
+        {hasPrimary ? <div ref={primaryRef} className={slot(!primaryLabel)} data-vb="primary">{primary}</div> : null}
+      </div>
+      <div ref={layerRef} className="bt-viewbar__measure" aria-hidden="true" />
+      {selecting && mobile && selection ? <SelectionBar selection={selection} menu={[...(more ?? []), ...foldItems]} /> : null}
+      {overlays}
+    </div>
+    {chips}
     </>
   )
 }
