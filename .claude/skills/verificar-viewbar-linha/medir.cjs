@@ -1,6 +1,6 @@
 // Verificação da linha de comando (ViewBar com espaços nomeados) na vitrine: uma linha, sem sobreposição, fixos parados com
 // 0/1/3 selecionados, nenhum texto cortado (inclusive o rodapé do celular e o placeholder da busca), sem vão nem fio junto a
-// espaço vazio na superfície, sem erro de console. Uso: node medir.cjs <url> <pasta-de-saida>
+// espaço vazio na superfície, superfície com a altura e o topo da ação principal (1.27.2), sem erro de console. Uso: node medir.cjs <url> <pasta-de-saida>
 // PLAYWRIGHT: caminho do pacote playwright (ex.: o do @playwright/cli global); CHROME_EXE: Chromium já instalado (opcional);
 // SCHEME: light (padrão) ou dark, emula prefers-color-scheme (o DS só tem tema claro: o escuro tem de sair igual, sem quebra).
 const { chromium } = require(process.env.PLAYWRIGHT || 'playwright')
@@ -76,6 +76,38 @@ const measure = () => {
       if (hole > 4) holes.push(`${(a.el?.classList.contains('bt-viewbar__sep') || b.el?.classList.contains('bt-viewbar__sep')) ? 'FIO JUNTO A VAZIO' : 'vão'} ${Math.round(hole)}px (${a.el ? label(a.el) : 'início'}→${b.el ? label(b.el) : 'fim'})`)
     }
   }
+  // Altura única (1.27.2): superfície e ação principal com o mesmo topo e a mesma altura (±0,5 px); a visão centrada na
+  // mesma linha; itens da superfície sem passar da altura interna; botões do rodapé do celular com uma altura só.
+  const altura = []
+  const prim = bar.querySelector('.bt-viewbar__end [data-vb="primary"] .bt-button--primary')
+  if (surface) {
+    const sr = surface.getBoundingClientRect()
+    const root = getComputedStyle(document.documentElement)
+    const token = parseFloat(root.getPropertyValue(matchMedia('(pointer: coarse), (max-width: 820px)').matches ? '--bt-control-height-touch' : '--bt-control-height-default'))
+    if (Math.abs(sr.height - token) > 0.5) altura.push(`superfície ${sr.height.toFixed(1)} ≠ controle ${token}`)
+    if (prim && visible(prim)) {
+      const pr = prim.getBoundingClientRect()
+      if (Math.abs(sr.top - pr.top) > 0.5 || Math.abs(sr.height - pr.height) > 0.5) altura.push(`superfície ${sr.height.toFixed(1)}@${sr.top.toFixed(1)} × principal ${pr.height.toFixed(1)}@${pr.top.toFixed(1)}`)
+    }
+    const trig = bar.querySelector('.bt-viewbar__trigger')
+    if (trig && visible(trig)) {
+      const tr = trig.getBoundingClientRect()
+      const d = (tr.top + tr.height / 2) - (sr.top + sr.height / 2)
+      if (Math.abs(d) > 0.5) altura.push(`visão fora do centro ${d.toFixed(1)}px`)
+    }
+    const cs = getComputedStyle(surface)
+    const innerTop = sr.top + parseFloat(cs.borderTopWidth) + parseFloat(cs.paddingTop) - 0.5
+    const innerBottom = sr.bottom - parseFloat(cs.borderBottomWidth) - parseFloat(cs.paddingBottom) + 0.5
+    for (const el of surface.querySelectorAll('.bt-button, .bt-control, .bt-selection')) {
+      if (!visible(el) || el.closest('.is-floating')) continue
+      const r = el.getBoundingClientRect()
+      if (r.top < innerTop || r.bottom > innerBottom) altura.push(`${name(el)} ${r.height.toFixed(1)}px vaza`)
+    }
+  }
+  if (footer) {
+    const hs = [...footer.querySelectorAll('.bt-selectionbar__actions .bt-button')].filter((el) => el.getBoundingClientRect().width > 2 && !el.closest('.bt-selectionbar__measure')).map((el) => el.getBoundingClientRect().height)
+    if (hs.length && Math.max(...hs) - Math.min(...hs) > 0.5) altura.push(`rodapé ${hs.map((h) => h.toFixed(1)).join('/')}`)
+  }
   // Posição x dos fixos (o que nunca depende da seleção).
   // A busca não é fixa (1.27.1): sem seleção ocupa a reserva; com seleção encolhe (e pode virar lupa no degrau dela).
   const fixedSel = { visao: '.bt-viewbar__trigger', colunas: '[data-vb="colunas"]', filtros: '[data-vb="filtros"]', densidade: '[data-vb="density"]', auditoria: '[data-vb="audit"]', mais: '.bt-viewbar__more', principal: '[data-vb="primary"]' }
@@ -98,7 +130,7 @@ const measure = () => {
     pilula: [...bar.querySelectorAll('.bt-selection__count')].some((el) => getComputedStyle(el).backgroundColor !== 'rgba(0, 0, 0, 0)'),
     rodape: Boolean(document.querySelector('.bt-selectionbar')),
   }
-  return { barW: Math.round(br.width), barH: Math.round(br.height), oneLine, overlaps, outside, cut, holes, fixed, state, pageScroll: document.documentElement.scrollWidth > window.innerWidth }
+  return { barW: Math.round(br.width), barH: Math.round(br.height), altura, oneLine, overlaps, outside, cut, holes, fixed, state, pageScroll: document.documentElement.scrollWidth > window.innerWidth }
 }
 
 ;(async () => {
@@ -134,12 +166,12 @@ const measure = () => {
     for (const r of set) r.fixosParados = JSON.stringify(r.fixed) === base
   }
   fs.writeFileSync(path.join(out, 'viewbar-medidas.json'), JSON.stringify({ rows, errors }, null, 2))
-  console.log('| Viewport | Sel. | Barra (px) | Altura | 1 linha | Sobreposição | Fora da barra | Texto cortado | Vão / fio | Fixos parados | Estado |')
-  console.log('|---|---|---|---|---|---|---|---|---|---|---|')
+  console.log('| Viewport | Sel. | Barra (px) | Altura | 1 linha | Sobreposição | Fora da barra | Texto cortado | Vão / fio | Altura única | Fixos parados | Estado |')
+  console.log('|---|---|---|---|---|---|---|---|---|---|---|---|')
   for (const r of rows) {
     const s = r.state
     const estado = [s.texto ? 'fixos c/ texto' : 'fixos só ícone', s.principalTexto ? 'principal c/ texto' : 'principal só ícone', r.count ? (s.rodape ? 'seleção no rodapé' : `seleção ${s.selInline} inline${s.selTexto ? ' c/ texto' : ' só ícone'}`) : null, s.noMenu.length ? `no ⋮: ${s.noMenu.join(', ')}` : null, s.lupa ? 'lupa' : 'busca', s.visaoCompacta ? 'visão só ícone' : null, s.selo ? `selo ${s.selo}` : null, s.superficie ? null : 'SUPERFÍCIE ERRADA', s.pilula ? 'PÍLULA' : null].filter(Boolean).join('; ')
-    console.log(`| ${r.width} | ${r.count} | ${r.barW} | ${r.barH} | ${r.oneLine ? 'sim' : 'NÃO'} | ${r.overlaps.length ? r.overlaps.join(' ') : 'nenhuma'} | ${r.outside.length ? r.outside.join(' ') : '—'} | ${r.cut.length ? r.cut.join(', ') : 'nenhum'} | ${r.holes.length ? r.holes.join(' ') : 'nenhum'} | ${r.fixosParados ? 'sim' : 'NÃO'} | ${estado}${r.pageScroll ? ' (ROLAGEM HORIZONTAL)' : ''} |`)
+    console.log(`| ${r.width} | ${r.count} | ${r.barW} | ${r.barH} | ${r.oneLine ? 'sim' : 'NÃO'} | ${r.overlaps.length ? r.overlaps.join(' ') : 'nenhuma'} | ${r.outside.length ? r.outside.join(' ') : '—'} | ${r.cut.length ? r.cut.join(', ') : 'nenhum'} | ${r.holes.length ? r.holes.join(' ') : 'nenhum'} | ${r.altura.length ? r.altura.join(', ') : 'sim'} | ${r.fixosParados ? 'sim' : 'NÃO'} | ${estado}${r.pageScroll ? ' (ROLAGEM HORIZONTAL)' : ''} |`)
   }
   console.log(`Erros de console: ${errors.length ? errors.join(' | ') : 'nenhum'}`)
 })().catch((e) => { console.error(e); process.exit(1) })

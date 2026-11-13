@@ -1,6 +1,6 @@
 # Betinhos Design System
 
-**Versão:** 1.27.1
+**Versão:** 1.27.2
 
 **Status:** fonte oficial inicial
 
@@ -747,7 +747,7 @@ Comandos da linha:
 - Botões secundários com ícone e rótulo: "Colunas" (`Columns3`) e "Filtros" (`Filter`, com o número de condições ativas). Depois deles, o botão só de ícone "Densidade das linhas" (`Rows3`/`Rows4`/`Rows5`) abre um menu com Confortável, Compacta e Mínima (linha de 32 px, uma linha de texto por célula, botões da linha com 24 px); a escolha fica no navegador, por tela (`view.density`/`view.setDensity` de `useTableView`, repassada à `Table` em `view.density`). Busca por palavra-chave com largura fixa à direita. Em mobile os rótulos podem virar só ícone, com `aria-label`. O filtro por coluna não tem botão na linha de comando: mora no menu do título de cada coluna (§10.9.2).
 - A ação primária da lista, quando existir, é a última à direita e é a única primária da página.
 - **Lugares fixos** (`ViewBar` com `search`, `more`, `primary` e `selection`): visão · Colunas · Filtros · Densidade · Auditoria · espaço flexível (seleção reservada, busca, `children`) · "⋮ Mais ações" · ação primária. **Sempre uma linha**, no desktop e no celular. O `ViewBar` mede de verdade (ResizeObserver na barra e a largura natural de cada item, com e sem texto, medida em cópias numa camada invisível), sem breakpoint fixo. O que é fixo depende só da largura, nunca da seleção: marcar linhas não move nem esconde controle fixo; a seleção é quem cede espaço.
-- **Peça única** (1.27, só com espaços nomeados): o seletor de visão fica fora, à esquerda; a ação principal fica fora, à direita (botão primário sólido); **todo o resto fica numa superfície só**: fundo `surface`, borda `border-width-default` em `border`, raio `radius-lg`, recuo interno `space-0-5`. Dentro, os botões não têm borda nem fundo (hover `surface-soft`, raio `radius-sm`) e a altura total da superfície é a do botão de fora. Entre os grupos visíveis vai um fio vertical de 1 px na cor `border`, com `space-2` de margem vertical e `space-1` de respiro de cada lado: Colunas | Filtros | Densidade | Auditoria | [seleção] busca | ⋮ | itens secundários de `primary`. Grupo que sai para o ⋮ leva o fio junto. A busca dentro da superfície também não tem caixa (só a lupa e o texto; o foco mostra a borda de foco); aberta pela lupa, flutua com a caixa normal.
+- **Peça única** (1.27, só com espaços nomeados): o seletor de visão fica fora, à esquerda; a ação principal fica fora, à direita (botão primário sólido); **todo o resto fica numa superfície só**: fundo `surface`, borda `border-width-default` em `border`, raio `radius-lg`, recuo interno `space-0-5`. Dentro, os botões não têm borda nem fundo (hover `surface-soft`, raio `radius-sm`). **Altura única** (1.27.2): a superfície e a ação principal têm exatamente a altura do controle (`control-height-default`, 40 px; `control-height-touch`, 44 px em toque ou até 820 px), com topo e base alinhados ao pixel; os itens internos (botões, busca, trecho da seleção, fios) encolhem para caber: altura interna = altura do controle − 2 × (borda + recuo) = 34 px / 38 px. O seletor de visão fica centrado na mesma linha, mesmo que a tela alinhe a barra no topo. Entre os grupos visíveis vai um fio vertical de 1 px na cor `border`, com `space-2` de margem vertical e `space-1` de respiro de cada lado: Colunas | Filtros | Densidade | Auditoria | [seleção] busca | ⋮ | itens secundários de `primary`. Grupo que sai para o ⋮ leva o fio junto. A busca dentro da superfície também não tem caixa (só a lupa e o texto; o foco mostra a borda de foco); aberta pela lupa, flutua com a caixa normal.
 - **Quem fica fora em `primary`:** o botão de variante primária (o padrão do `Button`) e qualquer outro com texto que não seja `secondary`/`ghost`. Botão `secondary` ou `ghost`, ou só ícone (ex.: Atualizar), entra na superfície depois do ⋮, com o mesmo visual dos outros. Não há prop para isso: a regra lê a `variant` e o conteúdo de cada botão (fragmentos são abertos).
 - **Ordem de encolhimento** quando falta espaço (o texto volta assim que houver espaço):
   1. ações `inline` da seleção perdem o texto;
@@ -882,7 +882,7 @@ Com linhas marcadas, a linha de comando entra no modo seleção. Prop `selection
 - **Menu único (⋮):** com seleção, o ⋮ abre com o grupo "N selecionados" em cima (as ações da seleção que não estão na linha, na ordem da tela, inertes com o motivo) e as ações da tela (`more`) embaixo, seguidas do que saiu da linha (Colunas, Auditoria, Densidade). O ⋮ não muda de lugar e não ganha selo numérico: a quantidade de ações da seleção que estão dentro dele fica no `aria-label` ("Mais ações (N da seleção)"). Sem seleção, é o ⋮ de sempre. O "Mais" da barra do celular segue a mesma regra.
 - **Inertes:** `single` exige exatamente um registro ("Selecione exatamente um registro."); `blocked` traz o motivo da tela (ex.: ativos e inativos misturados). Na linha o botão fica com `aria-disabled`, `title` e o motivo em `aria-describedby`: continua focável e o clique não faz nada. No menu o item fica desabilitado com o motivo numa segunda linha (`MenuAction.description`), nunca cortado. Ação que só cabe num estado (Ativar ou Desativar) é uma só, com `blocked` quando a seleção mistura estados, em vez de dois botões inertes.
 - **Uma lista só:** `selectionMenuActions(selection)` devolve os mesmos itens para o `ContextMenu`/`rowActions` (§10.9.3). Linha de comando, ⋮, barra do celular e clique direito nunca divergem; nenhuma ação existe só num deles, e nenhuma aparece duas vezes entre a linha e o ⋮.
-- **Celular (até 820 px):** a linha de cima é a mesma peça única (com botões de 44 px; a superfície e a ação principal sobem juntas) e fica numa linha só com a mesma priorização (§10.9.1, inclusive o seletor de visão compacto quando nem a lupa basta) e não muda com a seleção; a seleção vira barra fixa no rodapé (`bt-selectionbar`) com o contador em texto simples numa linha e, embaixo, até 2 ações `inline` e "Mais" (dividem a largura; nenhum rótulo é cortado: o botão cujo texto não cabe, medido, vira só ícone quadrado com o nome no `title` e no `aria-label`, começando pelo mais largo, e a sobra volta aos outros), que abre o mesmo menu único do ⋮ (resto da seleção em cima, ações da tela e o que saiu da linha embaixo); enquanto houver seleção, ela cobre a `BottomNav` (camada logo acima de `--bt-z-index-mobile-navigation`, abaixo de drawer e popover). A altura fica em `--bt-selectionbar-height`; a lista usa `padding-bottom: var(--bt-selectionbar-height, 0)` para o último item não ficar embaixo da barra.
+- **Celular (até 820 px):** a linha de cima é a mesma peça única (a superfície e a ação principal sobem juntas para 44 px, com itens internos de 38 px) e fica numa linha só com a mesma priorização (§10.9.1, inclusive o seletor de visão compacto quando nem a lupa basta) e não muda com a seleção; a seleção vira barra fixa no rodapé (`bt-selectionbar`) com o contador em texto simples numa linha e, embaixo, até 2 ações `inline` e "Mais" (dividem a largura; nenhum rótulo é cortado: o botão cujo texto não cabe, medido, vira só ícone quadrado com o nome no `title` e no `aria-label`, começando pelo mais largo, e a sobra volta aos outros), que abre o mesmo menu único do ⋮ (resto da seleção em cima, ações da tela e o que saiu da linha embaixo); enquanto houver seleção, ela cobre a `BottomNav` (camada logo acima de `--bt-z-index-mobile-navigation`, abaixo de drawer e popover). A altura fica em `--bt-selectionbar-height`; a lista usa `padding-bottom: var(--bt-selectionbar-height, 0)` para o último item não ficar embaixo da barra.
 
 ### 10.9.5 Grade editável (edição na célula)
 
@@ -1276,7 +1276,7 @@ Este bloco permite implementação mesmo quando os arquivos auxiliares não acom
 
 <!-- GENERATED:TOKENS_CSS:START -->
 ```css
-/* Betinhos Design System 1.27.1.
+/* Betinhos Design System 1.27.2.
  * GENERATED from design-tokens.json. Do not edit this file manually.
  */
 :root {
@@ -1568,6 +1568,10 @@ O padrão de mercado não é apenas um PDF de marca. É um produto versionado: t
 ---
 
 ## 20. Changelog
+
+### 1.27.2 — 13/11/2026
+
+- §10.9.1 e §10.9.6 **Altura única na peça**: a superfície da ViewBar tem exatamente a altura do botão primário de fora (40 px no desktop, 44 px em toque/celular, pelos tokens `control-height-*`); antes, os botões internos de 40/44 px somados à borda e ao recuo deixavam a superfície mais alta (até 46–50 px) que o botão e o seletor de visão. Os itens internos ficam com a altura do controle − 2 × (borda + recuo) (34/38 px), presos com prioridade sobre o alvo de 44 px do toque; o seletor de visão fica centrado na linha. Larguras dos botões quadrados acompanham a altura e continuam medidas (`viewBarFit` sem mudança). Modo legado e rodapé `bt-selectionbar` (já com uma altura só) inalterados.
 
 ### 1.27.1 — 13/11/2026
 
