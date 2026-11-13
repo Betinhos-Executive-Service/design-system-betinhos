@@ -643,7 +643,7 @@ function TableViewShowcase() {
         rows={linhas}
         rowKey={(row) => row.id}
         columns={OCORRENCIA_COLUNAS}
-        view={{ config: view.config, onChange: view.setConfig, pinnable: true, extraCell: (id, key) => valorExtra(OCORRENCIAS_FILTRO.find((r) => r.id === id)!, key) }}
+        view={{ config: view.config, onChange: view.setConfig, pinnable: true, groupable: true, extraCell: (id, key) => valorExtra(OCORRENCIAS_FILTRO.find((r) => r.id === id)!, key) }}
         quickFilters={quickFilters}
         columnLines
         stickyHeader
@@ -657,7 +657,7 @@ function TableViewShowcase() {
   )
   const selecao = { count: selected.size, onClear: () => setSelected(new Set()), actions: acoesSelecao([...selected]) }
   return (
-    <Section name="Visões, colunas e filtros" summary="§10.9.1 e §10.9.2: seletor de visão como título; Colunas e Filtros abrem painéis; o título de cada coluna abre o menu (ordenar, Filtrar por…, fixar, ocultar); chips dos filtros ativos. A linha de comando fica numa linha só e encolhe medindo o espaço (texto some, depois itens vão para o ⋮). Seleção de linhas (clique, Ctrl/⌘, Shift, Esc) e clique direito sobre a seleção. Linhas entre colunas ligadas (`columnLines`) e cabeçalho fixo com rolagem por dentro (`stickyHeader`, `maxHeight`). Dados de exemplo com 'hoje' = 15/10/2026.">
+    <Section name="Visões, colunas e filtros" summary="§10.9.1 e §10.9.2: seletor de visão como título; Colunas e Filtros abrem painéis; o título de cada coluna abre o menu (ordenar, Filtrar por…, agrupar, fixar, ocultar); chips dos filtros ativos. A linha de comando fica numa linha só e encolhe medindo o espaço (texto some, depois itens vão para o ⋮). Seleção de linhas (clique, Ctrl/⌘, Shift, Esc) e clique direito sobre a seleção. Linhas entre colunas ligadas (`columnLines`) e cabeçalho fixo com rolagem por dentro (`stickyHeader`, `maxHeight`). Dados de exemplo com 'hoje' = 15/10/2026.">
       <ViewBar
         view={view}
         columns={OCORRENCIA_DEFS}

@@ -29,16 +29,24 @@ export type ColumnMenuProps = {
   onTogglePin?: () => void
   /** `false` desabilita "Fixar coluna" quando as fixas já ocupam metade da tabela. Padrão: `true`. */
   canPin?: boolean
+  /**
+   * Agrupar a lista por esta coluna (§10.9.1). `date` oferece mês e ano; `active` é o agrupamento valendo nesta coluna
+   * (`null` quando a lista não está agrupada por ela). Sem ele os itens não aparecem.
+   */
+  group?: { date: boolean; active: ColumnGroupBy | null; onChange: (next: ColumnGroupBy | null) => void }
   /** Clique no gatilho que não deve abrir o menu (ex.: fim de um arraste). */
   suppressClick?: () => boolean
   /** Teclas do cabeçalho além das do menu (Alt+setas movem a coluna). */
   onKeyDown?: (event: KeyboardEvent<HTMLButtonElement>) => void
 }
 
+/** Como a coluna agrupa: pelo valor ou, em data, por mês ou ano. */
+export type ColumnGroupBy = 'value' | 'month' | 'year'
+
 export const PIN_LIMIT_HINT = 'As colunas fixas já ocupam metade da tabela'
 
-/** Título da coluna como gatilho de menu (§10.9.2): Ordenar A→Z, Z→A, Filtrar por…, Limpar filtro, Fixar coluna e Ocultar coluna. O ▾ aparece no hover/foco e sempre que a coluna está filtrada (com ponto de ação). */
-export function ColumnMenu({ label, columnKey, sortIcon, sortable = true, filterable, filtered, canHide, onSort, onFilter, onClearFilter, onHide, pinned = false, onTogglePin, canPin = true, suppressClick, onKeyDown }: ColumnMenuProps) {
+/** Título da coluna como gatilho de menu (§10.9.2): Ordenar A→Z, Z→A, Filtrar por…, Limpar filtro, Agrupar, Fixar coluna e Ocultar coluna. O ▾ aparece no hover/foco e sempre que a coluna está filtrada (com ponto de ação). */
+export function ColumnMenu({ label, columnKey, sortIcon, sortable = true, filterable, filtered, canHide, onSort, onFilter, onClearFilter, onHide, pinned = false, onTogglePin, canPin = true, group, suppressClick, onKeyDown }: ColumnMenuProps) {
   const actions: MenuAction[] = [
     ...(sortable && onSort ? [
       { id: 'asc', label: 'Ordenar A→Z', icon: icons.arrowUp, onSelect: () => onSort(false) },
@@ -46,6 +54,7 @@ export function ColumnMenu({ label, columnKey, sortIcon, sortable = true, filter
     ] : []),
     ...(filterable ? [{ id: 'filter', label: 'Filtrar por…', icon: icons.filter, onSelect: onFilter }] : []),
     ...(filterable && filtered ? [{ id: 'clear', label: 'Limpar filtro', icon: icons.filterX, onSelect: onClearFilter }] : []),
+    ...(group ? groupActions(group) : []),
     ...(onTogglePin ? [pinned
       ? { id: 'unpin', label: 'Desafixar coluna', icon: icons.pinOff, onSelect: onTogglePin }
       : { id: 'pin', label: 'Fixar coluna', icon: icons.pin, onSelect: onTogglePin, disabled: !canPin, title: canPin ? undefined : PIN_LIMIT_HINT }] : []),
@@ -74,4 +83,14 @@ export function ColumnMenu({ label, columnKey, sortIcon, sortable = true, filter
       )}
     />
   )
+}
+
+function groupActions({ date, active, onChange }: NonNullable<ColumnMenuProps['group']>): MenuAction[] {
+  const options: { by: ColumnGroupBy; label: string }[] = date
+    ? [{ by: 'month', label: 'Agrupar por mês' }, { by: 'year', label: 'Agrupar por ano' }]
+    : [{ by: 'value', label: 'Agrupar por esta coluna' }]
+  return [
+    ...options.filter((o) => o.by !== active).map((o) => ({ id: `group-${o.by}`, label: o.label, icon: icons.group, onSelect: () => onChange(o.by) })),
+    ...(active ? [{ id: 'ungroup', label: 'Desagrupar', icon: icons.ungroup, onSelect: () => onChange(null) }] : []),
+  ]
 }
