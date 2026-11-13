@@ -38,9 +38,11 @@ export { Select, filterOptions, normalizeSearch, type SelectOption, type SelectP
 export { Cluster, Grid, Split, Stack } from './primitives'
 export {
   CONFIG_VERSION, EXTRA_COLUMN_PREFIX, MAX_COLUMN_WIDTH, addColumn, isExtraColumn, removeColumn, MIN_COLUMN_WIDTH, cleanWidth, defaultConfig, moveColumn, moveVisibleColumn, normalizeConfig, parseConfig, pinColumn, pinnedColumns, resizeColumn, unpinColumn,
-  sameConfig, serializeConfig, setFilters, toggleColumn, sortBy, toggleSort, visibleColumns,
-  type SortDir, type ViewColumnDef, type ViewColumnState, type ViewConfig, type ViewFilters, type ViewSort,
+  sameConfig, serializeConfig, setFilters, setGroup, toggleColumn, sortBy, toggleSort, visibleColumns,
+  type SortDir, type ViewColumnDef, type ViewColumnState, type ViewConfig, type ViewFilters, type ViewGroup, type ViewSort,
 } from './tableView/config'
+export { EMPTY_GROUP_ID, GROUP_LIMIT, OTHERS_GROUP_ID, groupRows, groupableFields, type RowGroup } from './tableView/grouping'
+export { TableGroups, type TableGroupsProps } from './tableView/TableGroups'
 export {
   DEFAULT_VIEW_ID, DEFAULT_VIEW_NAME, buildEntries, createMemoryViewStore, pickInitial,
   type StoredView, type TableViewEntry, type ViewScope, type ViewStore,
