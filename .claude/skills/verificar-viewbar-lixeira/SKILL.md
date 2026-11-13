@@ -1,6 +1,6 @@
 ---
 name: verificar-viewbar-lixeira
-description: "Verifica a lixeira das visões pessoais do ViewBar (§10.9.1, 1.28): ícone em cada visão 'Minhas', toast 'Desfazer', exclusão adiada (useTableView.discard), MenuAction.secondary e ToastOptions.action. Use após mudar ViewBar.tsx, useTableView.ts, Menu.tsx, menu.css, Alert.tsx ou viewDiscard.test.tsx."
+description: "Verifica a lixeira das visões pessoais do ViewBar (§10.9.1, 1.29): ícone em cada visão 'Minhas', toast 'Desfazer', exclusão adiada (useTableView.discard), MenuAction.secondary e ToastOptions.action. Use após mudar ViewBar.tsx, useTableView.ts, Menu.tsx, menu.css, Alert.tsx ou viewDiscard.test.tsx."
 ---
 # Verificar lixeira das visões
 
