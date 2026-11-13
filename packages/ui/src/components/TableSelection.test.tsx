@@ -12,7 +12,7 @@ const columns: TableColumn<Row>[] = [
   { key: 'acao', header: 'Ação', cell: (r) => <button type="button">Editar {r.id}</button> },
 ]
 
-function Harness({ open = vi.fn(), withView = false, initial = [] as string[], list = rows, all }: { open?: (row: Row) => void; withView?: boolean; initial?: string[]; list?: Row[]; all?: Row[] }) {
+function Harness({ open = vi.fn(), withView = false, initial = [] as string[], list = rows, all, scope }: { open?: (row: Row) => void; withView?: boolean; initial?: string[]; list?: Row[]; all?: Row[]; scope?: Row[] }) {
   const [selected, setSelected] = useState<Set<string>>(new Set(initial))
   const [config, setConfig] = useState(() => defaultConfig(tableViewColumns(columns)))
   return (
@@ -20,7 +20,7 @@ function Harness({ open = vi.fn(), withView = false, initial = [] as string[], l
       <output data-testid="sel">{[...selected].sort().join(',')}</output>
       <Table columns={columns} rows={list} rowKey={(r) => r.id} onRowClick={open}
         view={withView ? { config, onChange: (fn) => setConfig(fn) } : undefined}
-        selection={{ selected, onChange: setSelected, label: (r) => `Selecionar ${r.nome}`, all }} />
+        selection={{ selected, onChange: setSelected, label: (r) => `Selecionar ${r.nome}`, all, scope }} />
     </>
   )
 }
@@ -220,4 +220,22 @@ it('lista virtualizada: "selecionar todas" e Shift usam selection.all, não só 
   rerender(<Harness list={rows.slice(2)} all={rows} />)
   fireEvent.click(rowOf('d'), { shiftKey: true })
   expect(sel()).toBe('a,b,c,d')
+})
+
+it('grupo do Agrupar por: o cabeçalho com selection.scope marca e desmarca só o grupo e preserva os outros', () => {
+  render(<Harness list={rows.slice(2)} all={rows} scope={rows.slice(2)} initial={['a']} />)
+  const head = screen.getByRole('checkbox', { name: 'Selecionar linhas do grupo' }) as HTMLInputElement
+  expect(head.checked).toBe(false)
+  expect(head.indeterminate).toBe(false)
+  fireEvent.click(head)
+  expect(sel()).toBe('a,c,d')
+  expect(head.checked).toBe(true)
+  fireEvent.click(head)
+  expect(sel()).toBe('a')
+})
+
+it('grupo do Agrupar por: o cabeçalho com selection.scope larga chaves que saíram da lista', () => {
+  render(<Harness list={rows.slice(2)} all={rows} scope={rows.slice(2)} initial={['a', 'sumiu']} />)
+  fireEvent.click(screen.getByRole('checkbox', { name: 'Selecionar linhas do grupo' }))
+  expect(sel()).toBe('a,c,d')
 })

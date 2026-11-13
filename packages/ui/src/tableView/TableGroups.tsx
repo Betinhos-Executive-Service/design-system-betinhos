@@ -8,7 +8,8 @@ export type TableGroupsProps<Row> = {
   /**
    * O que aparece no grupo aberto: a tabela (ou os cartões) só com as linhas dele. Com seleção, passe à tabela
    * `selection.all` = as linhas de todos os grupos (`groups.flatMap((g) => g.rows)`): sem isso, "Selecionar todas",
-   * o Shift e o lote do clique direito só enxergam o grupo, e o "Selecionar todas" troca a seleção dos outros grupos.
+   * o Shift e o lote do clique direito só enxergam o grupo. Passe também `selection.scope` = `rows`: o checkbox do
+   * cabeçalho de cada grupo marca e desmarca só as linhas dele, sem trocar a seleção dos outros grupos.
    */
   children: (rows: Row[], group: RowGroup<Row>) => ReactNode
   /** Muda quando o agrupamento muda (campo e período): todos os grupos voltam a fechar. */

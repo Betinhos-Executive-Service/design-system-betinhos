@@ -1,6 +1,6 @@
 # Betinhos Design System
 
-**Versão:** 1.30.0
+**Versão:** 1.31.0
 
 **Status:** fonte oficial inicial
 
@@ -721,7 +721,7 @@ Rótulos começam com verbo: “Registrar erro”, “Salvar alterações”, �
 
 - Estado controlado pela tela: `selected` (chaves de `rowKey`), `onChange` e `label(row)` para o checkbox (padrão "Selecionar linha"). O `Table` não tira da seleção as linhas que somem ao filtrar ou recarregar; a tela decide.
 - Coluna de checkbox de 40 px na extrema esquerda, sempre fixa; não é coluna de dados, não aparece no painel e não conta para o limite das fixas.
-- Checkbox do cabeçalho ("Selecionar linhas carregadas"): marcado com todas as linhas carregadas selecionadas, parcial com algumas; alterna entre todas e nenhuma. Vale para as linhas carregadas, não para o total do servidor. Em lista virtualizada (a tela passa ao `Table` só a janela desenhada), `selection.all` traz todas as carregadas: o cabeçalho, o intervalo do Shift e o lote do clique direito usam essas, não só as visíveis.
+- Checkbox do cabeçalho ("Selecionar linhas carregadas"): marcado com todas as linhas carregadas selecionadas, parcial com algumas; alterna entre todas e nenhuma. Vale para as linhas carregadas, não para o total do servidor. Em lista virtualizada (a tela passa ao `Table` só a janela desenhada), `selection.all` traz todas as carregadas: o cabeçalho, o intervalo do Shift e o lote do clique direito usam essas, não só as visíveis. Com `selection.scope` (1.31, grupos do Agrupar por), o cabeçalho marca e desmarca só essas linhas e preserva o resto da seleção (chaves fora de `all` saem); o nome acessível passa a "Selecionar linhas do grupo".
 - Clique na linha (fora de link, botão, campo e menu): sozinho substitui a seleção; Ctrl/⌘ alterna a linha; Shift seleciona o intervalo desde a âncora (último clique sem Shift), na ordem da lista. Esc com o foco na tabela limpa.
 - Abrir o registro passa para duplo clique, Enter com a linha focada, o chevron (botão "Abrir") e o item "Abrir" do menu. Sem `selection`, o clique simples continua abrindo.
 - Acessibilidade: a tabela vira `role="grid"` com `aria-multiselectable`, cada linha leva `aria-selected` e a classe `is-selected` (fundo `action-soft`, também nas células fixas).
@@ -739,7 +739,7 @@ Seletor de visão:
 - Quando a tela difere da visão salva (colunas, larguras, ordenação ou filtros), mostra o rótulo "Alterada" em texto de apoio ao lado do nome, com dica que diz o que difere e onde resolver (Salvar, Salvar como, Restaurar padrão).
 - Ações do menu: Salvar, Salvar como, Renomear, Excluir, Tornar pública e Restaurar padrão. Salvar e Renomear só aparecem para visões que o usuário pode alterar; "Excluir visão…" (com diálogo) só para a visão pública ativa, e só para gestor.
 - **Lixeira das visões pessoais** (1.29): cada item de "Minhas" tem um ícone de lixeira na própria linha (Delete no item faz o mesmo), sem precisar abrir a visão. A visão some na hora, o menu continua aberto e o toast "Visão “Nome” excluída." traz "Desfazer" por 6 s (`VIEW_DISCARD_DELAY_MS`); só depois disso (ou quando a lista desmonta) o store exclui. Se era a visão ativa, a lista volta à padrão e o Desfazer a devolve como ativa. Falha do store devolve a visão e avisa. Visões públicas e prontas não têm lixeira.
-- **Agrupar por** (1.30): um nível, escolhido no painel Colunas ("Agrupar por", antes de "Fixas") e salvo na visão (`config.group = { key, by? }`). Só campos `choice`, `lookup`, `bool` e `date` (por mês ou por ano, no fuso de São Paulo) agrupam; texto e número não. A tela monta os grupos em memória sobre a lista já filtrada com `groupRows(rows, view.config.group, fields, read, labelOf?)` e desenha `<TableGroups groups resetKey={JSON.stringify(view.config.group)}>{(linhas) => <Table rows={linhas} selection={{ …, all: grupos.flatMap((g) => g.rows) }} …/>}</TableGroups>`: uma tabela (ou cards no celular) por grupo aberto; `selection.all` faz "Selecionar todas", o Shift e o clique direito valerem para a lista inteira, não só para o grupo. Lista vazia (`groupRows` devolve `[]`) desenha a tabela única, com o estado vazio. Grupos começam fechados e fecham de novo quando o agrupamento muda; o cabeçalho mostra rótulo e contagem (`counting` mostra "…" enquanto a lista ainda carrega). Ordem: opções do choice na ordem do campo; Sim antes de Não; datas da mais recente; lookup do maior grupo para o menor, com até 50 grupos (`GROUP_LIMIT`) e o resto em "Outros". Sem valor vai para "Vazio", no fim. Sem `maxHeight` nas tabelas agrupadas (a rolagem é da página).
+- **Agrupar por** (1.30): um nível, escolhido no painel Colunas ("Agrupar por", antes de "Fixas") e salvo na visão (`config.group = { key, by? }`). Só campos `choice`, `lookup`, `bool` e `date` (por mês ou por ano, no fuso de São Paulo) agrupam; texto e número não. A tela monta os grupos em memória sobre a lista já filtrada com `groupRows(rows, view.config.group, fields, read, labelOf?)` e desenha `<TableGroups groups resetKey={JSON.stringify(view.config.group)}>{(linhas) => <Table rows={linhas} selection={{ …, all: grupos.flatMap((g) => g.rows), scope: linhas }} …/>}</TableGroups>`: uma tabela (ou cards no celular) por grupo aberto; `selection.all` faz o lote do clique direito valer para a seleção da lista inteira (o Shift fica dentro do grupo, porque a âncora é de cada tabela), e `selection.scope` (1.31) faz o checkbox do cabeçalho de cada grupo marcar e desmarcar só as linhas daquele grupo, preservando a seleção dos outros. Lista vazia (`groupRows` devolve `[]`) desenha a tabela única, com o estado vazio. Grupos começam fechados e fecham de novo quando o agrupamento muda; o cabeçalho mostra rótulo e contagem (`counting` mostra "…" enquanto a lista ainda carrega). Ordem: opções do choice na ordem do campo; Sim antes de Não; datas da mais recente; lookup do maior grupo para o menor, com até 50 grupos (`GROUP_LIMIT`) e o resto em "Outros". Sem valor vai para "Vazio", no fim. Sem `maxHeight` nas tabelas agrupadas (a rolagem é da página).
 - Visão pessoal é visível só para o dono; qualquer usuário cria. Visão pública é visível para todos; só o perfil de gestor cria, altera, exclui ou publica.
 - A visão padrão é definida no código da tela, não pode ser editada nem excluída e é o destino de "Restaurar padrão". Como o seletor é o título, a visão padrão leva o nome da tela ("Todas as OPs", "Pessoas", "Funcionários ativos"), nunca o genérico "Visão padrão": o usuário precisa saber onde está sem olhar o menu lateral.
 - A última visão usada em cada tela é lembrada no navegador; é conveniência, não dado.
@@ -1278,7 +1278,7 @@ Este bloco permite implementação mesmo quando os arquivos auxiliares não acom
 
 <!-- GENERATED:TOKENS_CSS:START -->
 ```css
-/* Betinhos Design System 1.30.0.
+/* Betinhos Design System 1.31.0.
  * GENERATED from design-tokens.json. Do not edit this file manually.
  */
 :root {
@@ -1570,6 +1570,10 @@ O padrão de mercado não é apenas um PDF de marca. É um produto versionado: t
 ---
 
 ## 20. Changelog
+
+### 1.31.0 — 13/11/2026
+
+- §10.9 `selection.scope` no `Table`: linhas que o checkbox do cabeçalho marca e desmarca sem mexer no resto da seleção. No Agrupar por, cada grupo passa `scope` = as próprias linhas; antes o cabeçalho de um grupo mostrava a seleção da lista inteira (parcial num grupo sem nada marcado) e marcava todas as linhas. Com `scope`, o checkbox se chama "Selecionar linhas do grupo".
 
 ### 1.30.0 — 13/11/2026
 
