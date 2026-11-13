@@ -100,6 +100,10 @@ body.bt-columns-grabbing, body.bt-columns-grabbing * { cursor: grabbing !importa
 /* Fio entre grupos: 1 px na cor da borda, com respiro lateral no padding (entra na medida) e 8 px de margem vertical. */
 .bt-viewbar__sep { flex: none; align-self: stretch; box-sizing: content-box; width: var(--bt-border-width-default); margin-block: var(--bt-space-2); padding-inline: var(--bt-space-1); background-color: var(--bt-color-border); background-clip: content-box; }
 .bt-viewbar--slots .bt-viewbar__surface > .bt-viewbar__zone { display: flex; flex: 1 1 0; align-items: center; justify-content: flex-end; gap: var(--bt-space-0-5); min-width: 0; }
+/* Sem nada que estique a zona (só a lupa, sem reserva de seleção): a superfície abraça os itens e a sobra fica fora dela,
+   entre a visão e a superfície. Nada de vão dentro da peça (1.27.1). */
+.bt-viewbar--slots .bt-viewbar__surface.is-hug { flex-grow: 0; flex-basis: auto; margin-left: auto; }
+.bt-viewbar--slots .bt-viewbar__surface.is-hug > .bt-viewbar__zone { flex: none; }
 .bt-viewbar__zone > * { flex-shrink: 0; }
 /* Busca dentro da superfície: só a lupa e o texto, sem caixa própria; o foco continua visível. Aberta pela lupa, flutua
    com a caixa normal. */
@@ -120,6 +124,8 @@ body.bt-columns-grabbing, body.bt-columns-grabbing * { cursor: grabbing !importa
 .bt-viewbar__zone > .bt-selection > * { flex-shrink: 0; }
 .bt-viewbar__search { display: flex; flex: 0 1 320px; min-width: 140px; }
 .bt-viewbar__search.is-sized { flex: none; min-width: 0; }
+/* Na zona, a busca ocupa o que a seleção não usa (sem seleção, a reserva inteira): começa logo depois do fio anterior. */
+.bt-viewbar__zone > .bt-viewbar__search:not(.is-floating) { flex: 1 1 0; min-width: 0; }
 .bt-viewbar__search > * { flex: 1 1 auto; width: 100%; min-width: 0; }
 .bt-viewbar__search.is-floating { position: absolute; top: 50%; z-index: 3; transform: translateY(-50%); border-radius: var(--bt-radius-md); box-shadow: 0 0 0 var(--bt-space-1) var(--bt-color-surface); animation: bt-viewbar-search-in var(--bt-duration-fast) var(--bt-ease-out); }
 @keyframes bt-viewbar-search-in { from { opacity: 0; } }
@@ -155,6 +161,12 @@ body.bt-columns-grabbing, body.bt-columns-grabbing * { cursor: grabbing !importa
 .bt-selectionbar__actions { display: flex; gap: var(--bt-space-2); }
 .bt-selectionbar__actions > * { flex: 1 1 0; min-width: 0; }
 .bt-selectionbar__actions .bt-menu > .bt-button, .bt-selectionbar__actions > .bt-button { width: 100%; }
+/* Rótulo que não cabe (medido, 1.27.1): o botão vira só ícone, quadrado, e devolve a largura aos outros; nunca corta texto. */
+.bt-selectionbar__actions > .bt-button.is-compact, .bt-selectionbar__actions > .bt-menu:has(> .bt-button.is-compact) { flex: none; }
+.bt-selectionbar .bt-button.is-compact { position: relative; width: auto; padding: 0; aspect-ratio: 1; }
+.bt-selectionbar .bt-button.is-compact > .bt-button__label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.bt-selectionbar__measure { position: absolute; top: 0; left: 0; display: flex; width: max-content; visibility: hidden; pointer-events: none; contain: layout style; }
+.bt-selectionbar__measure > * { flex: none; width: auto; max-width: none; }
 @keyframes bt-selectionbar-in { from { transform: translateY(100%); } }
 @media (prefers-reduced-motion: reduce) { .bt-selectionbar { animation: none; } }
 

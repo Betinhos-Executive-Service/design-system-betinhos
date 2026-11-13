@@ -302,7 +302,8 @@ export function ViewBar({ view, columns, catalog, pinnable, children, onError, f
   const labels = plan?.labels ?? true
   const primaryLabel = plan?.primaryLabel ?? true
   const fold = plan?.fold ?? { audit: false, density: false, colunas: false }
-  const lupa = plan?.lupa ?? false
+  // Sem linhas marcadas a busca ocupa a reserva da seleção (1.27.1); a lupa só fica se nem assim a busca cabe.
+  const lupa = (selecting ? plan?.lupa : plan?.lupaIdle) ?? false
   const startCompact = plan?.startCompact ?? false
   const inlineCount = selection ? inlineActions(selection).length : 0
   const selShown = fit?.sel?.shown ?? inlineCount
@@ -477,7 +478,12 @@ export function ViewBar({ view, columns, catalog, pinnable, children, onError, f
     </>
   )
 
-  const searchStyle = floating && searchOpen ? { right: searchOpen.right, width: searchOpen.width } : plan && !lupa && plan.searchWidth ? { width: plan.searchWidth } : undefined
+  // Fora da lupa a busca não tem largura fixa: ocupa na zona o que a seleção não usa (CSS).
+  const searchStyle = floating && searchOpen ? { right: searchOpen.right, width: searchOpen.width } : undefined
+  // A zona estica quando a busca está aberta ou há reserva da seleção (fixos parados); só com a lupa, a superfície abraça
+  // os itens. Sem nada visível dentro, a zona não ganha fios (nunca fio ao lado de vazio).
+  const zoneGrows = inSelection || (hasSearch && !lupa)
+  const zoneShown = hasSearch || hasExtra || (inSelection && selecting)
   // Superfície única (§10.9.1): os grupos na ordem, com um fio entre cada par visível. Grupo dobrado continua no DOM
   // (escondido, para ser medido) e sem fio.
   const groups: Array<[string, boolean, ReactNode]> = [
@@ -506,7 +512,7 @@ export function ViewBar({ view, columns, catalog, pinnable, children, onError, f
         <AuditButton size={size} onClick={onAudit} />
       </div>
     ) : null],
-    ['zone', true, (
+    ['zone', zoneShown, (
         <div className="bt-viewbar__zone">
           {inSelection && selection ? <SelectionInline selection={selection} shown={selShown} compact={!(fit?.sel?.labels ?? true)} /> : null}
           {hasSearch ? (
@@ -535,6 +541,8 @@ export function ViewBar({ view, columns, catalog, pinnable, children, onError, f
     if (node == null) return null
     const sep = visible && seen
     if (visible) seen = true
+    // Reserva vazia (seleção sem busca nem `children`, nada marcado): o grupo seguinte também fica sem fio.
+    else if (key === 'zone' && zoneGrows) seen = false
     return <Fragment key={key}>{sep ? <span className="bt-viewbar__sep" data-vb="sep" aria-hidden="true" /> : null}{node}</Fragment>
   })
   return (
@@ -542,7 +550,7 @@ export function ViewBar({ view, columns, catalog, pinnable, children, onError, f
     <div ref={barRef} className={`bt-viewbar bt-viewbar--slots${selecting ? ' is-selecting' : ''}`}>
       <div className="bt-viewbar__start">{viewMenu}</div>
       <div className="bt-viewbar__end">
-        <div className="bt-viewbar__surface">{surfaceItems}</div>
+        <div className={`bt-viewbar__surface${zoneGrows ? '' : ' is-hug'}`}>{surfaceItems}</div>
         {hasPrimary ? <div className={slot(!primaryLabel)} data-vb="primary">{split.main}</div> : null}
       </div>
       <div ref={layerRef} className="bt-viewbar__measure" aria-hidden="true" />
