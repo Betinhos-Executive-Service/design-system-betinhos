@@ -49,6 +49,8 @@ export type ToastOptions = {
   message: ReactNode
   /** Milissegundos até sumir. Padrão: 4000; `danger` fica até ser fechado. */
   duration?: number
+  /** Botão no próprio toast (ex.: "Desfazer"): clicar roda `onClick` e fecha o toast. */
+  action?: { label: string; onClick: () => void }
 }
 type ToastItem = ToastOptions & { id: number; tone: AlertTone }
 
@@ -110,6 +112,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
         <div key={item.id} className={`bt-toast bt-toast--${item.tone}`} role={item.tone === 'danger' ? 'alert' : 'status'}>
           <span className="bt-alert__icon"><Icon tone={item.tone} /></span>
           <span className="bt-toast__text">{item.message}</span>
+          {item.action ? <button type="button" className="bt-toast__action" onClick={() => { dismiss(item.id); item.action?.onClick() }}>{item.action.label}</button> : null}
           <button type="button" className="bt-alert__close" aria-label="Fechar aviso" onClick={() => dismiss(item.id)}><Close /></button>
         </div>
       ))}
