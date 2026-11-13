@@ -76,6 +76,9 @@ body.bt-columns-grabbing, body.bt-columns-grabbing * { cursor: grabbing !importa
 /* Último recurso, quando nem o degrau final cabe: o nome da visão encolhe com reticências (nome inteiro no aria-label). */
 .bt-viewbar--slots .bt-viewbar__start > .bt-menu { display: flex; min-width: 0; max-width: 100%; }
 .bt-viewbar--slots .bt-viewbar__trigger, .bt-viewbar--slots .bt-viewbar__name { min-width: 0; }
+/* Último degrau (§10.9.1): seletor de visão só com o ícone da visão e o chevron; o nome fica no aria-label/title e no menu. */
+.bt-viewbar__scope--compact, .bt-viewbar__trigger.is-compact .bt-viewbar__name, .bt-viewbar__trigger.is-compact .bt-viewbar__dirty { display: none; }
+.bt-viewbar__trigger.is-compact .bt-viewbar__scope { display: inline-grid; }
 /* O fim nunca fica menor que o conteúdo do degrau escolhido: quem cede é o início. */
 .bt-viewbar--slots .bt-viewbar__end { flex: 1 1 0; flex-wrap: nowrap; min-width: auto; }
 .bt-viewbar--slots .bt-viewbar__end > * { flex-shrink: 0; }

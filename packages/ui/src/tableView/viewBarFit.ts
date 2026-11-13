@@ -13,8 +13,8 @@ export type FitInput = {
   gap: number
   /** Espaço entre o seletor de visão e os comandos. */
   startGap: number
-  /** Seletor de visão (largura natural). */
-  start: number
+  /** Seletor de visão: com o nome e compacto (ícone da visão + chevron). */
+  start: FitSize
   /** Botão só ícone (Densidade, ⋮, lupa). */
   square: number
   colunas: FitSize
@@ -44,6 +44,8 @@ export type FitPlan = {
   fold: { audit: boolean; density: boolean; colunas: boolean }
   /** Busca recolhida na lupa. */
   lupa: boolean
+  /** Seletor de visão compacto (só ícone + chevron; nome no `aria-label`/`title` e no menu). */
+  startCompact: boolean
   /** Largura da busca (0 = sem busca ou lupa). */
   searchWidth: number
   /** Sobra da linha no degrau (negativa só no último, quando nem ele cabe). */
@@ -78,14 +80,15 @@ function required(input: FitInput, plan: Omit<FitPlan, 'level' | 'searchWidth' |
   const anyFold = plan.fold.audit || plan.fold.density || plan.fold.colunas
   if (input.menu || anyFold) end.push(input.square)
   if (input.primary) end.push(plan.primaryLabel ? input.primary.full : input.primary.compact)
-  return { total: input.start + input.startGap + sum(end, gap), reserved }
+  return { total: (plan.startCompact ? input.start.compact : input.start.full) + input.startGap + sum(end, gap), reserved }
 }
 
 /** Degraus na ordem do §10.9.1: texto da seleção (não mexe nos fixos), texto de Colunas/Filtros/Auditoria, texto da
- * principal, ações da seleção para o ⋮, Auditoria/Densidade/Colunas para o ⋮ e, por fim, a busca vira lupa. */
+ * principal, ações da seleção para o ⋮, Auditoria/Densidade/Colunas para o ⋮, a busca vira lupa e, por último, o seletor
+ * de visão fica compacto (só quando nada antes coube). */
 export function planFit(input: FitInput): FitPlan {
   const steps: Array<Omit<FitPlan, 'level' | 'searchWidth' | 'slack' | 'selectionSpace'>> = []
-  let plan = { labels: true, primaryLabel: true, selectionFolded: 0, fold: { audit: false, density: false, colunas: false }, lupa: false }
+  let plan = { labels: true, primaryLabel: true, selectionFolded: 0, fold: { audit: false, density: false, colunas: false }, lupa: false, startCompact: false }
   const push = (next: Partial<typeof plan>) => { plan = { ...plan, ...next, fold: { ...plan.fold, ...next.fold } }; steps.push(plan) }
   steps.push(plan)
   if (input.colunas.full > input.colunas.compact || (input.filtros && input.filtros.full > input.filtros.compact) || (input.audit && input.audit.full > input.audit.compact)) push({ labels: false })
@@ -95,6 +98,7 @@ export function planFit(input: FitInput): FitPlan {
   push({ fold: { ...plan.fold, density: true } })
   push({ fold: { ...plan.fold, colunas: true } })
   if (input.search) push({ lupa: true })
+  if (input.start.full > input.start.compact) push({ startCompact: true })
 
   let level = steps.findIndex((step) => required(input, step).total <= input.avail + 0.5)
   if (level < 0) level = steps.length - 1

@@ -1,6 +1,6 @@
 # Betinhos Design System
 
-**Versão:** 1.26.0
+**Versão:** 1.26.1
 
 **Status:** fonte oficial inicial
 
@@ -753,8 +753,9 @@ Comandos da linha:
   3. a ação primária perde o texto (o rótulo fica como nome acessível e vira `title`);
   4. ações `inline` da seleção vão para o ⋮, da direita para a esquerda;
   5. Auditoria, depois Densidade, depois Colunas vão para o ⋮ (itens que abrem o próprio painel; a Densidade vira o grupo "Densidade das linhas");
-  6. a busca vira lupa: o clique abre a busca por cima da linha, alinhada à lupa; ela fecha quando perde o foco vazia (Esc com o campo vazio também fecha).
-- **Nunca saem da linha:** seletor de visão, Filtros, busca/lupa, ⋮ e tudo o que está em `primary`. Comando da tela que precisa ficar sempre visível (ex.: Atualizar só ícone) vai em `primary`, junto da ação primária; em `primary` só perde o texto o botão que tem ícone e texto. `children` fica depois da busca e não encolhe. Se nem o último degrau cabe, o nome da visão encolhe com reticências (nome inteiro no `aria-label`).
+  6. a busca vira lupa: o clique abre a busca por cima da linha, alinhada à lupa; ela fecha quando perde o foco vazia (Esc com o campo vazio também fecha);
+  7. só quando nada antes coube (ex.: celular de 390 px), o seletor de visão fica compacto: ícone da visão (padrão = lista `Table`; pública = `Users`; pessoal = `User`) e chevron. O nome sai da linha e fica no `aria-label`, no `title` e no menu do seletor; o selo "Alterada" também sai e vai para o `title`. A largura compacta é medida como a dos outros itens.
+- **Nunca saem da linha:** seletor de visão, Filtros, busca/lupa, ⋮ e tudo o que está em `primary`. Comando da tela que precisa ficar sempre visível (ex.: Atualizar só ícone) vai em `primary`, junto da ação primária; em `primary` só perde o texto o botão que tem ícone e texto. `children` fica depois da busca e não encolhe. O seletor de visão nunca sai, mas é o último a encolher (degrau 7); nenhum texto da linha é cortado com reticências.
 - A busca ocupa de 140 a 320 px com a sobra da linha, sem invadir a reserva da seleção (contador + ações `inline` só ícone). `children` sem esses espaços (modo legado) mantém o desenho antigo, sem medir.
 
 Painel de colunas:
@@ -878,7 +879,7 @@ Com linhas marcadas, a linha de comando entra no modo seleção. Prop `selection
 - **Menu único (⋮):** com seleção, o ⋮ abre com o grupo "N selecionados" em cima (as ações da seleção que não estão na linha, na ordem da tela, inertes com o motivo) e as ações da tela (`more`) embaixo, seguidas do que saiu da linha (Colunas, Auditoria, Densidade). O ⋮ não muda de lugar e ganha um selo com a quantidade de ações da seleção que estão dentro dele (`aria-label` "Mais ações (N da seleção)"). Sem seleção, é o ⋮ de sempre.
 - **Inertes:** `single` exige exatamente um registro ("Selecione exatamente um registro."); `blocked` traz o motivo da tela (ex.: ativos e inativos misturados). Na linha o botão fica com `aria-disabled`, `title` e o motivo em `aria-describedby`: continua focável e o clique não faz nada. No menu o item fica desabilitado com o motivo numa segunda linha (`MenuAction.description`), nunca cortado. Ação que só cabe num estado (Ativar ou Desativar) é uma só, com `blocked` quando a seleção mistura estados, em vez de dois botões inertes.
 - **Uma lista só:** `selectionMenuActions(selection)` devolve os mesmos itens para o `ContextMenu`/`rowActions` (§10.9.3). Linha de comando, ⋮, barra do celular e clique direito nunca divergem; nenhuma ação existe só num deles, e nenhuma aparece duas vezes entre a linha e o ⋮.
-- **Celular (até 820 px):** a linha de cima fica numa linha só com a mesma priorização (§10.9.1) e não muda com a seleção; a seleção vira barra fixa no rodapé (`bt-selectionbar`) com o contador numa linha e, embaixo, até 2 ações `inline` e "Mais", que abre o mesmo menu único do ⋮ (resto da seleção em cima, ações da tela e o que saiu da linha embaixo); enquanto houver seleção, ela cobre a `BottomNav` (camada logo acima de `--bt-z-index-mobile-navigation`, abaixo de drawer e popover). A altura fica em `--bt-selectionbar-height`; a lista usa `padding-bottom: var(--bt-selectionbar-height, 0)` para o último item não ficar embaixo da barra.
+- **Celular (até 820 px):** a linha de cima fica numa linha só com a mesma priorização (§10.9.1, inclusive o seletor de visão compacto quando nem a lupa basta) e não muda com a seleção; a seleção vira barra fixa no rodapé (`bt-selectionbar`) com o contador numa linha e, embaixo, até 2 ações `inline` e "Mais", que abre o mesmo menu único do ⋮ (resto da seleção em cima, ações da tela e o que saiu da linha embaixo); enquanto houver seleção, ela cobre a `BottomNav` (camada logo acima de `--bt-z-index-mobile-navigation`, abaixo de drawer e popover). A altura fica em `--bt-selectionbar-height`; a lista usa `padding-bottom: var(--bt-selectionbar-height, 0)` para o último item não ficar embaixo da barra.
 
 ### 10.9.5 Grade editável (edição na célula)
 
@@ -1272,7 +1273,7 @@ Este bloco permite implementação mesmo quando os arquivos auxiliares não acom
 
 <!-- GENERATED:TOKENS_CSS:START -->
 ```css
-/* Betinhos Design System 1.26.0.
+/* Betinhos Design System 1.26.1.
  * GENERATED from design-tokens.json. Do not edit this file manually.
  */
 :root {
@@ -1564,6 +1565,10 @@ O padrão de mercado não é apenas um PDF de marca. É um produto versionado: t
 ---
 
 ## 20. Changelog
+
+### 1.26.1 — 13/11/2026
+
+- §10.9.1 e §10.9.6 **Seletor de visão compacto**: novo último degrau do encolhimento, depois da lupa. Quando nem ele basta (ex.: celular de 390 px), o seletor de visão mostra só o ícone da visão e o chevron, com o nome no `aria-label`, no `title` e no menu; antes, o nome era cortado com reticências. Nas outras larguras nada muda; modo legado inalterado.
 
 ### 1.26.0 — 13/11/2026
 
