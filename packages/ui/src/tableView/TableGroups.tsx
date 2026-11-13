@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react'
+import { createContext, useMemo, useState, type ReactNode } from 'react'
 import type { RowGroup } from './grouping'
 import { icons } from './icons'
 
@@ -6,10 +6,9 @@ export type TableGroupsProps<Row> = {
   /** Saída de `groupRows`. */
   groups: RowGroup<Row>[]
   /**
-   * O que aparece no grupo aberto: a tabela (ou os cartões) só com as linhas dele. Com seleção, passe à tabela
-   * `selection.all` = as linhas de todos os grupos (`groups.flatMap((g) => g.rows)`): sem isso, "Selecionar todas",
-   * o Shift e o lote do clique direito só enxergam o grupo. Passe também `selection.scope` = `rows`: o checkbox do
-   * cabeçalho de cada grupo marca e desmarca só as linhas dele, sem trocar a seleção dos outros grupos.
+   * O que aparece no grupo aberto: a tabela (ou os cartões) só com as linhas dele. Um `Table` com `selection` aqui
+   * dentro recebe sozinho `selection.all` (as linhas de todos os grupos, para o lote do clique direito) e
+   * `selection.scope` (as do grupo, para o checkbox do cabeçalho marcar só ele); passe-os só para trocar o padrão.
    */
   children: (rows: Row[], group: RowGroup<Row>) => ReactNode
   /** Muda quando o agrupamento muda (campo e período): todos os grupos voltam a fechar. */
@@ -21,6 +20,9 @@ export type TableGroupsProps<Row> = {
 
 const count = new Intl.NumberFormat('pt-BR')
 
+/** Linhas da lista agrupada e do grupo aberto: o `Table` dentro do grupo usa como `selection.all` e `selection.scope`. */
+export const TableGroupContext = createContext<{ all: unknown[]; scope: unknown[] } | null>(null)
+
 /** Grupos da lista (§10.9.1): começam fechados; cada cabeçalho mostra o rótulo e quantas linhas tem e abre só aquele grupo. */
 export function TableGroups<Row>({ groups, children, resetKey, counting = false, className }: TableGroupsProps<Row>) {
   const [state, setState] = useState<{ key: string; open: ReadonlySet<string> }>(() => ({ key: resetKey, open: new Set() }))
@@ -30,6 +32,12 @@ export function TableGroups<Row>({ groups, children, resetKey, counting = false,
     if (!next.delete(id)) next.add(id)
     return { key: resetKey, open: next }
   })
+
+  // Valor estável por grupo: o contexto não força render de quem estiver memoizado dentro.
+  const contexts = useMemo(() => {
+    const all = groups.flatMap((g) => g.rows)
+    return new Map(groups.map((g) => [g.id, { all, scope: g.rows as unknown[] }]))
+  }, [groups])
 
   return (
     <div className={['bt-groups', className].filter(Boolean).join(' ')}>
@@ -43,7 +51,11 @@ export function TableGroups<Row>({ groups, children, resetKey, counting = false,
               <span className="bt-groups__label">{group.label}</span>
               <span className="bt-groups__count" aria-label={counting ? 'contando' : `${n} ${n === 1 ? 'linha' : 'linhas'}`}>{counting ? '…' : count.format(n)}</span>
             </button>
-            {expanded ? <div className="bt-groups__body">{children(group.rows, group)}</div> : null}
+            {expanded ? (
+              <div className="bt-groups__body">
+                <TableGroupContext.Provider value={contexts.get(group.id) ?? null}>{children(group.rows, group)}</TableGroupContext.Provider>
+              </div>
+            ) : null}
           </section>
         )
       })}

@@ -17,7 +17,7 @@ description: "Verifica o Agrupar por das listas (§10.9.1, 1.30): ViewConfig.gro
 3. Escolha Prazo: aparece "Período do grupo" (Por mês/Por ano), começa em Por mês.
 4. Status → Aplicar: 3 grupos fechados (Atrasado 5, Em andamento 5, Concluído 4). Clique abre uma tabela só com aquelas linhas; `aria-expanded` muda.
 5. Trocar o agrupamento fecha todos os grupos. "Sem agrupamento" (X do Select) volta à tabela única com rodapé.
-5b. Seleção com dois grupos abertos: marcar o checkbox do cabeçalho de um grupo seleciona só as linhas dele; o cabeçalho do outro grupo fica desmarcado (sem traço). Desmarcar devolve só aquele grupo; Shift+clique dentro de um grupo não pega linha de outro (`selection.scope`, 1.31).
+5b. Seleção com dois grupos abertos: marcar o checkbox do cabeçalho de um grupo seleciona só as linhas dele; o cabeçalho do outro grupo fica desmarcado (sem traço). Desmarcar devolve só aquele grupo; Shift+clique dentro de um grupo não pega linha de outro (`selection.scope`, 1.31). Desde a 1.33 a vitrine não passa `all` nem `scope`: o `TableGroups` injeta os dois, então este passo também prova o automático.
 6. Salvar como visão e reabrir: o agrupamento volta junto.
 7. Celular (390 px): grupos com cards dentro, sem rolagem lateral da página.
 
