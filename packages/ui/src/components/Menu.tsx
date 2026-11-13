@@ -10,6 +10,8 @@ export type MenuAction = {
   title?: string
   /** Linha de apoio embaixo do rótulo, quebrando se precisar (ex.: o motivo de o item estar desabilitado). */
   description?: string
+  /** Ação extra na própria linha (ex.: lixeira de uma visão). Delete no item também dispara; o menu continua aberto. */
+  secondary?: { icon: ReactNode; label: string; onSelect: () => void }
 }
 
 export type MenuProps = {
@@ -22,13 +24,27 @@ export type MenuProps = {
 
 const enabledOf = (actions: MenuAction[]) => actions.map((action, index) => (action.disabled ? -1 : index)).filter((index) => index >= 0)
 
+/** Item com ação secundária: linha com o item e o botão de ícone ao lado (o botão fica fora da navegação por setas). */
+function wrap(action: MenuAction, item: ReactNode, hover: () => void) {
+  const secondary = action.secondary
+  if (!secondary) return item
+  return (
+    <div className="bt-menu__row" role="none" onMouseEnter={hover}>
+      {item}
+      <button type="button" tabIndex={-1} className="bt-menu__secondary" aria-label={secondary.label} title={secondary.label} onClick={secondary.onSelect}>{secondary.icon}</button>
+    </div>
+  )
+}
+
 /** Painel com os itens, setas, Home/End, Enter e Esc. Compartilhado por `Menu` e `ContextMenu`. */
 function MenuPanel({ id, panelRef, actions, onClose, onSelect }: { id: string; panelRef: RefObject<HTMLDivElement | null>; actions: MenuAction[]; onClose: (refocus: boolean) => void; onSelect: (action: MenuAction) => void }) {
   const enabled = enabledOf(actions)
   const [active, setActive] = useState(enabled[0] ?? 0)
-  useEffect(() => { panelRef.current?.querySelectorAll<HTMLElement>('[role^=menuitem]')[active]?.focus() }, [active, panelRef])
+  // Item que sai da lista (ação secundária) leva o foco para o seguinte, ou para o último.
+  const focused = Math.min(active, actions.length - 1)
+  useEffect(() => { panelRef.current?.querySelectorAll<HTMLElement>('[role^=menuitem]')[focused]?.focus() }, [focused, actions.length, panelRef])
   const move = (step: number) => setActive((current) => {
-    const position = enabled.indexOf(current)
+    const position = enabled.indexOf(Math.min(current, actions.length - 1))
     return enabled[(position + step + enabled.length) % enabled.length] ?? current
   })
   const onKeyDown = (event: KeyboardEvent) => {
@@ -39,6 +55,11 @@ function MenuPanel({ id, panelRef, actions, onClose, onSelect }: { id: string; p
       case 'End': event.preventDefault(); setActive(enabled[enabled.length - 1] ?? 0); break
       case 'Escape': event.preventDefault(); event.stopPropagation(); onClose(true); break
       case 'Tab': onClose(false); break
+      case 'Delete': {
+        const secondary = actions[focused]?.secondary
+        if (secondary) { event.preventDefault(); secondary.onSelect() }
+        break
+      }
     }
   }
   return (
@@ -49,13 +70,13 @@ function MenuPanel({ id, panelRef, actions, onClose, onSelect }: { id: string; p
           <Fragment key={action.id}>
             {startsGroup && index > 0 ? <div className="bt-menu__divider" role="separator" /> : null}
             {startsGroup && action.group ? <div className="bt-menu__group" role="presentation">{action.group}</div> : null}
-            <button type="button" role={action.selected !== undefined ? 'menuitemradio' : 'menuitem'} aria-checked={action.selected} tabIndex={index === active ? 0 : -1} disabled={action.disabled} title={action.title} className={['bt-menu__item', action.tone === 'danger' && 'bt-menu__item--danger', action.selected && 'bt-menu__item--selected'].filter(Boolean).join(' ')} onMouseEnter={() => setActive(index)} onClick={() => { if (!action.disabled) onSelect(action) }}>
+            {wrap(action, <button type="button" role={action.selected !== undefined ? 'menuitemradio' : 'menuitem'} aria-checked={action.selected} aria-keyshortcuts={action.secondary ? 'Delete' : undefined} tabIndex={index === focused ? 0 : -1} disabled={action.disabled} title={action.title} className={['bt-menu__item', action.tone === 'danger' && 'bt-menu__item--danger', action.selected && 'bt-menu__item--selected'].filter(Boolean).join(' ')} onMouseEnter={() => setActive(index)} onClick={() => { if (!action.disabled) onSelect(action) }}>
               {action.icon != null ? <span className="bt-menu__icon">{action.icon}</span> : null}
               {action.description
                 ? <span className="bt-menu__text"><span className="bt-menu__label">{action.label}</span><small className="bt-menu__description">{action.description}</small></span>
                 : <span className="bt-menu__label">{action.label}</span>}
               {action.selected ? <svg className="bt-menu__check" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5" /></svg> : null}
-            </button>
+            </button>, () => setActive(index))}
           </Fragment>
         )
       })}

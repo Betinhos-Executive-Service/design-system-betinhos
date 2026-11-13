@@ -609,6 +609,7 @@ function TableViewShowcase() {
   // Uma pública já existente; o store recomeça ao trocar o perfil.
   const store = useMemo(() => createMemoryViewStore([
     { id: 'pub-1', name: 'Atrasadas por cliente', publica: true, mine: false, ordem: 1, config: serializeConfig({ ...toggleColumn(defaultConfig(OCORRENCIA_DEFS), OCORRENCIA_DEFS, 'responsavel'), sort: { key: 'cliente', dir: 'asc' } }) },
+    { id: 'minha-1', name: 'Minhas da semana', publica: false, mine: true, config: serializeConfig(defaultConfig(OCORRENCIA_DEFS)) },
   ], { canPublish: gestor }), [gestor])
   const view = useTableView({ tela: 'componentes.ocorrencias', columns: OCORRENCIA_DEFS, store, defaultSort: { key: 'prazo', dir: 'asc' } })
   const { filters, fetchXml, quickFilters } = useTableFilters(view, OCORRENCIA_FILTROS, buscarCliente)

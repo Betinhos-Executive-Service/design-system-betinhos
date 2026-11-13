@@ -43,9 +43,20 @@ export type TableViewState = {
   saveAs: (name: string) => Promise<void>
   rename: (name: string) => Promise<void>
   remove: () => Promise<void>
+  /**
+   * Lixeira de uma visão pessoal (§10.9.1): some da lista na hora e só é excluída no store depois de
+   * `VIEW_DISCARD_DELAY_MS` (ou ao desmontar a lista). `undo` cancela e a devolve; `done` rejeita se o store falhar
+   * (a visão volta à lista) e resolve quando ela é excluída ou o usuário desfaz.
+   */
+  discard: (id: string) => { undo: () => void; done: Promise<void> }
   publish: () => Promise<void>
   reload: () => Promise<void>
 }
+
+/** Tempo para desfazer a exclusão de uma visão (o mesmo do toast "Desfazer"). */
+export const VIEW_DISCARD_DELAY_MS = 6000
+
+type PendingDiscard = { timer: ReturnType<typeof setTimeout>; commit: () => void }
 
 const storageKey = (tela: string) => `betinhos.visao.${tela}`
 const densityKey = (tela: string) => `betinhos.densidade.${tela}`
@@ -78,7 +89,10 @@ export function useTableView({ tela, columns, store, defaultSort = null, default
   const [status, setStatus] = useState<TableViewState['status']>('loading')
   const [error, setError] = useState<unknown>(null)
   const [canPublish, setCanPublish] = useState(false)
-  const [views, setViews] = useState<TableViewEntry[]>(() => buildEntries([], defs, fallback, false, defaultName))
+  const [allViews, setViews] = useState<TableViewEntry[]>(() => buildEntries([], defs, fallback, false, defaultName))
+  const [hidden, setHidden] = useState<ReadonlySet<string>>(() => new Set())
+  const views = useMemo(() => (hidden.size ? allViews.filter((v) => !hidden.has(v.id)) : allViews), [allViews, hidden])
+  const pending = useRef(new Map<string, PendingDiscard>())
   const [activeId, setActiveId] = useState(DEFAULT_VIEW_ID)
   const [config, setConfigState] = useState<ViewConfig>(fallback)
   const [density, setDensityState] = useState<TableDensity>(() => readDensity(kv, tela))
@@ -86,7 +100,12 @@ export function useTableView({ tela, columns, store, defaultSort = null, default
   // Volta a `true` na remontagem do StrictMode; só a desmontagem real deixa `false`.
   useEffect(() => {
     live.current = true
-    return () => { live.current = false }
+    const discards = pending.current
+    return () => {
+      live.current = false
+      // Saiu da lista antes do prazo: a exclusão pedida vale.
+      for (const p of discards.values()) { clearTimeout(p.timer); p.commit() }
+    }
   }, [])
 
   const active = views.find((v) => v.id === activeId) ?? views[0]
@@ -152,6 +171,47 @@ export function useTableView({ tela, columns, store, defaultSort = null, default
     writeLast(kv, tela, DEFAULT_VIEW_ID)
     await load(DEFAULT_VIEW_ID)
   }, [active, store, kv, tela, load])
+  const discard = useCallback((id: string) => {
+    const entry = views.find((v) => v.id === id)
+    if (!entry || entry.scope !== 'pessoal') throw new Error('Só visões pessoais vão para a lixeira.')
+    const wasActive = id === activeId
+    const unhide = () => setHidden((set) => { const next = new Set(set); next.delete(id); return next })
+    setHidden((set) => new Set(set).add(id))
+    if (wasActive) {
+      setActiveId(DEFAULT_VIEW_ID)
+      setConfigState(views[0].config)
+      writeLast(kv, tela, DEFAULT_VIEW_ID)
+    }
+    let settle = () => {}
+    const done = new Promise<void>((resolve, reject) => {
+      settle = resolve
+      const commit = () => {
+        pending.current.delete(id)
+        store.remove(id).then(() => {
+          if (live.current) { setViews((list) => list.filter((v) => v.id !== id)); unhide() }
+          resolve()
+        }, (err: unknown) => {
+          if (live.current) unhide()
+          reject(err)
+        })
+      }
+      pending.current.set(id, { timer: setTimeout(commit, VIEW_DISCARD_DELAY_MS), commit })
+    })
+    const undo = () => {
+      const p = pending.current.get(id)
+      if (!p) return
+      clearTimeout(p.timer)
+      pending.current.delete(id)
+      unhide()
+      if (wasActive) {
+        setActiveId(id)
+        setConfigState(entry.config)
+        writeLast(kv, tela, id)
+      }
+      settle()
+    }
+    return { undo, done }
+  }, [views, activeId, kv, tela, store])
   const publish = useCallback(async () => {
     if (!canPublish || active.scope !== 'pessoal') throw new Error('Só gestores publicam visões pessoais.')
     await store.publish(active.id)
@@ -161,6 +221,6 @@ export function useTableView({ tela, columns, store, defaultSort = null, default
 
   return {
     status, error, views, active, config, dirty: !sameConfig(config, active.config), canPublish,
-    setConfig, density, setDensity, select, restore, save, saveAs, rename, remove, publish, reload,
+    setConfig, density, setDensity, select, restore, save, saveAs, rename, remove, discard, publish, reload,
   }
 }

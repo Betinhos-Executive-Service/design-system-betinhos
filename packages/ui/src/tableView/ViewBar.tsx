@@ -18,7 +18,7 @@ import { fitSelection, planFit, type FitPlan, type FitSize } from './viewBarFit'
 import { icons } from './icons'
 import type { TableViewEntry } from './store'
 import type { TableDensity } from '../components/Table'
-import type { TableViewState } from './useTableView'
+import { VIEW_DISCARD_DELAY_MS, type TableViewState } from './useTableView'
 
 /** Explica o selo "Alterada" (§10.9.1): o que difere e onde resolver, sem abrir o menu para descobrir. */
 const DIRTY_HINT = 'Colunas, ordem ou filtros diferentes da visão salva. No menu: Salvar, Salvar como ou Restaurar padrão.'
@@ -203,8 +203,15 @@ export function ViewBar({ view, columns, catalog, pinnable, children, onError, f
     else void run(() => view.saveAs(trimmed), 'Não foi possível salvar a visão.', 'Visão salva. Ela fica só para você.')
   }
 
+  // Lixeira das visões pessoais (§10.9.1): exclui sem diálogo, com "Desfazer" no toast enquanto o store espera.
+  const discard = (v: TableViewEntry) => {
+    const { undo, done } = view.discard(v.id)
+    toast?.({ tone: 'success', message: `Visão “${v.name}” excluída.`, duration: VIEW_DISCARD_DELAY_MS, action: { label: 'Desfazer', onClick: undo } })
+    done.catch((error: unknown) => fail('Não foi possível excluir a visão.', error))
+  }
   const viewItems = (scope: TableViewEntry['scope'], group: string): MenuAction[] => view.views.filter((v) => v.scope === scope).map((v) => ({
     id: `visao-${v.id}`, label: v.name, icon: scopeIcon(v), group, selected: v.id === active.id, onSelect: () => view.select(v.id),
+    secondary: scope === 'pessoal' ? { icon: icons.trash, label: `Excluir “${v.name}”`, onSelect: () => discard(v) } : undefined,
   }))
   const actions: MenuAction[] = [
     ...viewItems('padrao', 'Padrão'),
@@ -215,7 +222,7 @@ export function ViewBar({ view, columns, catalog, pinnable, children, onError, f
     ...(active.canEdit ? [{ id: 'renomear', label: 'Renomear…', icon: icons.pencil, group: '', onSelect: () => open('rename') }] : []),
     ...(canPublish && active.scope === 'pessoal' ? [{ id: 'publicar', label: 'Tornar pública…', icon: icons.share, group: '', onSelect: () => open('publish') }] : []),
     ...(active.scope !== 'padrao' || dirty ? [{ id: 'restaurar', label: 'Restaurar padrão', icon: icons.reset, group: '', onSelect: view.restore }] : []),
-    ...(active.canEdit ? [{ id: 'excluir', label: 'Excluir visão…', icon: icons.trash, group: '', tone: 'danger' as const, onSelect: () => open('delete') }] : []),
+    ...(active.canEdit && active.scope === 'publica' ? [{ id: 'excluir', label: 'Excluir visão…', icon: icons.trash, group: '', tone: 'danger' as const, onSelect: () => open('delete') }] : []),
   ]
 
   const current = filters ? readFilters(view.config.filters, filters.fields) : null
@@ -418,7 +425,7 @@ export function ViewBar({ view, columns, catalog, pinnable, children, onError, f
         </>}
       >
         <div className="bt-viewbar__form">
-          <p>A visão “{lastName.current}” será excluída{active.scope === 'publica' ? ' para todos' : ''} e não pode ser recuperada. Os registros não são afetados.</p>
+          <p>A visão “{lastName.current}” será excluída para todos e não pode ser recuperada. Os registros não são afetados.</p>
         </div>
       </Dialog>
     </>
