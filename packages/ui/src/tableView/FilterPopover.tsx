@@ -45,6 +45,8 @@ export function FilterPopover({ anchor, label, onClose, className, children }: F
       panel.style.transformOrigin = up ? 'bottom left' : 'top left'
     }
     place()
+    // O autoFocus do React roda antes do showPopover (painel ainda oculto): o foco entra aqui.
+    if (!panel.contains(document.activeElement)) panel.querySelector<HTMLElement>('input, textarea, button, [tabindex="0"]')?.focus()
     const outside = (event: PointerEvent) => {
       const target = event.target as Node
       if (!panel.contains(target) && !anchor?.contains(target)) closeRef.current()
