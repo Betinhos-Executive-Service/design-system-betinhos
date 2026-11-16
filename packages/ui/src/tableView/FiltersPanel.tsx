@@ -8,7 +8,7 @@ import { type LookupSearch } from './FilterEditors'
 import { FilterFieldPicker } from './FilterFieldPicker'
 import { FilterRow } from './FilterRow'
 import {
-  appendTo, countIncomplete, fromPanelList, needsValue, newCondition, newGroup, newId, removeNode, toPanelList, updateNode,
+  appendTo, countIncomplete, fromPanelList, groupDepth, MAX_GROUP_DEPTH, needsValue, newCondition, newGroup, newId, removeNode, toPanelList, updateNode,
   type FilterCondition, type FilterField, type FilterGroup, type TableFilters,
 } from './filters'
 
@@ -117,6 +117,8 @@ export function FiltersPanel({ open, onClose, fields, value, onApply, search, co
   const origin: TableFilters = { quick: {}, advanced: { ...emptyList(), items: [value.advanced, ...(saved ? [saved.advanced] : [])] } }
   const out = fromPanelList(effective, fields, origin)
   const outKey = stable(out)
+  // Grupo de três níveis (visão antiga com rápido + avançado "ou" com subgrupos, e algo novo ao lado) não cabe no gravado.
+  const tooDeep = groupDepth(out.advanced) > MAX_GROUP_DEPTH
   const changed = !same(out, value)
   const differsFromSaved = saved ? !same(out, saved) : false
   const incomplete = countIncomplete(effective, fields)
@@ -138,13 +140,15 @@ export function FiltersPanel({ open, onClose, fields, value, onApply, search, co
   useLayoutEffect(() => {
     const id = focusNext.current
     if (!id) return
+    // A última linha saindo pelo ×: o "+ Adicionar filtro" de agora some com ela; foca o do estado vazio depois.
+    if (id === 'add' && leaving.size) return
     focusNext.current = null
     const row = id === 'add' ? null : bodyRef.current?.querySelector<HTMLElement>(`[data-row="${CSS.escape(id)}"] .bt-frow`)
     ;(row ?? addRef.current)?.focus()
   })
 
   const requestClose = () => (changed ? setConfirming(true) : onClose())
-  const apply = () => { onApply(out); onClose() }
+  const apply = () => { if (tooDeep) return; onApply(out); onClose() }
   const update = (fn: (list: FilterGroup) => FilterGroup) => setDraft(fn)
 
   const remove = (id: string, viaPointer = false) => {
@@ -175,6 +179,7 @@ export function FiltersPanel({ open, onClose, fields, value, onApply, search, co
     if (!node || node.type !== 'condition') return
     const group: FilterGroup = { ...newGroup('or'), items: [node] }
     update((d) => updateNode(d, id, () => group))
+    setAutoOpen(null)
     setPick({ target: { kind: 'group', id: group.id }, anchor: null })
   }
 
@@ -200,7 +205,14 @@ export function FiltersPanel({ open, onClose, fields, value, onApply, search, co
 
   // Ação de teclado não anima (§10.9.2): o último tipo de entrada fica marcado no corpo.
   const markInput = (kind: 'kbd' | 'pointer') => { if (bodyRef.current) bodyRef.current.dataset.input = kind }
-  const openPicker = (target: PickTarget) => (event: { currentTarget: HTMLElement }) => setPick({ target, anchor: event.currentTarget })
+  const openPicker = (target: PickTarget) => (event: { currentTarget: HTMLElement }) => { setAutoOpen(null); setPick({ target, anchor: event.currentTarget }) }
+  const removeGroup = (group: FilterGroup) => {
+    const ids = rowIds(draft)
+    const inside = new Set(rowIds(group))
+    const at = ids.findIndex((id) => inside.has(id))
+    focusNext.current = ids.slice(at).find((id) => !inside.has(id)) ?? ids.slice(0, at).reverse().find((id) => !inside.has(id)) ?? 'add'
+    update((d) => removeNode(d, group.id))
+  }
 
   const connector = (group: FilterGroup, index: number) => {
     const word = group.logic === 'and' ? 'e' : 'ou'
@@ -222,7 +234,7 @@ export function FiltersPanel({ open, onClose, fields, value, onApply, search, co
           <section className="bt-filters__group" aria-label="Grupo de filtros">
             <header className="bt-filters__group-head">
               <span>{item.logic === 'or' ? 'Qualquer uma destas' : 'Todas estas'}</span>
-              <button type="button" className="bt-frow__icon" aria-label="Remover grupo" onClick={() => update((d) => removeNode(d, item.id))}>{icon(X)}</button>
+              <button type="button" className="bt-frow__icon" aria-label="Remover grupo" onClick={() => removeGroup(item)}>{icon(X)}</button>
             </header>
             <ul className="bt-filters__list">{renderItems(item, depth + 1)}</ul>
             <button type="button" className="bt-filters__addbtn" disabled={!fields.length} onClick={openPicker({ kind: 'group', id: item.id })}>+ Filtro</button>
@@ -254,8 +266,9 @@ export function FiltersPanel({ open, onClose, fields, value, onApply, search, co
     <div className="bt-filters__footer">
       <Button variant="ghost" onClick={() => reset(emptyList())}>Limpar</Button>
       <span className="bt-filters__footer-end">
+        {tooDeep ? <span className="bt-filters__note" role="alert">Grupos demais: tire o filtro novo ou junte-o ao grupo</span> : null}
         {incomplete ? <span className="bt-filters__note">{incomplete === 1 ? '1 filtro sem valor não entra' : `${incomplete} filtros sem valor não entram`}</span> : null}
-        <Button onClick={apply} disabled={!changed}>
+        <Button onClick={apply} disabled={!changed || tooDeep}>
           <span aria-live="polite" className={stale && preview != null ? 'bt-filters__count is-stale' : 'bt-filters__count'}>{preview != null ? `Mostrar ${many(preview)}` : 'Mostrar resultados'}</span>
         </Button>
       </span>

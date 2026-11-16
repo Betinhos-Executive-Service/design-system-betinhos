@@ -55,7 +55,7 @@ export { useMediaQuery } from './useMediaQuery'
 export {
   DATE_PRESETS, FILTER_OPS, MAX_GROUP_DEPTH, appendTo, conditionProblem, countActiveFilters, countIncomplete, describeCondition, describeGroup,
   emptyFilters, fieldLabel, filtersToFetchXml, keywordToFetchXml, matchesFilters, needsValue, newCondition, newGroup, parseNumberBR,
-  parseQuickNumber, parseQuickText, quickNumberOf, quickTextOf, readFilters, removeNode, storedFilters, todaySaoPaulo, updateNode, QUICK_OPS, toPanelList, fromPanelList,
+  parseQuickNumber, parseQuickText, quickNumberOf, quickTextOf, readFilters, removeNode, storedFilters, todaySaoPaulo, updateNode, QUICK_OPS, toPanelList, fromPanelList, groupDepth,
   type BoolOp, type DateOp, type FilterCondition, type FilterField, type FilterGroup, type FilterKind, type FilterOp, type FilterOption,
   type ListOp, type NumberOp, type TableFilters, type TextOp,
 } from './tableView/filters'

@@ -30,7 +30,7 @@ export function FilterFieldPicker({ anchor, fields, onPick, onClose }: FilterFie
     if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
       event.preventDefault()
       if (list.length) setActive((current + (event.key === 'ArrowDown' ? 1 : -1) + list.length) % list.length)
-    } else if (event.key === 'Enter') {
+    } else if (event.key === 'Enter' && !event.ctrlKey && !event.metaKey) {
       event.preventDefault()
       if (list[current]) onPick(list[current])
     } else if (event.key === 'Escape') {

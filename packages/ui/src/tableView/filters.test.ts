@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   appendTo, conditionProblem, countActiveFilters, countIncomplete, describeCondition, describeGroup, emptyFilters, filtersToFetchXml,
-  keywordToFetchXml, matchesFilters, parseNumberBR, parseQuickNumber, quickNumberOf, newGroup, parseQuickText, quickTextOf, readFilters, removeNode, todaySaoPaulo, updateNode, toPanelList, fromPanelList,
+  keywordToFetchXml, matchesFilters, parseNumberBR, parseQuickNumber, quickNumberOf, newGroup, parseQuickText, quickTextOf, readFilters, removeNode, todaySaoPaulo, updateNode, toPanelList, fromPanelList, groupDepth,
   type FilterCondition, type FilterField, type TableFilters,
 } from './filters'
 
@@ -193,9 +193,26 @@ describe('toPanelList e fromPanelList', () => {
     expect(list.items).toHaveLength(2)
     expect(list.items[1]).toMatchObject({ type: 'group', logic: 'or' })
   })
-  it('sem rápido, avançado em ou é a própria lista', () => {
+  it('sem rápido, avançado em ou entra como grupo sob a raiz e', () => {
     const list = toPanelList(withQuick({}, g('or', [c('valor', 'gt', { value: 1 })])), fields)
-    expect(list).toMatchObject({ id: 'raiz', logic: 'or' })
+    expect(list).toMatchObject({ id: 'raiz', logic: 'and', items: [{ type: 'group', logic: 'or' }] })
+  })
+  it('mesmo campo no rápido e no avançado: abrir e voltar não troca de lugar', () => {
+    const x = withQuick({ status: c('status', 'in', { values: [{ value: '1', label: 'Pendente' }] }) }, g('and', [c('status', 'not-in', { values: [{ value: '2', label: 'Confirmado' }] })]))
+    expect(fromPanelList(toPanelList(x, fields), fields, x)).toEqual(x)
+  })
+  it('condição da célula que vai ao avançado ganha id próprio', () => {
+    const out = fromPanelList(g('and', [{ ...c('nome', 'ends', { value: 'a' }), id: 'rapido-nome' }]), fields)
+    expect(out.advanced.items[0].id).not.toBe('rapido-nome')
+  })
+  it('readFilters dá o mesmo id a cada leitura de condição gravada sem id', () => {
+    const raw = { quick: { nome: { type: 'condition', field: 'nome', op: 'contains', value: 'a' } }, advanced: { type: 'group', logic: 'and', items: [{ type: 'condition', field: 'valor', op: 'gt', value: 1 }] } }
+    expect(readFilters(raw, fields)).toEqual(readFilters(raw, fields))
+    expect(readFilters(raw, fields).quick.nome.id).toBe('rapido-nome')
+  })
+  it('groupDepth conta os níveis', () => {
+    expect(groupDepth(g('and', [c('nome', 'eq', { value: 'a' })]))).toBe(1)
+    expect(groupDepth(g('and', [g('or', [g('and', [])], 'x')]))).toBe(3)
   })
   it('volta ao rápido só a condição única do campo, completa e com operador da célula', () => {
     const list = g('and', [

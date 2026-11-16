@@ -73,6 +73,7 @@ export function FilterRow({ condition, fields, search, autoOpen, onChange, onRem
   const [open, setOpen] = useState<Open>(autoOpen ?? null)
   const fieldRef = useRef<HTMLButtonElement>(null)
   const valueRef = useRef<HTMLButtonElement>(null)
+  const boxRef = useRef<HTMLDivElement>(null)
   const [anchors, setAnchors] = useState<{ field: HTMLElement | null; value: HTMLElement | null }>({ field: null, value: null })
   useEffect(() => { setAnchors({ field: fieldRef.current, value: valueRef.current }) }, [open])
 
@@ -103,7 +104,7 @@ export function FilterRow({ condition, fields, search, autoOpen, onChange, onRem
   ]
 
   return (
-    <div className="bt-frow" role="group" aria-label={sentence} tabIndex={0} onKeyDown={onBoxKeyDown}>
+    <div ref={boxRef} className="bt-frow" role="group" aria-label={sentence} tabIndex={0} onKeyDown={onBoxKeyDown}>
       <span className="bt-frow__phrase">
         <button ref={fieldRef} type="button" className="bt-frow__token bt-frow__token--field" aria-haspopup="dialog" aria-expanded={open === 'field'} onClick={() => setOpen(open === 'field' ? null : 'field')}>
           {field ? fieldLabel(field) : condition.field}
@@ -148,7 +149,7 @@ export function FilterRow({ condition, fields, search, autoOpen, onChange, onRem
       ) : null}
       {open === 'value' && field && showValue ? (
         <FilterPopover anchor={anchors.value} label={`Valor de ${field.label}`} onClose={() => setOpen(null)} className="bt-fvalue">
-          <ValueEditor field={field} condition={condition} search={search} onChange={onChange} onDone={() => { setOpen(null); valueRef.current?.focus() }} />
+          <ValueEditor field={field} condition={condition} search={search} onChange={onChange} onDone={() => { setOpen(null); (valueRef.current?.isConnected ? valueRef.current : boxRef.current)?.focus() }} />
         </FilterPopover>
       ) : null}
     </div>
@@ -159,7 +160,7 @@ type ValueProps = { field: FilterField; condition: FilterCondition; search?: Loo
 
 /** Editor do valor por tipo: texto, número (R$ quando `money`), data com atalhos, escolha em checklist, relação com busca. */
 function ValueEditor({ field, condition, search, onChange, onDone }: ValueProps) {
-  const enter = (event: KeyboardEvent) => { if (event.key === 'Enter' && (event.target as HTMLElement).tagName === 'INPUT') { event.preventDefault(); onDone() } }
+  const enter = (event: KeyboardEvent) => { if (event.key === 'Enter' && !event.ctrlKey && !event.metaKey && (event.target as HTMLElement).tagName === 'INPUT') { event.preventDefault(); onDone() } }
   switch (field.kind) {
     case 'text':
       return <Input autoFocus aria-label={`Texto de ${field.label}`} value={typeof condition.value === 'string' ? condition.value : ''} onKeyDown={enter} onChange={(event) => onChange({ ...condition, value: event.target.value })} />
