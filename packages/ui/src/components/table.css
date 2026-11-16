@@ -50,7 +50,8 @@ button.bt-table__row:focus-visible { outline: 0; box-shadow: inset 0 0 0 2px var
 .bt-table.is-scrolled .bt-table__cell--pin-last { box-shadow: calc(var(--bt-pin-y) - var(--bt-pin-cover, var(--bt-table-gap))) 0 0 var(--bt-pin-y) var(--bt-pin-bg), calc(var(--bt-table-gap) - var(--bt-pin-y)) 0 0 var(--bt-pin-y) var(--bt-pin-bg), calc(var(--bt-table-gap) - var(--bt-pin-y) + 2px) 0 8px var(--bt-pin-y) color-mix(in srgb, var(--bt-color-text-primary) 14%, transparent); }
 /* Seleção (§10.9.3): checkbox em coluna de 40px, sempre fixa; linha selecionada em azul-claro, inclusive nas fixas. */
 .bt-table__cell--select { justify-content: center; }
-.bt-table__check { min-height: 0; align-items: center; }
+/* Duas classes: o choice.css entra depois do table.css no styles.css, e `.bt-choice` (min-height 24px, flex-start) venceria `.bt-table__check` com o quadrado 3px acima do centro. */
+.bt-choice.bt-table__check { min-height: 0; align-items: center; }
 .bt-table__check .bt-choice__control { margin-top: 0; }
 .bt-table__check .bt-choice__text { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .bt-table__row--selectable { cursor: default; }
