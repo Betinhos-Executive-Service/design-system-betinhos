@@ -184,6 +184,57 @@ export function countIncomplete(group: FilterGroup, fields: FilterField[]): numb
   return walk(group)
 }
 
+// ---------- Lista do painel (§10.9.2) ----------
+
+/** Operadores que a célula do filtro rápido (cabeçalho da coluna) sabe mostrar. */
+export const QUICK_OPS: Record<FilterKind, FilterOp[]> = {
+  text: ['contains', 'eq', 'begins', 'not-contains', 'empty', 'not-empty'],
+  number: ['eq', 'ne', 'gt', 'ge', 'lt', 'le', 'between', 'empty'],
+  choice: ['in'],
+  lookup: ['in'],
+  date: [...DATE_PRESETS, 'between'],
+  bool: ['yes', 'no'],
+}
+
+/**
+ * Filtros gravados → lista única do painel: rápidos primeiro (na ordem dos campos), depois o avançado. Avançado em "e"
+ * entra item a item; em "ou" entra como grupo (ou vira a própria lista quando não há rápido).
+ */
+export function toPanelList(filters: TableFilters, fields: FilterField[]): FilterGroup {
+  const quick = fields.flatMap((f) => (filters.quick[f.key] ? [filters.quick[f.key]] : []))
+  const adv = filters.advanced
+  if (adv.logic === 'or' && !quick.length) return { ...adv, id: 'raiz' }
+  const tail = adv.logic === 'and' ? adv.items : adv.items.length ? [{ ...adv, id: newId() }] : []
+  return { type: 'group', id: 'raiz', logic: 'and', items: [...quick, ...tail] }
+}
+
+const nodeIds = (group: FilterGroup): string[] => group.items.flatMap((i) => (i.type === 'group' ? [i.id, ...nodeIds(i)] : [i.id]))
+
+/**
+ * Lista do painel → filtros gravados. Inverso de `toPanelList`: o que a célula da coluna sabe mostrar volta ao rápido.
+ * Com `origin` (o que estava gravado), condição ou grupo que já estava no avançado continua como estava: abrir e aplicar
+ * não muda nada.
+ */
+export function fromPanelList(list: FilterGroup, fields: FilterField[], origin?: TableFilters): TableFilters {
+  if (list.logic === 'or') return { quick: {}, advanced: { ...list, id: 'raiz' } }
+  const map = fieldMap(fields)
+  const keep = new Set(origin ? nodeIds(origin.advanced) : [])
+  const count = new Map<string, number>()
+  for (const item of list.items) if (item.type === 'condition') count.set(item.field, (count.get(item.field) ?? 0) + 1)
+  const quick: Record<string, FilterCondition> = {}
+  const rest: Array<FilterCondition | FilterGroup> = []
+  for (const item of list.items) {
+    const field = item.type === 'condition' ? map.get(item.field) : undefined
+    const toQuick = item.type === 'condition' && field && !field.advancedOnly && !keep.has(item.id) && count.get(item.field) === 1
+      && QUICK_OPS[field.kind].includes(item.op) && !conditionProblem(item, field)
+    if (toQuick) quick[item.field] = item
+    else rest.push(item)
+  }
+  const only = rest.length === 1 ? rest[0] : undefined
+  const advanced: FilterGroup = only?.type === 'group' && !keep.has(only.id) ? { ...only, id: 'raiz' } : { type: 'group', id: 'raiz', logic: 'and', items: rest }
+  return { quick, advanced }
+}
+
 // ---------- Filtro rápido de texto ----------
 
 /** Texto da célula de filtro rápido → condição. Prefixos: `=` igual, `^` começa com, `!` não contém; `vazio` e `preenchido`. */

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   appendTo, conditionProblem, countActiveFilters, countIncomplete, describeCondition, describeGroup, emptyFilters, filtersToFetchXml,
-  keywordToFetchXml, matchesFilters, parseNumberBR, parseQuickNumber, quickNumberOf, newGroup, parseQuickText, quickTextOf, readFilters, removeNode, todaySaoPaulo, updateNode,
+  keywordToFetchXml, matchesFilters, parseNumberBR, parseQuickNumber, quickNumberOf, newGroup, parseQuickText, quickTextOf, readFilters, removeNode, todaySaoPaulo, updateNode, toPanelList, fromPanelList,
   type FilterCondition, type FilterField, type TableFilters,
 } from './filters'
 
@@ -163,5 +163,63 @@ describe('filtro rápido de número', () => {
     expect(parseQuickNumber('valor', '250')).toMatchObject({ op: 'eq', value: 250 })
     expect(parseQuickNumber('valor', 'abc')).toBeNull()
     expect(quickNumberOf(parseQuickNumber('valor', '>=12,5')!)).toBe('≥12,5')
+  })
+})
+
+describe('toPanelList e fromPanelList', () => {
+  const g = (logic: 'and' | 'or', items: Array<FilterCondition | ReturnType<typeof newGroup>>, id = 'raiz') => ({ type: 'group' as const, id, logic, items })
+  const casos: Array<[string, TableFilters]> = [
+    ['vazio', emptyFilters()],
+    ['só rápido', withQuick({ nome: c('nome', 'contains', { value: 'ana' }), status: c('status', 'in', { values: [{ value: '1', label: 'Pendente' }] }) })],
+    ['só avançado e', withQuick({}, g('and', [c('valor', 'gt', { value: 10 }), c('cidade', 'contains', { value: 'Rio' })]))],
+    ['só avançado ou', withQuick({}, g('or', [c('valor', 'gt', { value: 10 }), c('nome', 'eq', { value: 'x' })]))],
+    ['rápido + avançado ou', withQuick({ nome: c('nome', 'contains', { value: 'ana' }) }, g('or', [c('valor', 'gt', { value: 10 }), c('data', 'today')]))],
+    ['rápido + avançado com grupo', withQuick({ nome: c('nome', 'contains', { value: 'ana' }) }, g('and', [c('cidade', 'contains', { value: 'Rio' }), g('or', [c('valor', 'lt', { value: 5 }), c('blindado', 'yes')], 'g1')]))],
+    ['avançado e com um único grupo', withQuick({}, g('and', [g('or', [c('valor', 'gt', { value: 1 }), c('data', 'today')], 'g3')]))],
+    ['avançado ou com subgrupo e rápido', withQuick({ nome: c('nome', 'contains', { value: 'ana' }) }, g('or', [c('valor', 'gt', { value: 1 }), g('and', [c('data', 'today'), c('blindado', 'no')], 'g2')]))],
+  ]
+  for (const [nome, filtros] of casos) {
+    it(`ida e volta sem mudança: ${nome}`, () => {
+      expect(fromPanelList(toPanelList(filtros, fields), fields, filtros)).toEqual(filtros)
+    })
+  }
+  it('lista começa pelos rápidos, na ordem dos campos', () => {
+    const list = toPanelList(withQuick({ status: c('status', 'in', { values: [{ value: '1', label: 'Pendente' }] }), nome: c('nome', 'contains', { value: 'a' }) }), fields)
+    expect(list.items.map((i) => (i.type === 'condition' ? i.field : 'grupo'))).toEqual(['nome', 'status'])
+    expect(list.logic).toBe('and')
+  })
+  it('avançado em ou com rápido vira grupo dentro da lista', () => {
+    const list = toPanelList(withQuick({ nome: c('nome', 'contains', { value: 'a' }) }, g('or', [c('valor', 'gt', { value: 1 }), c('data', 'today')])), fields)
+    expect(list.items).toHaveLength(2)
+    expect(list.items[1]).toMatchObject({ type: 'group', logic: 'or' })
+  })
+  it('sem rápido, avançado em ou é a própria lista', () => {
+    const list = toPanelList(withQuick({}, g('or', [c('valor', 'gt', { value: 1 })])), fields)
+    expect(list).toMatchObject({ id: 'raiz', logic: 'or' })
+  })
+  it('volta ao rápido só a condição única do campo, completa e com operador da célula', () => {
+    const list = g('and', [
+      c('nome', 'ends', { value: 'a' }), // operador que a célula não mostra → avançado
+      c('valor', 'gt', { value: 1 }), c('valor', 'lt', { value: 9 }), // dois do mesmo campo → avançado
+      c('cidade', 'contains', { value: 'Rio' }), // advancedOnly → avançado
+      c('status', 'in', { values: [] }), // incompleta → avançado
+      c('data', 'last-7'), // vai para o rápido
+    ])
+    const out = fromPanelList(list, fields)
+    expect(Object.keys(out.quick)).toEqual(['data'])
+    expect(out.advanced.items).toHaveLength(5)
+  })
+  it('condição que estava no avançado continua lá, mesmo podendo ir ao rápido', () => {
+    const origem = withQuick({}, g('and', [c('valor', 'gt', { value: 10 })]))
+    const lista = toPanelList(origem, fields)
+    const nova = c('data', 'today')
+    const out = fromPanelList({ ...lista, items: [...lista.items, nova] }, fields, origem)
+    expect(Object.keys(out.quick)).toEqual(['data'])
+    expect(out.advanced.items.map((i) => i.id)).toEqual(['valor-gt'])
+  })
+  it('lista em ou vai inteira para o avançado', () => {
+    const out = fromPanelList(g('or', [c('nome', 'contains', { value: 'a' }), c('data', 'today')]), fields)
+    expect(out.quick).toEqual({})
+    expect(out.advanced).toMatchObject({ id: 'raiz', logic: 'or' })
   })
 })
