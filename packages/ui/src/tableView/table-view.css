@@ -345,7 +345,7 @@ body.bt-columns-grabbing, body.bt-columns-grabbing * { cursor: grabbing !importa
 .bt-filters__group .bt-filters__item { grid-template-columns: 40px minmax(0, 1fr); }
 .bt-filters__locked { display: flex; align-items: center; gap: var(--bt-space-2); min-width: 0; min-height: 40px; padding: var(--bt-space-0-5) var(--bt-space-1) var(--bt-space-0-5) var(--bt-space-2-5); border: var(--bt-border-width-default) dashed var(--bt-color-text-tertiary); border-radius: var(--bt-radius-sm); background-color: var(--bt-color-surface-neutral); color: var(--bt-color-text-secondary); font-size: var(--bt-font-size-13); }
 .bt-filters__lock { display: inline-grid; flex: 0 0 auto; color: var(--bt-color-text-tertiary); }
-.bt-filters__locked-text { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bt-filters__locked-text { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; }
 .bt-filters__ro { display: inline-flex; flex: 0 0 auto; align-items: center; gap: 3px; color: var(--bt-color-text-tertiary); font-size: var(--bt-font-size-12); font-weight: var(--bt-font-weight-semibold); cursor: help; }
 .bt-filters__info { display: inline-grid; }
 .bt-filters__alt { display: flex; flex-wrap: wrap; align-items: center; gap: var(--bt-space-1-5); padding: var(--bt-space-2) var(--bt-space-3); border-radius: var(--bt-radius-sm); background-color: var(--bt-color-action-soft); color: var(--bt-color-text-primary); font-size: var(--bt-font-size-13); font-weight: var(--bt-font-weight-medium); }
@@ -370,6 +370,8 @@ body.bt-columns-grabbing, body.bt-columns-grabbing * { cursor: grabbing !importa
   .bt-filters__item { grid-template-columns: 40px minmax(0, 1fr); gap: var(--bt-space-1-5); }
   .bt-filters__group .bt-filters__item { grid-template-columns: 32px minmax(0, 1fr); }
   .bt-filters__add { padding-left: 44px; }
+  .bt-filters__locked { align-items: flex-start; }
+  .bt-filters__lock, .bt-filters__locked-text, .bt-filters__ro { display: flex; align-items: center; min-height: 40px; }
   .bt-filters__addbtn { min-height: 44px; }
 }
 @media (prefers-reduced-motion: reduce) {

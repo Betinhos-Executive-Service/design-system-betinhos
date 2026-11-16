@@ -123,6 +123,17 @@ it('Limpar esvazia o rascunho e mantém as condições só leitura', () => {
   expect(rows()).toHaveLength(0)
   expect(screen.getByText('Região é Sul')).toBeTruthy()
 })
+it('Limpar fica desabilitado sem condição do usuário (as só leitura não contam)', () => {
+  const limpar = () => screen.getByRole('button', { name: 'Limpar' }) as HTMLButtonElement
+  mount()
+  expect(limpar().disabled).toBe(true)
+  cleanup()
+  mount({ locked: [{ id: 'l1', label: 'Região é Sul' }] })
+  expect(limpar().disabled).toBe(true)
+  cleanup()
+  mount({ value: com({ cliente: c('cliente', 'contains', { value: 'a' }) }) })
+  expect(limpar().disabled).toBe(false)
+})
 it('aviso de visão alterada e Restaurar', () => {
   const saved = com({ cliente: c('cliente', 'contains', { value: 'Tenaris' }) })
   mount({ value: saved, saved })
