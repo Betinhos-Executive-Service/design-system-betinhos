@@ -270,7 +270,7 @@ export function FiltersPanel({ open, onClose, fields, value, onApply, search, co
 
   const footer = (
     <div className="bt-filters__footer">
-      <Button variant="ghost" onClick={() => reset(emptyList())}>Limpar</Button>
+      <Button variant="ghost" onClick={() => reset(emptyList())} disabled={!draft.items.length}>Limpar</Button>
       <span className="bt-filters__footer-end">
         {tooDeep ? <span className="bt-filters__note" role="alert">Grupos demais: tire o filtro novo ou junte-o ao grupo</span> : null}
         {incomplete ? <span className="bt-filters__note">{incomplete === 1 ? '1 filtro sem valor não entra' : `${incomplete} filtros sem valor não entram`}</span> : null}
