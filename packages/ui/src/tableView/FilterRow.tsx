@@ -17,7 +17,8 @@ export type FilterRowProps = {
   /** Abre o seletor de campo ou o editor de valor ao montar (linha recém-criada). */
   autoOpen?: 'field' | 'value'
   onChange: (next: FilterCondition) => void
-  onRemove: () => void
+  /** `viaPointer`: clique no × (anima a saída); teclado e menu removem na hora. */
+  onRemove: (viaPointer?: boolean) => void
   onDuplicate: () => void
   /** "Colocar num grupo"; ausente dentro de grupo. */
   onWrap?: () => void
@@ -81,7 +82,7 @@ export function FilterRow({ condition, fields, search, autoOpen, onChange, onRem
 
   const onBoxKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     if (event.target !== event.currentTarget) return
-    if (event.key === 'Delete' || event.key === 'Backspace') { event.preventDefault(); onRemove() }
+    if (event.key === 'Delete' || event.key === 'Backspace') { event.preventDefault(); onRemove(false) }
   }
 
   const opActions: MenuAction[] = field
@@ -98,7 +99,7 @@ export function FilterRow({ condition, fields, search, autoOpen, onChange, onRem
     { id: 'campo', label: 'Trocar campo', onSelect: () => setOpen('field') },
     { id: 'duplicar', label: 'Duplicar', onSelect: onDuplicate },
     ...(onWrap ? [{ id: 'grupo', label: 'Colocar num grupo', onSelect: onWrap }] : []),
-    { id: 'remover', label: 'Remover', tone: 'danger' as const, group: '', onSelect: onRemove },
+    { id: 'remover', label: 'Remover', tone: 'danger' as const, group: '', onSelect: () => onRemove(false) },
   ]
 
   return (
@@ -129,7 +130,7 @@ export function FilterRow({ condition, fields, search, autoOpen, onChange, onRem
             </button>
           )}
         />
-        <button type="button" className="bt-frow__icon" aria-label="Remover filtro" onClick={onRemove}>
+        <button type="button" className="bt-frow__icon" aria-label="Remover filtro" onClick={(event) => onRemove(event.detail > 0)}>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" /></svg>
         </button>
       </span>

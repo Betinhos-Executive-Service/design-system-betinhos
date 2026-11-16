@@ -28,9 +28,14 @@ export function FilterPopover({ anchor, label, onClose, className, children }: F
     if (mobile || !panel) return
     try { panel.showPopover?.() } catch { /* sem suporte: fixo com z-index alto */ }
     const place = () => {
-      if (!anchor) return
-      const r = anchor.getBoundingClientRect()
       const width = panel.offsetWidth
+      if (!anchor?.isConnected) {
+        // Gatilho que saiu da tela (linha que virou grupo): centraliza no alto.
+        panel.style.left = `${Math.max(8, (window.innerWidth - width) / 2)}px`
+        panel.style.top = `${Math.round(window.innerHeight * 0.18)}px`
+        return
+      }
+      const r = anchor.getBoundingClientRect()
       const below = window.innerHeight - r.bottom - 8
       const up = below < Math.min(panel.scrollHeight, 320) && r.top > below
       panel.style.left = `${Math.max(8, Math.min(r.left, window.innerWidth - width - 8))}px`
