@@ -308,3 +308,38 @@ body.bt-columns-grabbing, body.bt-columns-grabbing * { cursor: grabbing !importa
 .bt-fpick__empty { margin: 0; padding: var(--bt-space-2); color: var(--bt-color-text-secondary); font-size: var(--bt-font-size-13); }
 @media (max-width: 820px) { .bt-fpick__item { min-height: 44px; } }
 @media (prefers-reduced-motion: reduce) { .bt-fpop { transition: opacity var(--bt-duration-fast) ease-out; } @starting-style { .bt-fpop:popover-open { transform: none; } } }
+
+/* Condição em frase (§10.9.2): campo, operador e valor numa caixa; ⋯ no hover/foco e ×. */
+.bt-frow { display: flex; align-items: center; gap: var(--bt-space-1); min-width: 0; min-height: 40px; padding: var(--bt-space-0-5) var(--bt-space-1) var(--bt-space-0-5) var(--bt-space-1); border: var(--bt-border-width-default) solid var(--bt-color-border); border-radius: var(--bt-radius-sm); background-color: var(--bt-color-surface); font-family: var(--bt-font-family-sans); }
+.bt-frow:focus-visible { outline: 2px solid var(--bt-color-action); outline-offset: 1px; }
+.bt-frow__phrase { display: flex; flex: 1 1 auto; flex-wrap: wrap; align-items: center; gap: 2px; min-width: 0; }
+.bt-frow__phrase > .bt-menu { display: inline-flex; }
+.bt-frow__token { max-width: 100%; min-height: 30px; padding: 0 var(--bt-space-1-5); overflow: hidden; border: 0; border-radius: var(--bt-radius-xs); background: transparent; color: var(--bt-color-text-primary); font: inherit; font-size: var(--bt-font-size-13); font-weight: var(--bt-font-weight-medium); text-align: left; text-overflow: ellipsis; white-space: nowrap; cursor: pointer; transition: background-color var(--bt-duration-instant) ease-out, transform var(--bt-duration-instant) ease-out; }
+.bt-frow__token--field { font-weight: var(--bt-font-weight-bold); }
+.bt-frow__token--op { color: var(--bt-color-text-secondary); }
+.bt-frow__token--value.is-empty { color: var(--bt-color-text-tertiary); font-style: italic; }
+.bt-frow__token:focus-visible, .bt-frow__icon:focus-visible { outline: 2px solid var(--bt-color-action); outline-offset: -1px; }
+.bt-frow__token[aria-expanded="true"] { background-color: var(--bt-color-action-soft); color: var(--bt-color-action); }
+.bt-frow__token:active, .bt-frow__icon:active { transform: scale(0.97); }
+.bt-frow__actions { display: inline-flex; flex: 0 0 auto; align-items: center; }
+.bt-frow__icon { display: grid; place-items: center; width: 30px; height: 30px; padding: 0; border: 0; border-radius: var(--bt-radius-xs); background: transparent; color: var(--bt-color-text-secondary); cursor: pointer; transition: opacity var(--bt-duration-instant) ease-out, transform var(--bt-duration-instant) ease-out; }
+.bt-fvalue { display: grid; gap: var(--bt-space-2); }
+.bt-fvalue__date { display: grid; gap: var(--bt-space-2); }
+.bt-fvalue__presets { display: flex; flex-wrap: wrap; gap: var(--bt-space-1); }
+.bt-fvalue__preset { min-height: 28px; padding: 0 var(--bt-space-2); border: var(--bt-border-width-default) solid var(--bt-color-border); border-radius: var(--bt-radius-full); background-color: var(--bt-color-surface-neutral); color: var(--bt-color-text-primary); font: inherit; font-size: var(--bt-font-size-12); font-weight: var(--bt-font-weight-semibold); cursor: pointer; }
+.bt-fvalue__preset:focus-visible { outline: 2px solid var(--bt-color-action); outline-offset: 1px; }
+.bt-fvalue__choices { display: grid; gap: var(--bt-space-2); }
+.bt-fvalue__list { display: grid; gap: var(--bt-space-1); max-height: 260px; overflow-y: auto; }
+@media (hover: hover) and (pointer: fine) {
+  .bt-frow__more { opacity: 0; }
+  .bt-frow:hover .bt-frow__more, .bt-frow:focus-within .bt-frow__more, .bt-frow__more[aria-expanded="true"] { opacity: 1; }
+  .bt-frow__token:hover, .bt-frow__icon:hover { background-color: var(--bt-color-surface-soft); }
+  .bt-fvalue__preset:hover { border-color: var(--bt-color-action); color: var(--bt-color-action); }
+}
+@media (max-width: 820px) {
+  .bt-frow { align-items: flex-start; padding-block: var(--bt-space-1); }
+  .bt-frow__token--field { flex: 1 0 100%; }
+  .bt-frow__token, .bt-frow__icon { min-height: 40px; }
+  .bt-frow__icon { width: 40px; height: 40px; }
+}
+@media (prefers-reduced-motion: reduce) { .bt-frow__token:active, .bt-frow__icon:active { transform: none; } }
