@@ -114,11 +114,12 @@ export function conditionProblem(c: FilterCondition, field: FilterField | undefi
 
 const fieldMap = (fields: FilterField[]) => new Map(fields.map((f) => [f.key, f]))
 
-function sanitizeCondition(raw: unknown, fields: Map<string, FilterField>): FilterCondition | null {
+/** `fallbackId`: id estável para condição gravada sem id (o mesmo a cada leitura, para comparar sem falso "alterado"). */
+function sanitizeCondition(raw: unknown, fields: Map<string, FilterField>, fallbackId: string): FilterCondition | null {
   if (!isObject(raw) || raw.type !== 'condition' || typeof raw.field !== 'string' || typeof raw.op !== 'string') return null
   const field = fields.get(raw.field)
   if (!field || !FILTER_OPS[field.kind].some((o) => o.op === raw.op)) return null
-  const c: FilterCondition = { type: 'condition', id: typeof raw.id === 'string' ? raw.id : newId(), field: field.key, op: raw.op as FilterOp }
+  const c: FilterCondition = { type: 'condition', id: typeof raw.id === 'string' ? raw.id : fallbackId, field: field.key, op: raw.op as FilterOp }
   if (typeof raw.value === 'string' || isNum(raw.value)) c.value = raw.value
   if (typeof raw.to === 'string' || isNum(raw.to)) c.to = raw.to
   if (Array.isArray(raw.values)) {
@@ -127,18 +128,19 @@ function sanitizeCondition(raw: unknown, fields: Map<string, FilterField>): Filt
   return c
 }
 
-function sanitizeGroup(raw: unknown, fields: Map<string, FilterField>, depth: number): FilterGroup | null {
+function sanitizeGroup(raw: unknown, fields: Map<string, FilterField>, depth: number, fallbackId: string): FilterGroup | null {
   if (!isObject(raw) || raw.type !== 'group' || !Array.isArray(raw.items)) return null
-  const items = raw.items.flatMap((item): Array<FilterCondition | FilterGroup> => {
+  const id = typeof raw.id === 'string' ? raw.id : fallbackId
+  const items = raw.items.flatMap((item, index): Array<FilterCondition | FilterGroup> => {
     if (isObject(item) && item.type === 'group') {
       if (depth >= MAX_GROUP_DEPTH) return []
-      const group = sanitizeGroup(item, fields, depth + 1)
+      const group = sanitizeGroup(item, fields, depth + 1, `${id}-${index}`)
       return group ? [group] : []
     }
-    const c = sanitizeCondition(item, fields)
+    const c = sanitizeCondition(item, fields, `${id}-${index}`)
     return c ? [c] : []
   })
-  return { type: 'group', id: typeof raw.id === 'string' ? raw.id : newId(), logic: raw.logic === 'or' ? 'or' : 'and', items }
+  return { type: 'group', id, logic: raw.logic === 'or' ? 'or' : 'and', items }
 }
 
 /**
@@ -152,11 +154,11 @@ export function readFilters(raw: unknown, fields: FilterField[]): TableFilters {
   const quick: Record<string, FilterCondition> = {}
   if (isObject(raw.quick)) {
     for (const [key, value] of Object.entries(raw.quick)) {
-      const c = sanitizeCondition(value, map)
+      const c = sanitizeCondition(value, map, `rapido-${key}`)
       if (c && c.field === key && !map.get(key)?.advancedOnly) quick[key] = c
     }
   }
-  const advanced = sanitizeGroup(raw.advanced, map, 1) ?? base.advanced
+  const advanced = sanitizeGroup(raw.advanced, map, 1, 'raiz') ?? base.advanced
   return { quick, advanced: { ...advanced, id: 'raiz' } }
 }
 
@@ -183,6 +185,62 @@ export function countIncomplete(group: FilterGroup, fields: FilterField[]): numb
   const walk = (g: FilterGroup): number => g.items.reduce((n, item) => n + (item.type === 'group' ? walk(item) : conditionProblem(item, map.get(item.field)) ? 1 : 0), 0)
   return walk(group)
 }
+
+// ---------- Lista do painel (§10.9.2) ----------
+
+/** Operadores que a célula do filtro rápido (cabeçalho da coluna) sabe mostrar. */
+export const QUICK_OPS: Record<FilterKind, FilterOp[]> = {
+  text: ['contains', 'eq', 'begins', 'not-contains', 'empty', 'not-empty'],
+  number: ['eq', 'ne', 'gt', 'ge', 'lt', 'le', 'between', 'empty'],
+  choice: ['in'],
+  lookup: ['in'],
+  date: [...DATE_PRESETS, 'between'],
+  bool: ['yes', 'no'],
+}
+
+/**
+ * Filtros gravados → lista única do painel: rápidos primeiro (na ordem dos campos), depois o avançado. Avançado em "e"
+ * entra item a item; em "ou" entra como grupo (com id novo, para `fromPanelList` desfazer o embrulho). A raiz é sempre "e":
+ * o que se adiciona depois soma com E, como no gravado.
+ */
+export function toPanelList(filters: TableFilters, fields: FilterField[]): FilterGroup {
+  const quick = fields.flatMap((f) => (filters.quick[f.key] ? [filters.quick[f.key]] : []))
+  const adv = filters.advanced
+  const tail = adv.logic === 'and' ? adv.items : adv.items.length ? [{ ...adv, id: newId() }] : []
+  return { type: 'group', id: 'raiz', logic: 'and', items: [...quick, ...tail] }
+}
+
+const nodeIds = (group: FilterGroup): string[] => group.items.flatMap((i) => (i.type === 'group' ? [i.id, ...nodeIds(i)] : [i.id]))
+
+/**
+ * Lista do painel → filtros gravados. Inverso de `toPanelList`: o que a célula da coluna sabe mostrar volta ao rápido.
+ * Com `origin` (o que estava gravado), condição ou grupo que já estava no avançado continua como estava: abrir e aplicar
+ * não muda nada.
+ */
+export function fromPanelList(list: FilterGroup, fields: FilterField[], origin?: TableFilters): TableFilters {
+  if (list.logic === 'or') return { quick: {}, advanced: { ...list, id: 'raiz' } }
+  const map = fieldMap(fields)
+  const keep = new Set(origin ? nodeIds(origin.advanced) : [])
+  // Só contam as condições que podem ir ao rápido: a que fica no avançado não tira a vaga da coluna.
+  const count = new Map<string, number>()
+  for (const item of list.items) if (item.type === 'condition' && !keep.has(item.id)) count.set(item.field, (count.get(item.field) ?? 0) + 1)
+  const quick: Record<string, FilterCondition> = {}
+  const rest: Array<FilterCondition | FilterGroup> = []
+  for (const item of list.items) {
+    const field = item.type === 'condition' ? map.get(item.field) : undefined
+    const toQuick = item.type === 'condition' && field && !field.advancedOnly && !keep.has(item.id) && count.get(item.field) === 1
+      && QUICK_OPS[field.kind].includes(item.op) && !conditionProblem(item, field)
+    if (toQuick) quick[item.field] = item
+    // O id `rapido-<campo>` é da célula da coluna: no avançado ganharia um gêmeo quando a célula filtrar de novo.
+    else rest.push(item.type === 'condition' && item.id.startsWith('rapido-') && !keep.has(item.id) ? { ...item, id: newId() } : item)
+  }
+  const only = rest.length === 1 ? rest[0] : undefined
+  const advanced: FilterGroup = only?.type === 'group' && !keep.has(only.id) ? { ...only, id: 'raiz' } : { type: 'group', id: 'raiz', logic: 'and', items: rest }
+  return { quick, advanced }
+}
+
+/** Níveis de grupo (a raiz conta 1). Acima de `MAX_GROUP_DEPTH` o gravado não guarda: `readFilters` corta. */
+export const groupDepth = (group: FilterGroup): number => 1 + Math.max(0, ...group.items.map((i) => (i.type === 'group' ? groupDepth(i) : 0)))
 
 // ---------- Filtro rápido de texto ----------
 

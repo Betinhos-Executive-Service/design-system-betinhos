@@ -1,6 +1,6 @@
 # Betinhos Design System
 
-**Versão:** 1.34.1
+**Versão:** 1.35.0
 
 **Status:** fonte oficial inicial
 
@@ -816,17 +816,24 @@ Filtro por coluna (hot filters, no menu do título):
 - Nada vale antes de "Aplicar": `Enter` num campo de texto, número ou data aplica; `Esc` e clique fora fecham sem aplicar; condição incompleta desabilita "Aplicar" e mostra o que falta. Ao fechar, o foco volta ao título da coluna.
 - Coluna com filtro valendo (por coluna ou avançado): ▾ do título em azul, sempre visível, com um ponto de ação; o menu ganha "Limpar filtro".
 - Colunas que não filtram (calculadas, imagem, tabela relacionada) não mostram "Filtrar por…": só ordenar e ocultar.
-- No mobile o mesmo painel abre ancorado ao título quando o cabeçalho está visível; nas listas que viram cartões (cabeçalho escondido) os mesmos filtros ficam no painel "Filtros", aba "Por coluna".
+- No mobile o mesmo painel abre ancorado ao título quando o cabeçalho está visível; nas listas que viram cartões (cabeçalho escondido) os mesmos filtros ficam no painel "Filtros".
 
 Filtro avançado (painel "Filtros"):
 
-- `Drawer` largo (720 px) no desktop e `Sheet` no mobile, título "Filtros". Duas abas: "Por coluna" (os filtros por coluna em lista, para quem está no mobile ou prefere o painel) e "Avançado".
-- "Avançado" monta condições em grupos: cada linha tem campo, operador e valor; cada grupo tem o seletor E/OU (segmented control) e os botões "+ Condição" e "+ Grupo". Até dois níveis de grupo; mais que isso fica ilegível e não é oferecido.
-- Os campos incluem colunas fora da visão. Campos de tabelas relacionadas aparecem agrupados pelo nome da relação ("Cliente › Cidade").
-- Operadores por tipo, sempre em português: Texto (contém, não contém, igual a, diferente de, começa com, termina com, está vazio, está preenchido); Opção e Lookup (é um de, não é nenhum de, está vazio, está preenchido); Data (os atalhos relativos, em, antes de, depois de, entre, está vazio, está preenchido); Número (igual a, diferente de, maior que, maior ou igual, menor que, menor ou igual, entre, está vazio); Sim/Não (é sim, é não).
-- Condição incompleta fica marcada em vermelho com a mensagem do que falta e é ignorada até ser completada; "Aplicar" mostra quantas serão ignoradas.
-- Rodapé: "Limpar tudo" (ghost), "Cancelar" e "Aplicar". Quando a fonte permitir contar sem custo, "Aplicar" mostra o resultado previsto ("Aplicar · 42 registros").
-- As mudanças só valem em "Aplicar". Fechar com alteração pendente abre "Descartar alterações?".
+- `Drawer` largo (720 px) no desktop e `Sheet` no mobile, título "Filtros". Sem abas (1.35): **uma lista só** com todas as condições que valem, as da coluna e as avançadas juntas; só aparece o que existe.
+- **Cada condição lê como frase** numa caixa ("Status é um de Pendente, Aprovado"), com × à direita. Clicar no campo, no operador ou no valor edita só aquela parte (popover ancorado no desktop, `Sheet` de baixo no mobile). Valor que falta aparece em cinza como "escolha um valor"; a condição é ignorada até ser completada e o rodapé avisa ("1 filtro sem valor não entra").
+- **Conectores à esquerda:** a primeira linha diz "Onde"; a segunda tem o conector clicável "e ▾"/"ou ▾", que alterna direto; as demais repetem o conector, sem clique.
+- **Grupo:** bloco recuado (fundo `surface-soft`, borda esquerda de 3 px em azul) com os próprios conectores, "+ Filtro" no fim e × no cabeçalho. Nasce em "ou". Um nível só: dentro do grupo não há "+ Grupo". Remover o último filtro do grupo remove o grupo.
+- "+ Adicionar filtro" abre o seletor de campo: busca no topo, "Colunas da tabela" e "Outros campos" (campos de tabelas relacionadas, com a relação em cinza à direita). A linha nasce com o operador padrão do tipo e o editor do valor aberto. "+ Adicionar grupo" cria um grupo "ou" com a primeira linha.
+- Menu ⋯ da linha (hover e foco): "Trocar campo", "Duplicar", "Colocar num grupo" (só fora de grupo: embrulha a linha num grupo "ou" e abre o seletor para a segunda) e "Remover". Campo trocado pelo mesmo tipo mantém operador e valor; de outro tipo volta ao operador padrão.
+- Operadores por tipo, sempre em português: Texto (contém, não contém, igual a, diferente de, começa com, termina com, está vazio, está preenchido); Opção e Lookup (é um de, não é nenhum de, está vazio, está preenchido); Data (os atalhos relativos, em, antes de, depois de, entre, está vazio, está preenchido); Número (igual a, diferente de, maior que, maior ou igual, menor que, menor ou igual, entre, está vazio); Sim/Não (é sim, é não). "está vazio"/"está preenchido" ficam abaixo de um divisor.
+- **Condições só leitura** (a tela não sabe editar, vindas da visão nativa; prop `locked`): no topo, com "Sempre" no lugar do conector, cadeado, borda tracejada e "só leitura ⓘ" com o motivo. Têm × quando a tela permite remover (`onRemoveLocked`, aplica na hora). "Limpar" não as tira.
+- **Visão alterada:** com a visão salva (`saved`, que a `ViewBar` calcula da visão ativa, exceto a padrão), o aviso "Filtros diferentes da visão salva · Restaurar" aparece no topo quando o rascunho difere; "Restaurar" volta o rascunho (não aplica).
+- Rodapé: "Limpar" (ghost) e o primário "Mostrar 42 composições" (`noun` da lista, padrão registro/registros; sem contagem, "Mostrar resultados"), desabilitado sem mudança. A contagem recalcula 400 ms depois da última mudança e o número antigo esmaece enquanto isso. Sem "Cancelar": fecha no X ou no Esc.
+- Nada vale antes do primário. Fechar com alteração pendente abre "Descartar alterações?".
+- Teclado: `Tab` percorre campo, operador, valor, ⋯ e × de cada linha; `Esc` fecha o popover e um segundo `Esc` fecha o painel; `Del`/`Backspace` com a caixa em foco remove a linha (o foco vai para a seguinte); `Ctrl/Cmd+Enter` aplica. Cada linha é `role="group"` com a frase no `aria-label`.
+- Movimento: linha ou grupo entra com opacidade e `translateY(-4px)` em 150 ms (`ease-out` do DS) e sai em 120 ms de opacidade; popovers com `scale(0.97)` e opacidade; nada anima em ação de teclado; `prefers-reduced-motion` deixa só a opacidade.
+- Formato gravado sem mudança (`TableFilters { quick, advanced }`): o painel converte na entrada (`toPanelList`) e na saída (`fromPanelList`). A condição única do campo, completa e com operador que a célula da coluna sabe mostrar (`QUICK_OPS`), volta ao filtro por coluna; o resto vai para o avançado. O que já estava no avançado continua lá, então abrir e mostrar sem mexer não muda nada.
 - Uma condição avançada sobre a mesma coluna de um filtro por coluna não substitui o filtro da coluna: os dois valem com E, e os chips mostram os dois.
 
 Busca por palavra-chave:
@@ -1277,7 +1284,7 @@ Este bloco permite implementação mesmo quando os arquivos auxiliares não acom
 
 <!-- GENERATED:TOKENS_CSS:START -->
 ```css
-/* Betinhos Design System 1.34.1.
+/* Betinhos Design System 1.35.0.
  * GENERATED from design-tokens.json. Do not edit this file manually.
  */
 :root {
@@ -1569,6 +1576,10 @@ O padrão de mercado não é apenas um PDF de marca. É um produto versionado: t
 ---
 
 ## 20. Changelog
+
+### 1.35.0 — 16/11/2026
+
+- §10.9.2 **Painel "Filtros" em lista única**: sem as abas "Por coluna" e "Avançado"; todas as condições numa lista, cada uma como frase com campo, operador e valor editáveis, conectores "Onde"/"e"/"ou" à esquerda, grupo de um nível ("+ Adicionar grupo", "Colocar num grupo"), seletor de campo com busca ("Colunas da tabela" e "Outros campos"), condições só leitura da visão com "Sempre" (`locked`/`onRemoveLocked`, `removable: false` tira o × de uma), aviso "Filtros diferentes da visão salva · Restaurar" (`saved`) e primário "Mostrar N <noun>" (`noun`). Props novas opcionais; `initialTab` e `FiltersPanelTab` ficam exportados sem efeito (`@deprecated`). Funções puras novas: `toPanelList`, `fromPanelList` e `QUICK_OPS`. O formato gravado (`TableFilters`) não muda. A `ViewBar` repassa `locked`, `onRemoveLocked` e `noun` em `filters` e calcula `saved` da visão ativa; o texto do chip de filtro avançado só abre o painel.
 
 ### 1.34.1 — 16/11/2026
 

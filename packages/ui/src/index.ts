@@ -55,12 +55,12 @@ export { useMediaQuery } from './useMediaQuery'
 export {
   DATE_PRESETS, FILTER_OPS, MAX_GROUP_DEPTH, appendTo, conditionProblem, countActiveFilters, countIncomplete, describeCondition, describeGroup,
   emptyFilters, fieldLabel, filtersToFetchXml, keywordToFetchXml, matchesFilters, needsValue, newCondition, newGroup, parseNumberBR,
-  parseQuickNumber, parseQuickText, quickNumberOf, quickTextOf, readFilters, removeNode, storedFilters, todaySaoPaulo, updateNode,
+  parseQuickNumber, parseQuickText, quickNumberOf, quickTextOf, readFilters, removeNode, storedFilters, todaySaoPaulo, updateNode, QUICK_OPS, toPanelList, fromPanelList, groupDepth,
   type BoolOp, type DateOp, type FilterCondition, type FilterField, type FilterGroup, type FilterKind, type FilterOp, type FilterOption,
   type ListOp, type NumberOp, type TableFilters, type TextOp,
 } from './tableView/filters'
 export { FilterValueEditor, QuickFilterCell, type LookupSearch } from './tableView/FilterEditors'
-export { FiltersPanel, type FiltersPanelProps, type FiltersPanelTab } from './tableView/FiltersPanel'
+export { FiltersPanel, type FilterLocked, type FiltersPanelProps, type FiltersPanelTab } from './tableView/FiltersPanel'
 export { FilterChips, type FilterChipsProps } from './tableView/FilterChips'
 export { useTableFilters } from './tableView/useTableFilters'
 export { ColumnMenu, COLUMN_FILTER_EVENT, type ColumnMenuProps } from './tableView/ColumnMenu'

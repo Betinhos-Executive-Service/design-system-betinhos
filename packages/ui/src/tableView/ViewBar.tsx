@@ -12,7 +12,7 @@ import { FilterChips } from './FilterChips'
 import type { LookupSearch } from './FilterEditors'
 import { COLUMN_FILTER_EVENT } from './ColumnMenu'
 import { countActiveFilters, emptyFilters, readFilters, storedFilters, type FilterField, type TableFilters } from './filters'
-import { FiltersPanel, type FiltersPanelTab } from './FiltersPanel'
+import { FiltersPanel, type FilterLocked } from './FiltersPanel'
 import { SelectionBar, SelectionInline, countLabel, inlineActions, selectionOverflow, type ViewBarSelection } from './Selection'
 import { fitZone, planFit, type FitPlan, type FitSize, type ZoneFit } from './viewBarFit'
 import { icons } from './icons'
@@ -62,6 +62,12 @@ export type ViewBarProps = {
     countPreview?: (filters: TableFilters) => Promise<number | null>
     /** Chaves/ids que a tela não conseguiu aplicar (chip com alerta). */
     notApplied?: string[]
+    /** Condições que a tela não sabe editar (visão nativa): ficam no painel como só leitura. */
+    locked?: FilterLocked[]
+    /** Remove uma condição só leitura; sem ela, as condições ficam sem ×. */
+    onRemoveLocked?: (id: string) => void
+    /** Substantivo da lista no painel ("Mostrar 42 composições"); padrão registro/registros. */
+    noun?: { one: string; other: string }
   }
 }
 
@@ -167,7 +173,7 @@ export function ViewBar({ view, columns, catalog, pinnable, children, onError, f
   const [name, setName] = useState('')
   const [busy, setBusy] = useState(false)
   const [panel, setPanel] = useState(false)
-  const [filtersTab, setFiltersTab] = useState<FiltersPanelTab | null>(null)
+  const [filtersOpen, setFiltersOpen] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
   // O texto do diálogo não esvazia enquanto ele fecha.
   const lastName = useRef(view.active.name)
@@ -239,13 +245,15 @@ export function ViewBar({ view, columns, catalog, pinnable, children, onError, f
     ? { quick: raw.quick, advanced: raw.advanced?.type === 'group' ? raw.advanced : emptyFilters().advanced }
     : current
   const activeCount = filters && current ? countActiveFilters(current, filters.fields) : 0
+  // Filtros da visão salva (aviso "Filtros diferentes da visão salva" no painel). A visão padrão não tem o que restaurar.
+  const saved = filters && active.scope !== 'padrao' ? readFilters(active.config.filters, filters.fields) : undefined
   const setFilters = (next: TableFilters) => view.setConfig((config) => ({ ...config, filters: storedFilters(next) }))
   // O chip de filtro por coluna reabre o painel "Filtrar por" no título da coluna (evento tratado pelo cabeçalho, que
   // cancela o evento). Coluna fora da visão, cabeçalho escondido (mobile) ou ninguém tratando: painel na aba "Por coluna".
   const editQuick = (key: string) => {
     const target = mobile ? null : document.querySelector<HTMLElement>(`.bt-colhead[data-col="${CSS.escape(key)}"]`)
     const handled = target ? !target.dispatchEvent(new CustomEvent(COLUMN_FILTER_EVENT, { bubbles: true, cancelable: true })) : false
-    if (!handled) setFiltersTab('coluna')
+    if (!handled) setFiltersOpen(true)
   }
 
   const densityActions: MenuAction[] = DENSITIES.map((d) => ({ id: `densidade-${d.value}`, label: d.label, icon: d.icon, group: 'Densidade das linhas', selected: view.density === d.value, onSelect: () => view.setDensity(d.value) }))
@@ -447,17 +455,20 @@ export function ViewBar({ view, columns, catalog, pinnable, children, onError, f
         notApplied={filters.notApplied}
         onChange={setFilters}
         onEditQuick={editQuick}
-        onEditAdvanced={() => setFiltersTab('avancado')}
+        onEditAdvanced={() => setFiltersOpen(true)}
       />
       <FiltersPanel
-        open={filtersTab !== null}
-        initialTab={filtersTab ?? 'coluna'}
-        onClose={() => setFiltersTab(null)}
+        open={filtersOpen}
+        onClose={() => setFiltersOpen(false)}
         fields={filters.fields}
         value={current}
         search={filters.search}
         countPreview={filters.countPreview}
         onApply={setFilters}
+        saved={saved}
+        locked={filters.locked}
+        onRemoveLocked={filters.onRemoveLocked}
+        noun={filters.noun}
       />
     </>
   ) : null
@@ -473,7 +484,7 @@ export function ViewBar({ view, columns, catalog, pinnable, children, onError, f
         </Button>
         {filters ? (
           <>
-            <Button variant="secondary" size={size} icon={icons.filter} aria-haspopup="dialog" aria-label={mobile ? `Filtros${activeCount ? ` (${activeCount})` : ''}` : undefined} onClick={() => setFiltersTab('coluna')}>
+            <Button variant="secondary" size={size} icon={icons.filter} aria-haspopup="dialog" aria-label={mobile ? `Filtros${activeCount ? ` (${activeCount})` : ''}` : undefined} onClick={() => setFiltersOpen(true)}>
               {mobile ? null : <>Filtros{activeCount ? <span className="bt-viewbar__count">{activeCount}</span> : null}</>}
             </Button>
           </>
@@ -513,7 +524,7 @@ export function ViewBar({ view, columns, catalog, pinnable, children, onError, f
     )],
     ['filtros', true, filters ? (
       <div className={slot(!labels)} data-vb="filtros">
-        <Button variant="secondary" size={size} icon={icons.filter} iconEnd={activeCount ? <span className="bt-viewbar__count">{activeCount}</span> : null} aria-haspopup="dialog" title={labels ? undefined : `Filtros${activeCount ? ` (${activeCount})` : ''}`} onClick={() => setFiltersTab('coluna')}>Filtros</Button>
+        <Button variant="secondary" size={size} icon={icons.filter} iconEnd={activeCount ? <span className="bt-viewbar__count">{activeCount}</span> : null} aria-haspopup="dialog" title={labels ? undefined : `Filtros${activeCount ? ` (${activeCount})` : ''}`} onClick={() => setFiltersOpen(true)}>Filtros</Button>
       </div>
     ) : null],
     ['density', !fold.density, (
