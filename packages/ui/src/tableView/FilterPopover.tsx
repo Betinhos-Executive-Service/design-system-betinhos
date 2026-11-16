@@ -74,9 +74,12 @@ export function FilterPopover({ anchor, label, onClose, className, children }: F
 
   const onKeyDown = (event: KeyboardEvent) => {
     if (event.key !== 'Escape') return
+    // O Esc é tratado aqui: sem o preventDefault, o navegador cancela também o <dialog> do painel embaixo (no celular o
+    // Chrome agrupa os dois Sheets no mesmo pedido de fechar).
     event.stopPropagation()
-    // No Sheet o <dialog> fecha sozinho (cancel); no popover, o Esc não pode fechar o Drawer embaixo.
-    if (!mobile) { event.preventDefault(); close() }
+    event.preventDefault()
+    close()
+
   }
 
   if (mobile) {
