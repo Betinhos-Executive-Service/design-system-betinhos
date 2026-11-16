@@ -60,3 +60,13 @@ it('no celular abre num Sheet e o Esc no X do Sheet não chega ao painel embaixo
   expect(panel).not.toHaveBeenCalled()
   expect(screen.getByPlaceholderText('Buscar campo…')).toBeTruthy()
 })
+it('no celular o Esc no campo de busca fecha o seletor e cancela o padrão do navegador', () => {
+  vi.stubGlobal('matchMedia', (query: string) => ({ matches: query.includes('max-width: 820px'), media: query, addEventListener() {}, removeEventListener() {} }))
+  HTMLDialogElement.prototype.showModal ??= function (this: HTMLDialogElement) { this.open = true }
+  const { onClose } = mount()
+  const close = screen.getAllByRole('button', { hidden: true }).find((b) => b.closest('dialog') && !b.closest('.bt-fpop__sheet'))!
+  const event = new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true })
+  close.dispatchEvent(event)
+  expect(event.defaultPrevented).toBe(true)
+  expect(onClose).toHaveBeenCalled()
+})
