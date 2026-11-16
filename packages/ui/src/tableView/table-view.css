@@ -319,8 +319,11 @@ body.bt-columns-grabbing, body.bt-columns-grabbing * { cursor: grabbing !importa
   .bt-fvalue__preset:hover { border-color: var(--bt-color-action); color: var(--bt-color-action); }
 }
 @media (max-width: 820px) {
-  .bt-frow { align-items: flex-start; padding-block: var(--bt-space-1); }
-  .bt-frow__token--field { flex: 1 0 100%; }
+  /* Campo em cima (com ⋯ e × ao lado); operador e valor juntos na linha de baixo, com a largura toda. */
+  .bt-frow { position: relative; align-items: flex-start; padding-block: var(--bt-space-1); }
+  .bt-frow__token--field { flex: 1 0 100%; padding-right: 88px; }
+  .bt-frow__actions { position: absolute; top: var(--bt-space-1); right: var(--bt-space-1); }
+
   .bt-frow__token, .bt-frow__icon { min-height: 40px; }
   .bt-frow__icon { width: 40px; height: 40px; }
 }
@@ -373,3 +376,4 @@ body.bt-columns-grabbing, body.bt-columns-grabbing * { cursor: grabbing !importa
   @starting-style { .bt-filters__item { transform: none; } }
   .bt-filters__addbtn:active, .bt-filters__conn--toggle:active { transform: none; }
 }
+.bt-fpop__host { display: contents; }

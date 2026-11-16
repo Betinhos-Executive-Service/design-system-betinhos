@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, type KeyboardEvent, type ReactNode } from 'react'
+import { useEffect, useLayoutEffect, useRef, type KeyboardEvent, type ReactNode } from 'react'
 import { Sheet } from '../components/Sheet'
 import { useMediaQuery } from '../useMediaQuery'
 
@@ -19,6 +19,7 @@ export type FilterPopoverProps = {
 export function FilterPopover({ anchor, label, onClose, className, children }: FilterPopoverProps) {
   const mobile = useMediaQuery('(max-width: 820px)')
   const ref = useRef<HTMLDivElement>(null)
+  const sheetRef = useRef<HTMLDivElement>(null)
   const close = () => { onClose(); anchor?.focus() }
   const closeRef = useRef(close)
   closeRef.current = close
@@ -61,6 +62,16 @@ export function FilterPopover({ anchor, label, onClose, className, children }: F
     }
   }, [anchor, mobile])
 
+  // No celular o <dialog> do Sheet abre (showModal) depois deste efeito e foca o X: o foco vai ao primeiro controle no quadro seguinte.
+  useEffect(() => {
+    if (!mobile) return
+    const frame = window.requestAnimationFrame(() => {
+      const box = sheetRef.current
+      if (box && !box.contains(document.activeElement)) box.querySelector<HTMLElement>('input, textarea, button, [tabindex="0"]')?.focus()
+    })
+    return () => window.cancelAnimationFrame(frame)
+  }, [mobile])
+
   const onKeyDown = (event: KeyboardEvent) => {
     if (event.key !== 'Escape') return
     event.stopPropagation()
@@ -70,9 +81,13 @@ export function FilterPopover({ anchor, label, onClose, className, children }: F
 
   if (mobile) {
     return (
-      <Sheet open onClose={close} title={label}>
-        <div className={['bt-fpop__sheet', className].filter(Boolean).join(' ')} onKeyDown={onKeyDown}>{children}</div>
-      </Sheet>
+      // O Esc com o foco no X do Sheet também para aqui: fecha só este Sheet, não o painel embaixo.
+      <div className="bt-fpop__host" onKeyDown={onKeyDown}>
+        <Sheet open onClose={close} title={label}>
+          <div ref={sheetRef} className={['bt-fpop__sheet', className].filter(Boolean).join(' ')}>{children}</div>
+        </Sheet>
+      </div>
+
     )
   }
   return (
