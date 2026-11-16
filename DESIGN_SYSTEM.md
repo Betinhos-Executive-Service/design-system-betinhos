@@ -1,6 +1,6 @@
 # Betinhos Design System
 
-**Versão:** 1.33.0
+**Versão:** 1.34.0
 
 **Status:** fonte oficial inicial
 
@@ -739,7 +739,7 @@ Seletor de visão:
 - Quando a tela difere da visão salva (colunas, larguras, ordenação ou filtros), mostra o rótulo "Alterada" em texto de apoio ao lado do nome, com dica que diz o que difere e onde resolver (Salvar, Salvar como, Restaurar padrão).
 - Ações do menu: Salvar, Salvar como, Renomear, Excluir, Tornar pública e Restaurar padrão. Salvar e Renomear só aparecem para visões que o usuário pode alterar; "Excluir visão…" (com diálogo) só para a visão pública ativa, e só para gestor.
 - **Lixeira das visões pessoais** (1.29): cada item de "Minhas" tem um ícone de lixeira na própria linha (Delete no item faz o mesmo), sem precisar abrir a visão. A visão some na hora, o menu continua aberto e o toast "Visão “Nome” excluída." traz "Desfazer" por 6 s (`VIEW_DISCARD_DELAY_MS`); só depois disso (ou quando a lista desmonta) o store exclui. Se era a visão ativa, a lista volta à padrão e o Desfazer a devolve como ativa. Falha do store devolve a visão e avisa. Visões públicas e prontas não têm lixeira.
-- **Agrupar por** (1.30): um nível, escolhido no painel Colunas ("Agrupar por", antes de "Fixas") e salvo na visão (`config.group = { key, by? }`). Só campos `choice`, `lookup`, `bool` e `date` (por mês ou por ano, no fuso de São Paulo) agrupam; texto e número não. A tela monta os grupos em memória sobre a lista já filtrada com `groupRows(rows, view.config.group, fields, read, labelOf?)` e desenha `<TableGroups groups resetKey={JSON.stringify(view.config.group)}>{(linhas) => <Table rows={linhas} selection={{ selected, onChange }} …/>}</TableGroups>`: uma tabela (ou cards no celular) por grupo aberto. Desde a 1.33, o `Table` dentro do grupo recebe sozinho `selection.all` (a lista agrupada) e `selection.scope` (as linhas do grupo); passá-los à mão só troca o padrão. `selection.all` faz o lote do clique direito valer para a seleção da lista inteira (o Shift fica dentro do grupo, porque a âncora é de cada tabela), e `selection.scope` (1.31) faz o checkbox do cabeçalho de cada grupo marcar e desmarcar só as linhas daquele grupo, preservando a seleção dos outros. Lista vazia (`groupRows` devolve `[]`) desenha a tabela única, com o estado vazio. Grupos começam fechados e fecham de novo quando o agrupamento muda; o cabeçalho mostra rótulo e contagem (`counting` mostra "…" enquanto a lista ainda carrega). Ordem: opções do choice na ordem do campo; Sim antes de Não; datas da mais recente; lookup do maior grupo para o menor, com até 50 grupos (`GROUP_LIMIT`) e o resto em "Outros". Sem valor vai para "Vazio", no fim. Sem `maxHeight` nas tabelas agrupadas (a rolagem é da página).
+- **Agrupar por** (1.30): um nível, escolhido no painel Colunas ("Agrupar por", antes de "Fixas") ou, desde a 1.34 e com `view.groupable`, no menu do título da coluna ("Agrupar por esta coluna"; data: "Agrupar por mês"/"Agrupar por ano"; na agrupada, "Desagrupar"), e salvo na visão (`config.group = { key, by? }`). Só campos `choice`, `lookup`, `bool` e `date` (por mês ou por ano, no fuso de São Paulo) agrupam; texto e número não. A tela monta os grupos em memória sobre a lista já filtrada com `groupRows(rows, view.config.group, fields, read, labelOf?)` e desenha `<TableGroups groups resetKey={JSON.stringify(view.config.group)}>{(linhas) => <Table rows={linhas} selection={{ selected, onChange }} …/>}</TableGroups>`: uma tabela (ou cards no celular) por grupo aberto. Desde a 1.33, o `Table` dentro do grupo recebe sozinho `selection.all` (a lista agrupada) e `selection.scope` (as linhas do grupo); passá-los à mão só troca o padrão. `selection.all` faz o lote do clique direito valer para a seleção da lista inteira (o Shift fica dentro do grupo, porque a âncora é de cada tabela), e `selection.scope` (1.31) faz o checkbox do cabeçalho de cada grupo marcar e desmarcar só as linhas daquele grupo, preservando a seleção dos outros. Lista vazia (`groupRows` devolve `[]`) desenha a tabela única, com o estado vazio. Grupos começam fechados e fecham de novo quando o agrupamento muda; o cabeçalho mostra rótulo e contagem (`counting` mostra "…" enquanto a lista ainda carrega). Ordem: opções do choice na ordem do campo; Sim antes de Não; datas da mais recente; lookup do maior grupo para o menor, com até 50 grupos (`GROUP_LIMIT`) e o resto em "Outros". Sem valor vai para "Vazio", no fim. Sem `maxHeight` nas tabelas agrupadas (a rolagem é da página).
 - Visão pessoal é visível só para o dono; qualquer usuário cria. Visão pública é visível para todos; só o perfil de gestor cria, altera, exclui ou publica.
 - A visão padrão é definida no código da tela, não pode ser editada nem excluída e é o destino de "Restaurar padrão". Como o seletor é o título, a visão padrão leva o nome da tela ("Todas as OPs", "Pessoas", "Funcionários ativos"), nunca o genérico "Visão padrão": o usuário precisa saber onde está sem olhar o menu lateral.
 - A última visão usada em cada tela é lembrada no navegador; é conveniência, não dado.
@@ -804,7 +804,7 @@ O que a visão guarda: colunas visíveis, ordem, larguras, ordenação e filtros
 
 Filtro por coluna (hot filters, no menu do título):
 
-- O título de cada coluna é o gatilho de um menu, como no model-driven: "Ordenar A→Z", "Ordenar Z→A", "Filtrar por…", "Limpar filtro" (só com filtro valendo) e "Ocultar coluna" (desabilitado na última coluna visível). O ▾ do título aparece no hover, no foco, com o menu aberto e sempre que a coluna está filtrada; em pointer grosso fica sempre visível. Não existe linha de controles sob o cabeçalho nem botão "Filtro rápido" na linha de comando.
+- O título de cada coluna é o gatilho de um menu, como no model-driven: "Ordenar A→Z", "Ordenar Z→A", "Filtrar por…", "Limpar filtro" (só com filtro valendo), os itens de agrupar (1.34, só com `view.groupable`, §10.9.1), "Fixar coluna" (com `view.pinnable`) e "Ocultar coluna" (desabilitado na última coluna visível). O ▾ do título aparece no hover, no foco, com o menu aberto e sempre que a coluna está filtrada; em pointer grosso fica sempre visível. Não existe linha de controles sob o cabeçalho nem botão "Filtro rápido" na linha de comando.
 - "Filtrar por…" abre um painel ancorado logo abaixo do título (300 px, `role="dialog"` "Filtro da coluna <coluna>", camada superior como o `Menu`), com o título "Filtrar por <coluna>", o operador do tipo da coluna, o controle de valor e os botões "Limpar" (secundário, só com filtro valendo) e "Aplicar" (primário). Com filtro valendo, uma linha "Filtro ativo: …" em azul descreve a condição atual e o painel abre já com ela.
 - Operadores e controle seguem o tipo da coluna, os mesmos do filtro avançado:
   - **Texto:** contém, não contém, igual a, diferente de, começa com, termina com, está vazio, está preenchido.
@@ -1277,7 +1277,7 @@ Este bloco permite implementação mesmo quando os arquivos auxiliares não acom
 
 <!-- GENERATED:TOKENS_CSS:START -->
 ```css
-/* Betinhos Design System 1.33.0.
+/* Betinhos Design System 1.34.0.
  * GENERATED from design-tokens.json. Do not edit this file manually.
  */
 :root {
@@ -1569,6 +1569,10 @@ O padrão de mercado não é apenas um PDF de marca. É um produto versionado: t
 ---
 
 ## 20. Changelog
+
+### 1.34.0 — 13/11/2026
+
+- §10.9.1/§10.9.2 **Agrupar no menu do título**: com `view.groupable`, o título das colunas de escolha, relação, Sim/Não e data (entre os campos de `quickFilters.fields`) oferece "Agrupar por esta coluna" (data: "Agrupar por mês" e "Agrupar por ano") e, na coluna agrupada, "Desagrupar". A escolha vai na visão (`config.group`), como no painel Colunas, que continua com a seção "Agrupar por" (com todos os grupos fechados não há cabeçalho de coluna à vista). Sem `view.groupable` nada muda: lista que não desenha `TableGroups` não oferece agrupar.
 
 ### 1.33.0 — 13/11/2026
 
