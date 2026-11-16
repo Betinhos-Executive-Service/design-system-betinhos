@@ -16,7 +16,13 @@ import {
 export type FiltersPanelTab = 'coluna' | 'avancado'
 
 /** Condição que a tela não sabe editar (vinda da visão nativa): sempre vale, fica no topo, só leitura. */
-export type FilterLocked = { id: string; label: string; reason?: string }
+export type FilterLocked = {
+  id: string
+  label: string
+  reason?: string
+  /** `false`: sem × mesmo com `onRemoveLocked` (ex.: condição do FetchXML de uma visão nativa). */
+  removable?: boolean
+}
 
 export type FiltersPanelProps = {
   open: boolean
@@ -300,7 +306,7 @@ export function FiltersPanel({ open, onClose, fields, value, onApply, search, co
                   <span className="bt-filters__lock">{icon(LOCK, 14)}</span>
                   <span className="bt-filters__locked-text" title={l.label}>{l.label}</span>
                   <span className="bt-filters__ro" title={l.reason}>só leitura{l.reason ? <span className="bt-filters__info" role="img" aria-label={l.reason}>{icon(INFO, 13)}</span> : null}</span>
-                  {onRemoveLocked ? <button type="button" className="bt-frow__icon" aria-label="Remover condição da visão" onClick={() => onRemoveLocked(l.id)}>{icon(X)}</button> : null}
+                  {onRemoveLocked && l.removable !== false ? <button type="button" className="bt-frow__icon" aria-label="Remover condição da visão" onClick={() => onRemoveLocked(l.id)}>{icon(X)}</button> : null}
                 </div>
               </li>
             ))}

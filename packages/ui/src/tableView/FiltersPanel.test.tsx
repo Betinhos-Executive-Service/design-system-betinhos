@@ -113,6 +113,9 @@ it('condição só leitura fica no topo com Sempre; × só com onRemoveLocked', 
   cleanup()
   mount({ locked: [{ id: 'l1', label: 'Região da origem é Sul' }] })
   expect(screen.queryByRole('button', { name: 'Remover condição da visão' })).toBeNull()
+  cleanup()
+  mount({ locked: [{ id: 'n1', label: 'Origem da visão', removable: false }], onRemoveLocked })
+  expect(screen.queryByRole('button', { name: 'Remover condição da visão' })).toBeNull()
 })
 it('Limpar esvazia o rascunho e mantém as condições só leitura', () => {
   mount({ value: com({ cliente: c('cliente', 'contains', { value: 'a' }) }), locked: [{ id: 'l1', label: 'Região é Sul' }] })
