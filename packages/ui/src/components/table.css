@@ -40,6 +40,9 @@ button.bt-table__row:focus-visible { outline: 0; box-shadow: inset 0 0 0 2px var
 .bt-table__resize::after { content: ""; position: absolute; top: 8px; bottom: 8px; left: 3px; width: 2px; border-radius: var(--bt-radius-full); background-color: transparent; transition: background-color var(--bt-duration-fast) ease; }
 .bt-table__resize:focus-visible { outline: 0; }
 .bt-table__resize:focus-visible::after { background-color: var(--bt-focus-border); }
+/* Enquanto arrasta a largura: cursor de redimensionar na página inteira, sem seleção de texto, e a alça ativa em destaque. */
+:root.bt-resizing, :root.bt-resizing * { cursor: col-resize !important; user-select: none; }
+.bt-table__resize[data-active]::after { background-color: var(--bt-color-action); transition: none; }
 /* Colunas fixas (§10.9.1): grudam à esquerda na rolagem horizontal, com fundo opaco que cobre o espaço antes delas e o recuo vertical da linha. */
 .bt-table__row { --bt-pin-bg: var(--bt-color-surface); --bt-pin-y: var(--bt-space-2); }
 .bt-table__head { --bt-pin-bg: var(--bt-color-surface-neutral); --bt-pin-y: 0px; }
