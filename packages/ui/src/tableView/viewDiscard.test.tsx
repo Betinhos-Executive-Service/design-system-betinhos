@@ -4,7 +4,7 @@ import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import { ToastProvider } from '../components/Alert'
 import { tableViewColumns, type TableColumn } from '../components/Table'
 import { createMemoryViewStore } from './store'
-import { useTableView, VIEW_DISCARD_DELAY_MS } from './useTableView'
+import { useTableView } from './useTableView'
 import { ViewBar } from './ViewBar'
 
 type Row = { id: string; nome: string }
@@ -25,12 +25,15 @@ const openMenu = () => fireEvent.click(screen.getByRole('button', { name: /^Vis�
 const trash = (name: string) => screen.queryByRole('button', { name: `Excluir “${name}”`, hidden: true })
 
 beforeEach(() => {
-  vi.useFakeTimers()
+  HTMLDialogElement.prototype.showModal ??= function (this: HTMLDialogElement) { this.open = true }
+  HTMLDialogElement.prototype.close ??= function (this: HTMLDialogElement) { this.open = false }
   vi.stubGlobal('matchMedia', (query: string) => ({ matches: false, media: query, addEventListener() {}, removeEventListener() {} }))
 })
-afterEach(() => { cleanup(); vi.useRealTimers(); vi.unstubAllGlobals() })
+afterEach(() => { cleanup(); vi.unstubAllGlobals() })
 
-it('lixeira só nas visões pessoais; exclui no store depois do prazo', async () => {
+const confirm = () => screen.getByRole('button', { name: 'Excluir visão', hidden: true })
+
+it('lixeira só nas visões pessoais; pede confirmação e só então exclui', async () => {
   const store = seed()
   mount(store)
   await act(async () => {})
@@ -38,17 +41,30 @@ it('lixeira só nas visões pessoais; exclui no store depois do prazo', async ()
   expect(trash('Equipe')).toBeNull()
   fireEvent.click(trash('Minhas pendentes')!)
 
-  // Some da lista na hora e o menu continua aberto.
-  expect(screen.queryByRole('menuitemradio', { name: /Minhas pendentes/, hidden: true })).toBeNull()
-  expect(screen.getByRole('menuitemradio', { name: /Equipe/, hidden: true })).toBeTruthy()
-  expect(screen.getByRole('button', { name: 'Desfazer' })).toBeTruthy()
+  // Diálogo de confirmação com o nome da visão; nada é excluído antes de confirmar.
+  expect(screen.getByText(/A visão “Minhas pendentes” será excluída e não pode ser recuperada/)).toBeTruthy()
+  expect(screen.queryByRole('button', { name: 'Desfazer' })).toBeNull()
   expect(store.snapshot().some((v) => v.id === 'minha')).toBe(true)
 
-  await act(async () => { vi.advanceTimersByTime(VIEW_DISCARD_DELAY_MS) })
+  await act(async () => { fireEvent.click(confirm()) })
   expect(store.snapshot().some((v) => v.id === 'minha')).toBe(false)
+  expect(screen.getByText('Visão excluída.')).toBeTruthy()
+  openMenu()
+  expect(screen.queryByRole('menuitemradio', { name: /Minhas pendentes/, hidden: true })).toBeNull()
 })
 
-it('Desfazer devolve a visão e não exclui; a visão ativa volta a ser a ativa', async () => {
+it('"Manter visão" cancela sem excluir', async () => {
+  const store = seed()
+  mount(store)
+  await act(async () => {})
+  openMenu()
+  fireEvent.click(trash('Minhas pendentes')!)
+  fireEvent.click(screen.getByRole('button', { name: 'Manter visão', hidden: true }))
+  await act(async () => {})
+  expect(store.snapshot().some((v) => v.id === 'minha')).toBe(true)
+})
+
+it('excluir a visão ativa pela lixeira volta para a padrão', async () => {
   const store = seed()
   mount(store)
   await act(async () => {})
@@ -58,44 +74,38 @@ it('Desfazer devolve a visão e não exclui; a visão ativa volta a ser a ativa'
 
   openMenu()
   fireEvent.click(trash('Minhas pendentes')!)
+  await act(async () => { fireEvent.click(confirm()) })
+  expect(store.snapshot().some((v) => v.id === 'minha')).toBe(false)
   expect(screen.queryByRole('button', { name: /^Visão: Minhas pendentes/ })).toBeNull()
-
-  fireEvent.click(screen.getByRole('button', { name: 'Desfazer' }))
-  await act(async () => { vi.advanceTimersByTime(VIEW_DISCARD_DELAY_MS) })
-  expect(store.snapshot().some((v) => v.id === 'minha')).toBe(true)
-  expect(screen.getByRole('button', { name: /^Visão: Minhas pendentes/ })).toBeTruthy()
 })
 
-it('tecla Delete no item pessoal manda para a lixeira; sair da lista antes do prazo confirma a exclusão', async () => {
+it('tecla Delete no item pessoal abre a confirmação', async () => {
   const store = seed()
-  const { unmount } = mount(store)
+  mount(store)
   await act(async () => {})
   openMenu()
   const item = screen.getByRole('menuitemradio', { name: /Minhas pendentes/, hidden: true })
   fireEvent.mouseEnter(item) // item ativo, como ao chegar nele pelas setas
   fireEvent.keyDown(item, { key: 'Delete' })
-  expect(screen.queryByRole('menuitemradio', { name: /Minhas pendentes/, hidden: true })).toBeNull()
-
-  unmount()
-  await act(async () => {})
-  expect(store.snapshot().some((v) => v.id === 'minha')).toBe(false)
+  expect(confirm()).toBeTruthy()
+  expect(store.snapshot().some((v) => v.id === 'minha')).toBe(true)
 })
 
-it('falha do store devolve a visão e avisa', async () => {
+it('falha do store mantém a visão e avisa', async () => {
   const store = seed()
   store.remove = () => Promise.reject(new Error('Sem permissão.'))
   mount(store)
   await act(async () => {})
   openMenu()
   fireEvent.click(trash('Minhas pendentes')!)
-  await act(async () => { vi.advanceTimersByTime(VIEW_DISCARD_DELAY_MS) })
+  await act(async () => { fireEvent.click(confirm()) })
   expect(screen.getByText(/Não foi possível excluir a visão\. Sem permissão\./)).toBeTruthy()
-  expect(screen.getByRole('menuitemradio', { name: /Minhas pendentes/, hidden: true })).toBeTruthy()
+  expect(store.snapshot().some((v) => v.id === 'minha')).toBe(true)
 })
 
-it('estado sem discard (adaptador da tela) mantém a visão pessoal no diálogo "Excluir visão…"', async () => {
+it('estado sem removeView (adaptador da tela) mantém a visão pessoal no diálogo "Excluir visão…"', async () => {
   function SemLixeira({ store }: { store: ReturnType<typeof createMemoryViewStore> }) {
-    const { discard: _, ...view } = useTableView({ tela: 'teste', columns: defs, store, storage: null })
+    const { removeView: _, ...view } = useTableView({ tela: 'teste', columns: defs, store, storage: null })
     return <ViewBar view={view} columns={defs} />
   }
   render(<ToastProvider><SemLixeira store={seed()} /></ToastProvider>)
