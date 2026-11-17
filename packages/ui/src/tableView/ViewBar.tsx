@@ -16,7 +16,7 @@ import { fitZone, planFit, type FitPlan, type FitSize, type ZoneFit } from './vi
 import { icons } from './icons'
 import type { TableViewEntry } from './store'
 import type { TableDensity } from '../components/Table'
-import { VIEW_DISCARD_DELAY_MS, type TableViewState } from './useTableView'
+import type { TableViewState } from './useTableView'
 
 /** Explica o selo "Alterada" (§10.9.1): o que difere e onde resolver, sem abrir o menu para descobrir. */
 const DIRTY_HINT = 'Colunas, ordem ou filtros diferentes da visão salva. No menu: Salvar, Nova visão ou Restaurar padrão.'
@@ -171,6 +171,8 @@ export function ViewBar({ view, columns, catalog, pinnable, children, onError, f
   const [panel, setPanel] = useState(false)
   const [filtersOpen, setFiltersOpen] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
+  // Visão da lixeira (§10.9.1): o diálogo "Excluir" vale para ela, não para a ativa.
+  const [target, setTarget] = useState<TableViewEntry | null>(null)
   // O texto do diálogo não esvazia enquanto ele fecha.
   const lastName = useRef(view.active.name)
   if (mode === null) lastName.current = view.active.name
@@ -197,6 +199,7 @@ export function ViewBar({ view, columns, catalog, pinnable, children, onError, f
   }
   const open = (next: Exclude<Mode, null>, suggested = '') => {
     setName(next === 'rename' ? active.name : suggested)
+    setTarget(null)
     setMode(next)
   }
   const close = () => { if (!busy) setMode(null) }
@@ -207,19 +210,22 @@ export function ViewBar({ view, columns, catalog, pinnable, children, onError, f
     else void run(() => view.saveAs(trimmed), 'Não foi possível salvar a visão.', 'Visão salva. Ela fica só para você.')
   }
 
-  // Lixeira das visões pessoais (§10.9.1): exclui sem diálogo, com "Desfazer" no toast enquanto o store espera.
-  // Sem `discard` no estado (adaptadores próprios da tela), a visão pessoal segue pelo diálogo "Excluir visão…".
-  const trashable = view.discard !== undefined
-  const discard = (v: TableViewEntry) => {
-    if (!view.discard) return
-    const { undo, done } = view.discard(v.id)
-    const onUndo = () => { if (!undo()) toast?.({ tone: 'info', message: `A visão “${v.name}” já foi excluída.` }) }
-    toast?.({ tone: 'success', message: `Visão “${v.name}” excluída.`, duration: VIEW_DISCARD_DELAY_MS, action: { label: 'Desfazer', onClick: onUndo } })
-    done.catch((error: unknown) => fail('Não foi possível excluir a visão.', error))
+  // Lixeira das visões pessoais (§10.9.1): pede confirmação no diálogo "Excluir" sem abrir a visão.
+  // Sem `removeView` no estado (adaptadores próprios da tela), a visão pessoal segue pelo "Excluir visão…" do menu.
+  const trashable = view.removeView !== undefined
+  const trash = (v: TableViewEntry) => {
+    lastName.current = v.name
+    setTarget(v)
+    setMode('delete')
+  }
+  const removeTarget = () => {
+    const { removeView } = view
+    if (target && removeView) return removeView(target.id)
+    return view.remove()
   }
   const viewItems = (scope: TableViewEntry['scope'], group: string): MenuAction[] => view.views.filter((v) => v.scope === scope).map((v) => ({
     id: `visao-${v.id}`, label: v.name, icon: scopeIcon(v), group, selected: v.id === active.id, onSelect: () => view.select(v.id),
-    secondary: scope === 'pessoal' && trashable ? { icon: icons.trash, label: `Excluir “${v.name}”`, onSelect: () => discard(v) } : undefined,
+    secondary: scope === 'pessoal' && trashable ? { icon: icons.trash, label: `Excluir “${v.name}”`, onSelect: () => trash(v) } : undefined,
   }))
   const actions: MenuAction[] = [
     ...viewItems('padrao', 'Padrão'),
@@ -421,11 +427,11 @@ export function ViewBar({ view, columns, catalog, pinnable, children, onError, f
         title="Excluir esta visão?"
         actions={<>
           <Button variant="secondary" disabled={busy} onClick={close}>Manter visão</Button>
-          <Button variant="danger" loading={busy} onClick={() => { void run(view.remove, 'Não foi possível excluir a visão.', 'Visão excluída.') }}>Excluir visão</Button>
+          <Button variant="danger" loading={busy} onClick={() => { void run(removeTarget, 'Não foi possível excluir a visão.', 'Visão excluída.') }}>Excluir visão</Button>
         </>}
       >
         <div className="bt-viewbar__form">
-          <p>A visão “{lastName.current}” será excluída{active.scope === 'publica' ? ' para todos' : ''} e não pode ser recuperada. Os registros não são afetados.</p>
+          <p>A visão “{lastName.current}” será excluída{(target ?? active).scope === 'publica' ? ' para todos' : ''} e não pode ser recuperada. Os registros não são afetados.</p>
         </div>
       </Dialog>
     </>
