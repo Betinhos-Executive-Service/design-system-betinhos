@@ -9,7 +9,7 @@
   .bt-alert__close, .bt-dialog__close, .bt-drawer__close, .bt-sheet__close, .bt-sheet__expand, .bt-search__clear, .bt-select__clear,
   .bt-shell__nav button, .bt-shell__rail button, .bt-shell__icon-button, .bt-shell__brand-link, .bt-shell__item, .bt-shell__popover-item,
   button.bt-table__row, .bt-colhead, .bt-audit__record, .bt-audit__more,
-  .bt-viewbar__trigger, .bt-columns__more, .bt-columns__link, .bt-columns-add__crumb, .bt-columns-add__entry, .bt-chip__text, .bt-chip__remove
+  .bt-viewbar__trigger, .bt-columns__more, .bt-columns__link, .bt-columns-add__crumb, .bt-columns-add__entry
 ) {
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
@@ -22,7 +22,7 @@
 
 /* Botões e controles compactos: leve redução de escala ao pressionar. */
 :is(.bt-button, .bt-segmented__item, .bt-pagination__button, .bt-upload__button, .bt-select-panel__actions button,
-  .bt-viewbar__trigger, .bt-chip__text, .bt-bottom-nav__item, .bt-shell__brand-link):active:not(:disabled) {
+  .bt-viewbar__trigger, .bt-bottom-nav__item, .bt-shell__brand-link):active:not(:disabled) {
   transform: scale(.97);
   transition-duration: 60ms;
 }
@@ -43,7 +43,7 @@
 
 /* Botões de ícone (fechar, limpar, remover): fundo circular ao pressionar. */
 :is(.bt-alert__close, .bt-dialog__close, .bt-drawer__close, .bt-sheet__close, .bt-sheet__expand, .bt-search__clear,
-  .bt-select__clear, .bt-chip__remove, .bt-shell__icon-button):active {
+  .bt-select__clear, .bt-shell__icon-button):active {
   background-color: var(--bt-color-border);
   transform: scale(.94);
   transition-duration: 60ms;
@@ -52,6 +52,6 @@
 
 @media (prefers-reduced-motion: reduce) {
   :is(.bt-button, .bt-segmented__item, .bt-pagination__button, .bt-upload__button, .bt-select-panel__actions button, .bt-viewbar__trigger,
-    .bt-chip__text, .bt-bottom-nav__item, .bt-shell__brand-link, .bt-alert__close, .bt-dialog__close, .bt-drawer__close, .bt-sheet__close,
-    .bt-sheet__expand, .bt-search__clear, .bt-select__clear, .bt-chip__remove, .bt-shell__icon-button, .bt-upload__remove):active { transform: none; }
+    .bt-bottom-nav__item, .bt-shell__brand-link, .bt-alert__close, .bt-dialog__close, .bt-drawer__close, .bt-sheet__close,
+    .bt-sheet__expand, .bt-search__clear, .bt-select__clear, .bt-shell__icon-button, .bt-upload__remove):active { transform: none; }
 }

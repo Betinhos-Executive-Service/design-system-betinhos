@@ -2,9 +2,6 @@ import type { KeyboardEvent, ReactNode } from 'react'
 import { Menu, type MenuAction } from '../components/Menu'
 import { icons } from './icons'
 
-/** Evento disparado no gatilho `.bt-colhead` para reabrir o painel "Filtrar por" daquela coluna (chip de filtro ativo). Quem o trata chama `preventDefault()`. */
-export const COLUMN_FILTER_EVENT = 'bt-colfilter'
-
 export type ColumnMenuProps = {
   label: string
   /** Chave da coluna: vai em `data-col` no gatilho, para o foco voltar ao cabeçalho depois de mover ou ocultar. */

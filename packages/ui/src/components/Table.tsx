@@ -1,7 +1,7 @@
 import { useCallback, useContext, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type HTMLAttributes, type KeyboardEvent, type PointerEvent, type ReactNode, type Ref } from 'react'
 import { isExtraColumn, moveVisibleColumn, pinColumn, resizeColumn, setGroup, unpinColumn, sortBy, toggleColumn, visibleColumns, type ViewColumnDef, type ViewConfig } from '../tableView/config'
 import { ColumnFilter } from '../tableView/ColumnFilter'
-import { COLUMN_FILTER_EVENT, ColumnMenu, type ColumnGroupBy } from '../tableView/ColumnMenu'
+import { ColumnMenu, type ColumnGroupBy } from '../tableView/ColumnMenu'
 import type { LookupSearch } from '../tableView/FilterEditors'
 import { groupableFields } from '../tableView/grouping'
 import type { FilterCondition, FilterField } from '../tableView/filters'
@@ -512,18 +512,6 @@ function ViewHead<Row>({ placed, defs, view, chevron, cellClass, quick, pinRoom,
   const closeFilter = useCallback(() => setFilterAt(null), [])
   const filterField = filterAt ? quick?.fields.find((f) => f.key === filterAt && !f.advancedOnly) : undefined
   const filterAnchor = filterAt ? headRef.current?.querySelector<HTMLElement>(`.bt-colhead[data-col="${CSS.escape(filterAt)}"]`) ?? null : null
-  // O chip de filtro ativo pede para reabrir o painel da coluna.
-  useEffect(() => {
-    const head = headRef.current
-    if (!head) return
-    const open = (event: Event) => {
-      const key = (event.target as HTMLElement).closest<HTMLElement>('.bt-colhead')?.dataset.col
-      if (key && quick?.fields.some((f) => f.key === key && !f.advancedOnly)) { event.preventDefault(); setFilterAt(key) }
-    }
-    head.addEventListener(COLUMN_FILTER_EVENT, open)
-    return () => head.removeEventListener(COLUMN_FILTER_EVENT, open)
-  }, [quick])
-
   const cellOf = (key: string) => headRef.current?.querySelector<HTMLElement>(`[data-col="${CSS.escape(key)}"]`) ?? null
   const announce = (key: string, config: ViewConfig) => {
     const visible = visibleColumns(config)

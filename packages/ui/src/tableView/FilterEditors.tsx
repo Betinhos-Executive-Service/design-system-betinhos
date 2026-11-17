@@ -45,7 +45,7 @@ function QuickTyped({ field, value, onChange, parse, show }: QuickProps & { pars
   const [text, setText] = useState(show(value))
   const timer = useRef<number | undefined>(undefined)
   const applied = show(value)
-  // Valor aplicado por fora (chip removido, visão trocada) sobrescreve o que está no campo.
+  // Valor aplicado por fora (filtro limpo, visão trocada) sobrescreve o que está no campo.
   useEffect(() => { setText(applied) }, [applied])
   useEffect(() => () => window.clearTimeout(timer.current), [])
   const commit = (next: string) => {

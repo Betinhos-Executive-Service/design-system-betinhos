@@ -8,10 +8,8 @@ import { Menu, type MenuAction } from '../components/Menu'
 import { useMediaQuery } from '../useMediaQuery'
 import type { ViewColumnDef } from './config'
 import { ColumnsPanel, type ColumnCatalog } from './ColumnsPanel'
-import { FilterChips } from './FilterChips'
 import type { LookupSearch } from './FilterEditors'
-import { COLUMN_FILTER_EVENT } from './ColumnMenu'
-import { countActiveFilters, emptyFilters, readFilters, storedFilters, type FilterField, type TableFilters } from './filters'
+import { countActiveFilters, readFilters, storedFilters, type FilterField, type TableFilters } from './filters'
 import { FiltersPanel, type FilterLocked } from './FiltersPanel'
 import { SelectionBar, SelectionInline, countLabel, inlineActions, selectionOverflow, type ViewBarSelection } from './Selection'
 import { fitZone, planFit, type FitPlan, type FitSize, type ZoneFit } from './viewBarFit'
@@ -55,13 +53,11 @@ export type ViewBarProps = {
   onAudit?: () => void
   /** Erro ao gravar; sem isso usa o toast do `ToastProvider`. */
   onError?: (message: string) => void
-  /** Filtros da lista (§10.9.2): mostra "Filtros", "Filtro rápido", o painel e os chips. Os filtros moram em `view.config.filters`. */
+  /** Filtros da lista (§10.9.2): mostra "Filtros" (com o número de filtros ativos) e o painel. Os filtros moram em `view.config.filters`. */
   filters?: {
     fields: FilterField[]
     search?: LookupSearch
     countPreview?: (filters: TableFilters) => Promise<number | null>
-    /** Chaves/ids que a tela não conseguiu aplicar (chip com alerta). */
-    notApplied?: string[]
     /** Condições que a tela não sabe editar (visão nativa): ficam no painel como só leitura. */
     locked?: FilterLocked[]
     /** Remove uma condição só leitura; sem ela, as condições ficam sem ×. */
@@ -238,23 +234,10 @@ export function ViewBar({ view, columns, catalog, pinnable, children, onError, f
   ]
 
   const current = filters ? readFilters(view.config.filters, filters.fields) : null
-  // Filtro que a tela não conseguiu aplicar (campos indisponíveis) some no `readFilters`; o chip dele precisa continuar
-  // visível, com o alerta "não aplicado" (§10.9.2). Nesse caso os chips mostram o que está gravado.
-  const raw = view.config.filters as Partial<TableFilters> | undefined
-  const shown = filters?.notApplied?.length && raw?.quick && typeof raw.quick === 'object'
-    ? { quick: raw.quick, advanced: raw.advanced?.type === 'group' ? raw.advanced : emptyFilters().advanced }
-    : current
   const activeCount = filters && current ? countActiveFilters(current, filters.fields) : 0
   // Filtros da visão salva (aviso "Filtros diferentes da visão salva" no painel). A visão padrão não tem o que restaurar.
   const saved = filters && active.scope !== 'padrao' ? readFilters(active.config.filters, filters.fields) : undefined
   const setFilters = (next: TableFilters) => view.setConfig((config) => ({ ...config, filters: storedFilters(next) }))
-  // O chip de filtro por coluna reabre o painel "Filtrar por" no título da coluna (evento tratado pelo cabeçalho, que
-  // cancela o evento). Coluna fora da visão, cabeçalho escondido (mobile) ou ninguém tratando: painel na aba "Por coluna".
-  const editQuick = (key: string) => {
-    const target = mobile ? null : document.querySelector<HTMLElement>(`.bt-colhead[data-col="${CSS.escape(key)}"]`)
-    const handled = target ? !target.dispatchEvent(new CustomEvent(COLUMN_FILTER_EVENT, { bubbles: true, cancelable: true })) : false
-    if (!handled) setFiltersOpen(true)
-  }
 
   const densityActions: MenuAction[] = DENSITIES.map((d) => ({ id: `densidade-${d.value}`, label: d.label, icon: d.icon, group: 'Densidade das linhas', selected: view.density === d.value, onSelect: () => view.setDensity(d.value) }))
   const densityIcon = DENSITIES.find((d) => d.value === view.density)?.icon ?? icons.rows
@@ -447,30 +430,20 @@ export function ViewBar({ view, columns, catalog, pinnable, children, onError, f
     </>
   )
 
-  const chips = filters && current ? (
-    <>
-      <FilterChips
-        filters={shown ?? current}
-        fields={filters.fields}
-        notApplied={filters.notApplied}
-        onChange={setFilters}
-        onEditQuick={editQuick}
-        onEditAdvanced={() => setFiltersOpen(true)}
-      />
-      <FiltersPanel
-        open={filtersOpen}
-        onClose={() => setFiltersOpen(false)}
-        fields={filters.fields}
-        value={current}
-        search={filters.search}
-        countPreview={filters.countPreview}
-        onApply={setFilters}
-        saved={saved}
-        locked={filters.locked}
-        onRemoveLocked={filters.onRemoveLocked}
-        noun={filters.noun}
-      />
-    </>
+  const filtersPanel = filters && current ? (
+    <FiltersPanel
+      open={filtersOpen}
+      onClose={() => setFiltersOpen(false)}
+      fields={filters.fields}
+      value={current}
+      search={filters.search}
+      countPreview={filters.countPreview}
+      onApply={setFilters}
+      saved={saved}
+      locked={filters.locked}
+      onRemoveLocked={filters.onRemoveLocked}
+      noun={filters.noun}
+    />
   ) : null
 
   // Modo legado (`children` sem espaços nomeados): o desenho de antes, sem medir.
@@ -500,7 +473,7 @@ export function ViewBar({ view, columns, catalog, pinnable, children, onError, f
       </div>
       {overlays}
     </div>
-    {chips}
+    {filtersPanel}
     </>
   )
 
@@ -587,7 +560,7 @@ export function ViewBar({ view, columns, catalog, pinnable, children, onError, f
       {selecting && mobile && selection ? <SelectionBar selection={selection} menu={[...(more ?? []), ...foldItems]} /> : null}
       {overlays}
     </div>
-    {chips}
+    {filtersPanel}
     </>
   )
 }
