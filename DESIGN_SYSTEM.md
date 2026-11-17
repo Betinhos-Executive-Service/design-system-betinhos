@@ -777,7 +777,7 @@ Painel de colunas:
 
 Direto no cabeçalho da tabela (apenas pointer fino):
 
-- **Reordenar:** arrastar o cabeçalho. A coluna arrastada fica com fundo `#FCFCFB`, borda de foco azul e sem sombra pesada; as vizinhas deslizam em 150 ms ease-out. Com `prefers-reduced-motion`, trocam de lugar sem deslizar.
+- **Reordenar:** arrastar o cabeçalho (arraste nativo do navegador). O título continua no lugar e uma linha de 2 px na cor de ação marca onde a coluna vai entrar; a visão muda uma vez, ao soltar. Nada entra antes da primeira coluna.
 - **Largura:** alça de 8 px na borda direita do cabeçalho, cursor `col-resize`, mínimo 90 px e máximo 1200 px. Duplo clique volta à largura da visão.
 - **Teclado:** `Alt+←/→` move a coluna em foco; com foco na alça, `←/→` ajusta 16 px. Cada movimento é anunciado em `aria-live` (ex.: "Coluna Cliente na posição 3 de 8").
 - **Ordenação:** clique no cabeçalho alterna crescente/decrescente; a seta indica o sentido e `aria-sort` acompanha.

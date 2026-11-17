@@ -33,7 +33,11 @@ button.bt-table__row:focus-visible { outline: 0; box-shadow: inset 0 0 0 2px var
 .bt-table--view .bt-table__chevron { justify-self: end; }
 .bt-table__headcell { position: relative; align-self: stretch; padding-right: var(--bt-space-2); border-radius: var(--bt-radius-xs); }
 .bt-table__headcell:focus-visible { outline: 0; box-shadow: inset 0 0 0 2px var(--bt-focus-border); }
-.bt-table__headcell.is-dragging { z-index: 1; background-color: var(--bt-color-surface-neutral); box-shadow: inset 0 0 0 1px var(--bt-focus-border); cursor: grabbing; }
+/* Marcador de onde a coluna arrastada vai entrar. */
+/* Pseudo-elemento, não sombra: a coluna fixa já usa box-shadow para cobrir o vão. */
+.bt-table__headcell.is-drop-before::before, .bt-table__headcell.is-drop-after::before { content: ""; position: absolute; top: 6px; bottom: 6px; width: 2px; border-radius: var(--bt-radius-full); background-color: var(--bt-color-action); pointer-events: none; }
+.bt-table__headcell.is-drop-before::before { left: 0; }
+.bt-table__headcell.is-drop-after::before { right: 0; }
 /* O gatilho do menu vem envolto no `.bt-menu` (inline-flex): encolhe como item do flex para o rótulo truncar em vez de vazar. */
 .bt-table__headcell > .bt-menu { display: flex; flex: 0 1 auto; min-width: 0; max-width: 100%; height: 100%; }
 .bt-table__resize { position: absolute; top: 0; right: calc(var(--bt-space-3) / -2 - 4px); bottom: 0; z-index: 2; width: 8px; cursor: col-resize; touch-action: none; }
