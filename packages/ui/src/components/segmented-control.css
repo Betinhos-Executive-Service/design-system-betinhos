@@ -3,7 +3,7 @@
 .bt-segmented--full { display: flex; width: 100%; }
 .bt-segmented--full .bt-segmented__item { flex: 1 1 0; }
 .bt-segmented__item { flex: 0 0 auto; min-height: 32px; padding: 0 var(--bt-space-2-5); border: 0; border-radius: var(--bt-radius-sm); background: transparent; color: var(--bt-color-text-secondary); font: inherit; font-size: var(--bt-font-size-12); font-weight: var(--bt-font-weight-extrabold); white-space: nowrap; cursor: pointer; transition: background-color var(--bt-duration-fast) ease, color var(--bt-duration-fast) ease, transform var(--bt-duration-fast) var(--bt-ease-out); }
-.bt-segmented__item.is-active { color: var(--bt-color-surface); background-color: var(--bt-color-brand); }
+.bt-segmented__item.is-active { color: var(--bt-color-on-solid); background-color: var(--bt-color-brand); }
 .bt-segmented__item:active:not(:disabled) { transform: scale(.97); }
 .bt-segmented__item:focus-visible { outline: 0; box-shadow: 0 0 0 2px var(--bt-color-surface), 0 0 0 4px var(--bt-focus-border); }
 .bt-segmented__item:disabled { opacity: var(--bt-opacity-disabled); cursor: not-allowed; }

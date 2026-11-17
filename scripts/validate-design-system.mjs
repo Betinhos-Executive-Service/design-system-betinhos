@@ -55,6 +55,70 @@ function resolveTokenValue(path, tokens, stack = []) {
   return reference ? resolveTokenValue(reference, tokens, [...stack, path]) : token.value;
 }
 
+function hexOf(value) {
+  const hex = typeof value === "string" ? value : (value?.alpha ?? 1) === 1 ? value?.hex : null;
+  return /^#[0-9a-f]{6}$/i.test(hex ?? "") ? hex : null;
+}
+
+function luminance(hex) {
+  const channel = (i) => {
+    const v = parseInt(hex.slice(i, i + 2), 16) / 255;
+    return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
+  };
+  return 0.2126 * channel(1) + 0.7152 * channel(3) + 0.0722 * channel(5);
+}
+
+function contrast(a, b) {
+  const [light, dark] = [luminance(a), luminance(b)].sort((x, y) => y - x);
+  return (light + 0.05) / (dark + 0.05);
+}
+
+// Texto que os componentes põem sobre cada fundo; AA (4,5:1) nos dois temas.
+const S = "color.semantic.";
+const CONTRAST_PAIRS = [
+  ...["text-primary", "text-secondary", "brand", "action", "success", "warning", "danger"]
+    .flatMap((text) => ["surface", "surface-soft", "surface-neutral"].map((bg) => [S + text, S + bg])),
+  [S + "text-primary", S + "canvas"],
+  ...["success", "warning", "danger", "action"].map((tone) => [S + tone, `${S}${tone}-soft`]),
+  ...["action", "danger", "brand", "brand-hover"].map((bg) => [S + "on-solid", S + bg]),
+  ...["foreground", "foreground-muted"].flatMap((text) => ["background", "background-hover"].map((bg) => [`component.shell.${text}`, `component.shell.${bg}`])),
+];
+
+// Só no escuro: no claro são exceções conhecidas (§2.3), mas o escuro não pode herdá-las.
+const DARK_ONLY_PAIRS = [
+  [S + "text-secondary", S + "canvas"],
+  [S + "text-secondary", "component.shell.background"],
+];
+
+function validateContrast(tokens, theme, pairs = CONTRAST_PAIRS) {
+  const failures = [];
+  for (const [text, background] of pairs) {
+    const [fg, bg] = [text, background].map((path) => hexOf(resolveTokenValue(path, tokens)));
+    if (!fg || !bg) throw new Error(`Tema ${theme}: ${!fg ? text : background} não resolve para cor opaca.`);
+    const ratio = contrast(fg, bg);
+    if (ratio < 4.5) failures.push(`${text} sobre ${background}: ${ratio.toFixed(2)}`);
+  }
+  if (failures.length) throw new Error(`Contraste abaixo de 4,5:1 no tema ${theme}: ${failures.join("; ")}`);
+}
+
+// Tokens com os overrides do modo aplicados; override só troca o valor de um token existente.
+function applyMode(tokens, overrides, mode) {
+  const result = new Map(tokens);
+  for (const [path, value] of Object.entries(overrides)) {
+    const token = tokens.get(path);
+    if (!token) throw new Error(`Modo ${mode}: token inexistente ${path}`);
+    for (const reference of references(value)) {
+      if (!tokens.has(reference)) throw new Error(`Modo ${mode}: alias ausente em ${path}: ${reference}`);
+    }
+    const corValida = references(value).length || hexOf(value) || typeof value?.hex === "string";
+    if (token.type === "color" && !corValida) {
+      throw new Error(`Modo ${mode}: ${path} precisa ser hex (#rrggbb) ou cor DTCG.`);
+    }
+    result.set(path, { ...token, value });
+  }
+  return result;
+}
+
 async function validateNoGradients(paths) {
   const pattern = /(linear|radial|conic|repeating-linear|repeating-radial)-gradient\s*\(/i;
   for (const path of paths) {
@@ -69,9 +133,15 @@ async function main() {
   const tokens = collectTokens(document);
   validateReferences(tokens);
 
-  if (document.theme?.mode?.[VALUE] !== "light" || document.theme?.["supports-dark"]?.[VALUE] !== false) {
-    throw new Error("Tema deve permanecer light-only; dark mode não autorizado.");
+  // Claro é o padrão; escuro só por data-theme (opt-in), declarado em modes.dark.
+  const darkOverrides = metadata.modes?.dark;
+  if (document.theme?.mode?.[VALUE] !== "light" || document.theme?.["supports-dark"]?.[VALUE] !== true || !darkOverrides) {
+    throw new Error("Tema padrão deve ser light, com supports-dark = true e modes.dark declarado.");
   }
+  const darkTokens = applyMode(tokens, darkOverrides, "escuro");
+  if (darkTokens.get("theme.mode").value !== "dark") throw new Error("modes.dark deve trocar theme.mode para dark.");
+  validateContrast(tokens, "claro");
+  validateContrast(darkTokens, "escuro", [...CONTRAST_PAIRS, ...DARK_ONLY_PAIRS]);
 
   const generated = generateCss(document);
   const committed = await readFile(resolve("design-tokens.css"), "utf8");
@@ -130,7 +200,7 @@ async function main() {
   // A adoção nos apps (import dos tokens, superfície neutra) é checada em cada app consumidor, não aqui.
   await validateNoGradients(["DESIGN_SYSTEM.md", "design-tokens.css"]);
 
-  console.log(`Design system válido: ${tokens.size} tokens, aliases íntegros, light-only, prefixo ${responsePrefix}, sem gradientes e CSS sincronizado.`);
+  console.log(`Design system válido: ${tokens.size} tokens, aliases íntegros, claro + escuro com contraste AA, prefixo ${responsePrefix}, sem gradientes e CSS sincronizado.`);
 }
 
 main().catch((error) => {

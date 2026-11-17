@@ -1012,11 +1012,28 @@ function AlertShowcase() {
   )
 }
 
+type Tema = 'light' | 'dark' | 'auto'
+const TEMAS: { value: Tema; label: string }[] = [{ value: 'light', label: 'Claro' }, { value: 'dark', label: 'Escuro' }, { value: 'auto', label: 'Sistema' }]
+
+/** Tema escuro é opt-in: `data-theme` no `<html>` ("dark" força, "auto" segue o sistema). */
+function ThemeSwitcher() {
+  // Lê o atributo atual: ao remontar (HMR), o seletor mostra o tema que a página está usando.
+  const [tema, setTema] = useState<Tema>(() => {
+    const atual = document.documentElement.dataset.theme
+    return atual === 'dark' || atual === 'auto' ? atual : 'light'
+  })
+  const trocar = (proximo: Tema) => {
+    document.documentElement.dataset.theme = proximo
+    setTema(proximo)
+  }
+  return <SegmentedControl size="compact" aria-label="Tema" value={tema} onChange={trocar} options={TEMAS} />
+}
+
 /** Vitrine dos componentes de `@betinhos/ui`, só no `pnpm dev`. */
 export function ComponentsPage() {
   return (
     <ToastProvider>
-    <PageLayout eyebrow="Design System" title="Componentes">
+    <PageLayout eyebrow="Design System" title="Componentes" actions={<ThemeSwitcher />}>
       <Stack gap="4">
         <ButtonShowcase />
         <FieldShowcase />

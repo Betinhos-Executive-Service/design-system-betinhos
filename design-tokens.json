@@ -1,13 +1,49 @@
 {
   "$schema": "https://www.designtokens.org/schemas/2025.10/format.json",
-  "$description": "Betinhos Design System 3.1.1. Identidade operacional premium extraída do Módulo Qualidade.",
+  "$description": "Betinhos Design System 3.2.0. Identidade operacional premium extraída do Módulo Qualidade.",
   "$extensions": {
     "com.betinhos.design-system": {
-      "version": "3.1.1",
-      "updated": "2026-11-13",
+      "version": "3.2.0",
+      "updated": "2026-11-18",
       "source": "Módulo Qualidade",
-      "theme": "light-only",
+      "theme": "light-dark",
       "cssPrefix": "bt",
+      "modes": {
+        "dark": {
+          "theme.mode": "dark",
+          "color.semantic.canvas": "#0b1220",
+          "color.semantic.surface": "#131c2e",
+          "color.semantic.surface-soft": "#1a2438",
+          "color.semantic.surface-neutral": "#162033",
+          "color.semantic.border": "#2a3650",
+          "color.semantic.text-primary": "#e6ebf3",
+          "color.semantic.text-control": "#e6ebf3",
+          "color.semantic.text-secondary": "#9aa8bd",
+          "color.semantic.text-tertiary": "#7d8aa0",
+          "color.semantic.on-solid": "#0b1220",
+          "color.semantic.brand": "#f1f5fb",
+          "color.semantic.brand-hover": "#d3dceb",
+          "color.semantic.action": "#7ea6f6",
+          "color.semantic.action-soft": "#1c2c4d",
+          "color.semantic.success": "#4cc38a",
+          "color.semantic.success-soft": "#12301f",
+          "color.semantic.warning": "#e0b04a",
+          "color.semantic.warning-soft": "#33280f",
+          "color.semantic.danger": "#f07a8b",
+          "color.semantic.danger-soft": "#3a1820",
+          "component.shell.background": "#0a1628",
+          "component.shell.background-hover": "#16294a",
+          "component.shell.foreground": "#e6ebf3",
+          "component.shell.foreground-muted": "#a9b6ca",
+          "component.focus.ring-color": { "colorSpace": "srgb", "components": [0.494118, 0.65098, 0.964706], "alpha": 0.28, "hex": "#7ea6f6" },
+          "component.focus.ring": { "color": { "colorSpace": "srgb", "components": [0.494118, 0.65098, 0.964706], "alpha": 0.28, "hex": "#7ea6f6" }, "offsetX": { "value": 0, "unit": "px" }, "offsetY": { "value": 0, "unit": "px" }, "blur": { "value": 0, "unit": "px" }, "spread": { "value": 3, "unit": "px" } },
+          "shadow.surface": { "color": { "colorSpace": "srgb", "components": [0, 0, 0], "alpha": 0.32, "hex": "#000000" }, "offsetX": { "value": 0, "unit": "px" }, "offsetY": { "value": 8, "unit": "px" }, "blur": { "value": 24, "unit": "px" }, "spread": { "value": 0, "unit": "px" } },
+          "shadow.panel": { "color": { "colorSpace": "srgb", "components": [0, 0, 0], "alpha": 0.32, "hex": "#000000" }, "offsetX": { "value": 0, "unit": "px" }, "offsetY": { "value": 10, "unit": "px" }, "blur": { "value": 28, "unit": "px" }, "spread": { "value": 0, "unit": "px" } },
+          "shadow.popover": [{ "color": { "colorSpace": "srgb", "components": [0, 0, 0], "alpha": 0.5, "hex": "#000000" }, "offsetX": { "value": 0, "unit": "px" }, "offsetY": { "value": 18, "unit": "px" }, "blur": { "value": 42, "unit": "px" }, "spread": { "value": 0, "unit": "px" } }, { "color": { "colorSpace": "srgb", "components": [0, 0, 0], "alpha": 0.3, "hex": "#000000" }, "offsetX": { "value": 0, "unit": "px" }, "offsetY": { "value": 2, "unit": "px" }, "blur": { "value": 7, "unit": "px" }, "spread": { "value": 0, "unit": "px" } }],
+          "shadow.drawer": { "color": { "colorSpace": "srgb", "components": [0, 0, 0], "alpha": 0.55, "hex": "#000000" }, "offsetX": { "value": -24, "unit": "px" }, "offsetY": { "value": 0, "unit": "px" }, "blur": { "value": 70, "unit": "px" }, "spread": { "value": 0, "unit": "px" } },
+          "shadow.toast": { "color": { "colorSpace": "srgb", "components": [0, 0, 0], "alpha": 0.45, "hex": "#000000" }, "offsetX": { "value": 0, "unit": "px" }, "offsetY": { "value": 12, "unit": "px" }, "blur": { "value": 35, "unit": "px" }, "spread": { "value": 0, "unit": "px" } }
+        }
+      },
       "compatibilityAliases": {
         "font-sans": "font.family.sans",
         "font-mono": "font.family.mono",
@@ -96,6 +132,7 @@
       "text-control": { "$value": "{color.primitive.ink-950}" },
       "text-secondary": { "$value": "{color.primitive.slate-500}" },
       "text-tertiary": { "$value": "{color.primitive.slate-400}" },
+      "on-solid": { "$value": "{color.primitive.white}" },
       "border": { "$value": "{color.primitive.line-200}" },
       "success": { "$value": "{color.primitive.green-700}" },
       "success-soft": { "$value": "{color.primitive.green-100}" },
@@ -375,7 +412,7 @@
       "primary": {
         "background": { "$type": "color", "$value": "{color.semantic.brand}" },
         "background-hover": { "$type": "color", "$value": "{color.semantic.brand-hover}" },
-        "foreground": { "$type": "color", "$value": "{color.primitive.white}" }
+        "foreground": { "$type": "color", "$value": "{color.semantic.on-solid}" }
       },
       "radius": { "$type": "dimension", "$value": "{radius.md}" },
       "height-compact": { "$type": "dimension", "$value": "{control.height.compact}" },
@@ -423,6 +460,12 @@
         }
       }
     },
+    "shell": {
+      "background": { "$type": "color", "$value": "{color.semantic.brand}" },
+      "background-hover": { "$type": "color", "$value": "{color.semantic.brand-hover}" },
+      "foreground": { "$type": "color", "$value": "{color.semantic.on-solid}" },
+      "foreground-muted": { "$type": "color", "$value": "{color.primitive.line-200}" }
+    },
     "navigation": {
       "desktop-width": { "$type": "dimension", "$value": "{layout.sidebar-width}" },
       "mobile-height": { "$type": "dimension", "$value": { "value": 58, "unit": "px" } }
@@ -436,6 +479,6 @@
   },
   "theme": {
     "mode": { "$type": "string", "$value": "light" },
-    "supports-dark": { "$type": "boolean", "$value": false }
+    "supports-dark": { "$type": "boolean", "$value": true }
   }
 }

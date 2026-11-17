@@ -66,6 +66,8 @@ function fontFamily(value) {
 }
 
 function color(value) {
+  // Modos (ex.: escuro) aceitam hex opaco direto: "#131c2e".
+  if (typeof value === "string") return value.toLowerCase();
   const alpha = value.alpha ?? 1;
   if (alpha === 1 && value.hex) return value.hex.toLowerCase();
   const [red, green, blue] = value.components.map((component) => Math.round(component * 255));
@@ -115,6 +117,15 @@ function typographyProperties(token, prefix) {
   return properties;
 }
 
+// Overrides de um modo: mesmo nome de variável, valor do modo. Ficam no próprio :root para os aliases recalcularem.
+function modeDeclarations(overrides, tokens, prefix) {
+  return Object.entries(overrides).map(([path, value]) => {
+    const token = tokens.get(path);
+    if (!token) throw new Error(`Modo escuro: token inexistente ${path}`);
+    return `${cssVariable(path, prefix)}: ${primitiveCss(value, token.type, prefix)};`;
+  });
+}
+
 export function generateCss(document) {
   const metadata = document[EXTENSIONS]?.["com.betinhos.design-system"] || {};
   const prefix = metadata.cssPrefix || "bt";
@@ -158,7 +169,30 @@ export function generateCss(document) {
     }
   }
 
-  lines.push("}", "", "@media (prefers-reduced-motion: reduce) {", "  *, *::before, *::after {", "    scroll-behavior: auto !important;", "    animation-duration: .01ms !important;", "    animation-iteration-count: 1 !important;", "    transition-duration: .01ms !important;", "  }", "}", "");
+  lines.push("}");
+
+  // Escuro é opt-in: data-theme="dark" força; data-theme="auto" segue o sistema. Sem atributo, claro.
+  const dark = metadata.modes?.dark;
+  if (dark) {
+    const declarations = modeDeclarations(dark, tokens, prefix);
+    const indented = (indent) => declarations.map((line) => indent + line);
+    lines.push(
+      "",
+      ':root[data-theme="dark"] {',
+      "  color-scheme: dark;",
+      ...indented("  "),
+      "}",
+      "",
+      "@media (prefers-color-scheme: dark) {",
+      '  :root[data-theme="auto"] {',
+      "    color-scheme: dark;",
+      ...indented("    "),
+      "  }",
+      "}",
+    );
+  }
+
+  lines.push("", "@media (prefers-reduced-motion: reduce) {", "  *, *::before, *::after {", "    scroll-behavior: auto !important;", "    animation-duration: .01ms !important;", "    animation-iteration-count: 1 !important;", "    transition-duration: .01ms !important;", "  }", "}", "");
   return lines.join("\n");
 }
 

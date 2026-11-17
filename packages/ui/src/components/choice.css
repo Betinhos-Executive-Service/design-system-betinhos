@@ -2,13 +2,13 @@
 .bt-choice { position: relative; display: inline-flex; align-items: flex-start; gap: var(--bt-space-2-5); min-height: var(--bt-space-6); font-family: var(--bt-font-family-sans); font-size: var(--bt-font-size-13); color: var(--bt-color-text-primary); cursor: pointer; }
 .bt-choice.is-disabled { opacity: var(--bt-opacity-disabled); cursor: not-allowed; }
 .bt-choice__input { position: absolute; width: 1px; height: 1px; margin: 0; opacity: 0; }
-.bt-choice__control { flex: 0 0 auto; display: grid; place-items: center; width: 18px; height: 18px; margin-top: 3px; border: var(--bt-border-width-emphasis) solid var(--bt-color-text-secondary); border-radius: var(--bt-radius-xs); background-color: var(--bt-color-surface); color: var(--bt-color-surface); transition: background-color var(--bt-duration-fast) ease, border-color var(--bt-duration-fast) ease; }
+.bt-choice__control { flex: 0 0 auto; display: grid; place-items: center; width: 18px; height: 18px; margin-top: 3px; border: var(--bt-border-width-emphasis) solid var(--bt-color-text-secondary); border-radius: var(--bt-radius-xs); background-color: var(--bt-color-surface); color: var(--bt-color-on-solid); transition: background-color var(--bt-duration-fast) ease, border-color var(--bt-duration-fast) ease; }
 .bt-choice__control > svg { width: 12px; height: 12px; opacity: 0; }
 .bt-choice__input:checked + .bt-choice__control { border-color: var(--bt-color-action); background-color: var(--bt-color-action); }
 .bt-choice__input:checked + .bt-choice__control > svg { opacity: 1; }
 .bt-choice__input:indeterminate + .bt-choice__control { border-color: var(--bt-color-action); background-color: var(--bt-color-action); }
 .bt-choice__input:indeterminate + .bt-choice__control > svg { opacity: 0; }
-.bt-choice__input:indeterminate + .bt-choice__control::after { content: ""; grid-area: 1 / 1; width: 8px; height: 2px; border-radius: var(--bt-radius-full); background-color: var(--bt-color-surface); }
+.bt-choice__input:indeterminate + .bt-choice__control::after { content: ""; grid-area: 1 / 1; width: 8px; height: 2px; border-radius: var(--bt-radius-full); background-color: var(--bt-color-on-solid); }
 .bt-choice__input:indeterminate + .bt-choice__control > svg { grid-area: 1 / 1; }
 .bt-choice__input:focus-visible + .bt-choice__control { box-shadow: 0 0 0 2px var(--bt-color-surface), 0 0 0 4px var(--bt-focus-border); }
 .bt-choice__text { display: grid; gap: var(--bt-space-0-5); min-width: 0; padding-top: 2px; }

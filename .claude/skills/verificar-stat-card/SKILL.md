@@ -29,4 +29,4 @@ description: "Verifica StatCard, DeltaBadge, Sparkline, AlertCard e o drill-down
 - Saída dos testes, linhas do `medir.cjs` e os prints gerados.
 
 ## Limites
-- Só tema claro (o tema escuro é PR próprio). Telas reais (dashboard do Sistema Betinhos) verificam os próprios cards depois do bump.
+- Tema escuro: skill `verificar-tema-escuro`. Telas reais (dashboard do Sistema Betinhos) verificam os próprios cards depois do bump.
