@@ -1,4 +1,4 @@
-import { useCallback, useContext, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type HTMLAttributes, type KeyboardEvent, type PointerEvent, type ReactNode, type Ref } from 'react'
+import { useCallback, useContext, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type DragEvent, type HTMLAttributes, type KeyboardEvent, type PointerEvent, type ReactNode, type Ref } from 'react'
 import { MAX_COLUMN_WIDTH, MIN_COLUMN_WIDTH, isExtraColumn, moveVisibleColumn, pinColumn, resizeColumn, setGroup, unpinColumn, sortBy, toggleColumn, visibleColumns, type ViewColumnDef, type ViewConfig } from '../tableView/config'
 import { ColumnFilter } from '../tableView/ColumnFilter'
 import { ColumnMenu, type ColumnGroupBy } from '../tableView/ColumnMenu'
@@ -280,8 +280,6 @@ export function nextSelection(selected: ReadonlySet<string>, keys: string[], key
 const chevronIcon = <svg className="bt-table__chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg>
 
 const RESIZE_STEP = 16
-const DRAG_THRESHOLD = 4
-const reducedMotion = () => typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
 /** Lista operacional em linhas: cabeçalho off-white, barra de gravidade, linha clicável e cabeçalho que some no mobile. */
 export function Table<Row>({ columns: own, rows, rowKey, onRowClick, severity, empty, footer, loading = false, view, quickFilters, rowActions, selection: ownSelection, scrollRef: outerScrollRef, afterRows, columnLines = false, density: densityProp = 'default', stickyHeader = false, maxHeight, fill = false, virtual = false, cellStatus, className, style, onKeyDown, ...rest }: TableProps<Row>) {
@@ -492,20 +490,18 @@ export function Table<Row>({ columns: own, rows, rowKey, onRowClick, severity, e
   )
 }
 
-type Drag = { key: string; pointerId: number; startX: number; grab: number; started: boolean; x: number }
+const COLUMN_MIME = 'text/x-bt-column'
 type Resize = { key: string; pointerId: number; startX: number; startWidth: number; width: number; frame: number; handle: HTMLElement; done: () => void }
 
 /** Cabeçalho com visão: o título abre o menu (ordenar, filtrar, ocultar), arrastar reordena, alça de largura e atalhos de teclado, com anúncio em `aria-live`. */
 function ViewHead<Row>({ placed, defs, view, chevron, cellClass, quick, pinRoom, lead, layoutFor }: { placed: Placed<Row>[]; defs: ViewColumnDef[]; view: TableView; chevron: boolean; cellClass: (column: TableColumn<Row>, index: number) => string; quick?: TableQuickFilters; pinRoom: number; lead?: ReactNode; layoutFor: (config: ViewConfig) => { template: string; minWidth: string | null } }) {
   const headRef = useRef<HTMLDivElement>(null)
-  const drag = useRef<Drag | null>(null)
   const resize = useRef<Resize | null>(null)
   const suppressClick = useRef(false)
-  const positions = useRef(new Map<string, number>())
-  const [dragging, setDragging] = useState<string | null>(null)
+  // Arraste de posição como na Geral: o navegador desenha a coluna sob o ponteiro e a visão muda uma vez, ao soltar.
+  const [dropAt, setDropAt] = useState<{ key: string; after: boolean } | null>(null)
   const [message, setMessage] = useState('')
   const first = defs[0]?.key
-  const order = placed.map((p) => p.column.key).join('|')
   const sort = view.config.sort
   // Coluna com o painel "Filtrar por" aberto; o painel ancora no gatilho do menu dessa coluna.
   const [filterAt, setFilterAt] = useState<string | null>(null)
@@ -523,25 +519,6 @@ function ViewHead<Row>({ placed, defs, view, chevron, cellClass, quick, pinRoom,
     setMessage(pinned ? `Coluna ${label} solta` : `Coluna ${label} fixada`)
   }
 
-  // FLIP só no cabeçalho: as colunas vizinhas deslizam para o novo lugar; a arrastada segue o ponteiro.
-  useLayoutEffect(() => {
-    const head = headRef.current
-    if (!head) return
-    const animate = !reducedMotion()
-    for (const cell of Array.from(head.querySelectorAll<HTMLElement>('[data-col]'))) {
-      const key = cell.dataset.col as string
-      const before = positions.current.get(key)
-      positions.current.set(key, cell.offsetLeft)
-      if (key === drag.current?.key) {
-        // A arrastada continua sob o ponteiro depois que trocou de lugar.
-        if (drag.current.started) cell.style.transform = `translateX(${drag.current.x - drag.current.grab - cell.offsetLeft}px)`
-        continue
-      }
-      if (!animate || before === undefined || before === cell.offsetLeft) continue
-      cell.animate([{ transform: `translateX(${before - cell.offsetLeft}px)` }, { transform: 'none' }], { duration: 150, easing: 'cubic-bezier(0.23, 1, 0.32, 1)' })
-    }
-  }, [order])
-
   const update = (fn: (config: ViewConfig) => ViewConfig) => view.onChange(fn)
   useEffect(() => () => { const state = resize.current; if (state) { cancelAnimationFrame(state.frame); state.done() } }, [])
   const moveBy = (key: string, step: -1 | 1) => {
@@ -551,55 +528,36 @@ function ViewHead<Row>({ placed, defs, view, chevron, cellClass, quick, pinRoom,
     announce(key, next)
   }
 
-  // O React move o nó da coluna ao reordenar, o que solta a captura do ponteiro: o arraste ouve a janela e lê o estado mais recente.
+  // Estado mais recente para o arraste de largura, que ouve eventos fora do ciclo do React.
   const latest = useRef({ placed, view })
   latest.current = { placed, view }
 
-  function onCellPointerDown(event: PointerEvent<HTMLElement>, key: string) {
-    if (key === first || event.pointerType === 'touch' || event.button !== 0 || (event.target as HTMLElement).closest('.bt-table__resize')) return
-    const pointerId = event.pointerId
-    drag.current = { key, pointerId, startX: event.clientX, grab: event.clientX - event.currentTarget.getBoundingClientRect().left, started: false, x: 0 }
-    const onMove = (e: globalThis.PointerEvent) => { if (e.pointerId === pointerId) dragMove(e.clientX) }
-    const onUp = (e: globalThis.PointerEvent) => {
-      if (e.pointerId !== pointerId) return
-      window.removeEventListener('pointermove', onMove)
-      window.removeEventListener('pointerup', onUp)
-      window.removeEventListener('pointercancel', onUp)
-      dragEnd()
-    }
-    window.addEventListener('pointermove', onMove)
-    window.addEventListener('pointerup', onUp)
-    window.addEventListener('pointercancel', onUp)
+  function onCellDragStart(event: DragEvent<HTMLElement>, key: string) {
+    if (resize.current || (event.target as HTMLElement).closest('.bt-table__resize')) { event.preventDefault(); return }
+    event.dataTransfer.setData(COLUMN_MIME, key)
+    event.dataTransfer.effectAllowed = 'move'
   }
-  function dragMove(clientX: number) {
-    const state = drag.current
-    const head = headRef.current
-    if (!state || !head) return
-    if (!state.started) {
-      if (Math.abs(clientX - state.startX) < DRAG_THRESHOLD) return
-      state.started = true
-      setDragging(state.key)
-    }
-    const x = clientX - head.getBoundingClientRect().left
-    state.x = x
-    const cell = cellOf(state.key)
-    if (cell) cell.style.transform = `translateX(${x - state.grab - cell.offsetLeft}px)`
-    // Posição final: quantas colunas (fora a arrastada) têm o meio à esquerda do ponteiro.
-    const { placed: current, view: bound } = latest.current
-    const others = current.map((p) => p.column.key).filter((k) => k !== state.key)
-    const target = Math.max(0, others.filter((k) => { const c = cellOf(k); return c ? c.offsetLeft + c.offsetWidth / 2 < x : false }).length)
-    if (current.findIndex((p) => p.column.key === state.key) !== target) bound.onChange((config) => moveVisibleColumn(config, defs, state.key, target))
+  function onCellDragOver(event: DragEvent<HTMLElement>, key: string) {
+    if (!event.dataTransfer.types.includes(COLUMN_MIME)) return
+    event.preventDefault()
+    const rect = event.currentTarget.getBoundingClientRect()
+    // Nada entra antes da primeira coluna.
+    const after = key === first || event.clientX > rect.left + rect.width / 2
+    setDropAt((d) => (d?.key === key && d.after === after ? d : { key, after }))
   }
-  function dragEnd() {
-    const state = drag.current
-    drag.current = null
-    if (!state?.started) return
-    suppressClick.current = true
-    window.setTimeout(() => { suppressClick.current = false }, 0)
-    const cell = cellOf(state.key)
-    if (cell) cell.style.transform = ''
-    setDragging(null)
-    announce(state.key, latest.current.view.config)
+  function onCellDrop(event: DragEvent<HTMLElement>, index: number) {
+    const from = event.dataTransfer.getData(COLUMN_MIME)
+    const after = dropAt?.after ?? false
+    setDropAt(null)
+    const fromIndex = placed.findIndex((p) => p.column.key === from)
+    if (fromIndex < 0) return
+    event.preventDefault()
+    const slot = index + (after ? 1 : 0)
+    const target = Math.max(1, fromIndex < slot ? slot - 1 : slot)
+    if (target === fromIndex) return
+    const next = moveVisibleColumn(view.config, defs, from, target)
+    update(() => next)
+    announce(from, next)
   }
 
   // Largura desenhada da trilha (com `fluid` a coluna pode estar mais larga que a da visão); sem layout (jsdom), a da visão.
@@ -702,9 +660,14 @@ function ViewHead<Row>({ placed, defs, view, chevron, cellClass, quick, pinRoom,
             role="columnheader"
             aria-sort={column.sortable ? (sorted === 'asc' ? 'ascending' : sorted === 'desc' ? 'descending' : 'none') : undefined}
             aria-label={movable ? `${label}. Alt e setas movem a coluna.` : undefined}
-            className={[cellClass(column, index), 'bt-table__headcell', movable && 'bt-table__headcell--movable', dragging === column.key && 'is-dragging'].filter(Boolean).join(' ')}
+            className={[cellClass(column, index), 'bt-table__headcell', movable && 'bt-table__headcell--movable', dropAt?.key === column.key && (dropAt.after ? 'is-drop-after' : 'is-drop-before')].filter(Boolean).join(' ')}
             style={pinStyle(pin)}
-            onPointerDown={(event) => onCellPointerDown(event, column.key)}
+            draggable={movable || undefined}
+            onDragStart={movable ? (event) => onCellDragStart(event, column.key) : undefined}
+            onDragOver={(event) => onCellDragOver(event, column.key)}
+            onDragLeave={(event) => { if (event.relatedTarget instanceof Node && event.currentTarget.contains(event.relatedTarget)) return; setDropAt((d) => (d?.key === column.key ? null : d)) }}
+            onDrop={(event) => onCellDrop(event, index)}
+            onDragEnd={() => setDropAt(null)}
             onKeyDown={(event) => onCellKeyDown(event, column.key)}
           >
             <ColumnMenu
