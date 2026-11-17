@@ -1,6 +1,6 @@
 /**
  * Modelo puro dos filtros de lista (Design System §10.9.2): filtro rápido por coluna, filtro avançado em grupos E/OU
- * (até dois níveis) e as traduções para FetchXML, texto de chip e filtragem em memória.
+ * (até dois níveis) e as traduções para FetchXML, texto da condição e filtragem em memória.
  */
 
 export type FilterKind = 'text' | 'choice' | 'lookup' | 'date' | 'number' | 'bool'
@@ -42,7 +42,7 @@ export type FilterCondition = {
   value?: string | number
   /** Fim do intervalo (`between`). */
   to?: string | number
-  /** Valores escolhidos (choice e lookup), com o rótulo para o chip. */
+  /** Valores escolhidos (choice e lookup), com o rótulo para o texto da condição. */
   values?: FilterOption[]
 }
 
@@ -316,7 +316,7 @@ export function quickNumberOf(c: FilterCondition | undefined): string {
   return `${sign[c.op] ?? ''}${n(c.value)}`
 }
 
-// ---------- Texto do chip ----------
+// ---------- Texto da condição ----------
 
 const brDate = (day: unknown) => (isDay(day) ? day.split('-').reverse().join('/') : '')
 const NUMBER = new Intl.NumberFormat('pt-BR')

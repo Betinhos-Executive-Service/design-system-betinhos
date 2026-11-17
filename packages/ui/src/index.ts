@@ -61,7 +61,6 @@ export {
 } from './tableView/filters'
 export { FilterValueEditor, QuickFilterCell, type LookupSearch } from './tableView/FilterEditors'
 export { FiltersPanel, type FilterLocked, type FiltersPanelProps, type FiltersPanelTab } from './tableView/FiltersPanel'
-export { FilterChips, type FilterChipsProps } from './tableView/FilterChips'
 export { useTableFilters } from './tableView/useTableFilters'
-export { ColumnMenu, COLUMN_FILTER_EVENT, type ColumnMenuProps } from './tableView/ColumnMenu'
+export { ColumnMenu, type ColumnMenuProps } from './tableView/ColumnMenu'
 export { ColumnFilter, type ColumnFilterProps } from './tableView/ColumnFilter'
