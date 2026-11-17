@@ -4,6 +4,7 @@ export {
   AuditButton, AuditPanel, EMPTY_AUDIT_FILTERS, auditDayLabel, auditFacets, filterAuditEvents, groupAuditByDay,
   type AuditButtonProps, type AuditChange, type AuditEvent, type AuditFilters, type AuditOperation, type AuditPanelProps, type AuditStatus,
 } from './components/Audit'
+export { AlertCard, type AlertCardProps, type AlertCardTone } from './components/AlertCard'
 export { BuildBadge, formatBuild } from './BuildBadge'
 export { Button, buttonClassName, type ButtonProps, type ButtonSize, type ButtonVariant } from './components/Button'
 export { Checkbox, ChoiceGroup, Radio, Switch, type ChoiceProps } from './components/Choice'
@@ -21,6 +22,10 @@ export { resolveSnap, dampen, type SheetLevel } from './components/sheetGesture'
 export { Upload, acceptFiles, formatFileSize, type UploadFile, type UploadProps } from './components/Upload'
 export { EmptyState, type EmptyStateProps } from './components/EmptyState'
 export { MetricCard, type MetricCardProps, type MetricTone } from './components/MetricCard'
+export {
+  DeltaBadge, Sparkline, StatCard,
+  type DeltaBadgeProps, type DeltaTone, type DeltaTrend, type SparklineProps, type StatCardProgress, type StatCardProps, type StatTone,
+} from './components/StatCard'
 export { PageHeader, type PageHeaderProps } from './components/PageHeader'
 export { PageToolbar, pageToolbarClassName, type PageToolbarProps, type PageToolbarVariant } from './components/PageToolbar'
 export { createShellHeaderStore, useShellHeader, type ShellHeaderEntry, type ShellHeaderStore } from './components/ShellHeader'

@@ -1,0 +1,9 @@
+/* Drill-down de card (StatCard, AlertCard): chevron de 28 px; o ::after cobre o card inteiro; sem transform ao pressionar (o card não "pula"). */
+.bt-card-open { flex: 0 0 auto; display: grid; place-items: center; width: 28px; height: 28px; margin: calc(-1 * var(--bt-space-1)) calc(-1 * var(--bt-space-1-5)) calc(-1 * var(--bt-space-1)) 0; padding: 0; border: 0; border-radius: var(--bt-radius-sm); background: none; color: var(--bt-color-action); cursor: pointer; -webkit-tap-highlight-color: transparent; touch-action: manipulation; transition: background-color var(--bt-duration-fast) var(--bt-ease-out); }
+.bt-card-open::after { content: ''; position: absolute; inset: 0; border-radius: var(--bt-radius-lg); }
+/* Anel interno: o overflow do card cortaria um anel externo. Outline transparente mantém o foco no alto contraste do Windows. */
+.bt-card-open:focus-visible { outline: 2px solid transparent; }
+.bt-card-open:focus-visible::after { box-shadow: inset 0 0 0 2px var(--bt-focus-border); }
+.bt-card-open:active { background-color: var(--bt-color-action-soft); }
+@media (hover: hover) { .bt-card-open:hover { background-color: var(--bt-color-action-soft); } }
+@media (prefers-reduced-motion: reduce) { .bt-card-open { transition: none; } }

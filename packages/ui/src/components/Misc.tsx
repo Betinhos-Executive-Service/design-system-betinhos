@@ -89,13 +89,17 @@ export function Breadcrumb({ items }: { items: Crumb[] }) {
   )
 }
 
-export type ProgressProps = { value: number; max?: number; label: string; tone?: 'info' | 'success' | 'warning' | 'danger'; showValue?: boolean }
+export type ProgressProps = {
+  value: number; max?: number; label: string; tone?: 'info' | 'success' | 'warning' | 'danger'; showValue?: boolean
+  /** Texto à direita no lugar da porcentagem: o total da meta ("R$ 3,20M"). */
+  valueLabel?: ReactNode
+}
 /** Barra de progresso de 6px com rótulo e valor. */
-export function Progress({ value, max = 100, label, tone = 'info', showValue = true }: ProgressProps) {
+export function Progress({ value, max = 100, label, tone = 'info', showValue = true, valueLabel }: ProgressProps) {
   const pct = Math.max(0, Math.min(100, (value / max) * 100))
   return (
     <div className={`bt-progress bt-progress--${tone}`}>
-      <div className="bt-progress__head"><span>{label}</span>{showValue ? <strong>{Math.round(pct)}%</strong> : null}</div>
+      <div className="bt-progress__head"><span>{label}</span>{showValue ? <strong>{valueLabel ?? `${Math.round(pct)}%`}</strong> : null}</div>
       <div className="bt-progress__track" role="progressbar" aria-label={label} aria-valuemin={0} aria-valuemax={max} aria-valuenow={value}>
         <span className="bt-progress__bar" style={{ transform: `scaleX(${pct / 100})` }} />
       </div>

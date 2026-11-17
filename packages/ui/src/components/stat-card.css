@@ -1,0 +1,36 @@
+/* StatCard (KPI), DeltaBadge e Sparkline. O número é navy; a cor fica no ícone, no selo e na sparkline. */
+
+/* Subgrid de 4 trilhas: rótulo, valor, extras e sparkline alinham entre os cards da fileira. */
+.bt-stat { position: relative; display: grid; grid-row: span 4; grid-template-rows: subgrid; row-gap: var(--bt-space-1-5); min-width: 0; padding: var(--bt-space-3); overflow: hidden; border: var(--bt-border-width-default) solid var(--bt-color-border); border-radius: var(--bt-radius-lg); background-color: var(--bt-color-surface); box-shadow: var(--bt-shadow-surface); font-family: var(--bt-font-family-sans); }
+/* Tom: ícone e sparkline leem estas variáveis; sem tom (info), cada um usa o próprio padrão. */
+.bt-spark--info { --bt-stat-tone: var(--bt-color-brand); --bt-stat-tone-soft: var(--bt-color-border); }
+.bt-stat--success, .bt-spark--success { --bt-stat-tone: var(--bt-color-success); --bt-stat-tone-soft: var(--bt-color-success-soft); }
+.bt-stat--warning, .bt-spark--warning { --bt-stat-tone: var(--bt-color-warning); --bt-stat-tone-soft: var(--bt-color-warning-soft); }
+.bt-stat--danger, .bt-spark--danger { --bt-stat-tone: var(--bt-color-danger); --bt-stat-tone-soft: var(--bt-color-danger-soft); }
+.bt-stat__top { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--bt-space-1); min-height: 20px; }
+.bt-stat__label { display: flex; align-items: center; gap: var(--bt-space-1-5); min-width: 0; padding-top: var(--bt-space-0-5); font-size: var(--bt-font-size-11); font-weight: var(--bt-font-weight-extrabold); line-height: var(--bt-typography-label-micro-line-height); letter-spacing: .08em; text-transform: uppercase; color: var(--bt-color-text-secondary); }
+.bt-stat__icon { flex: 0 0 auto; display: grid; place-items: center; width: 22px; height: 22px; border-radius: var(--bt-radius-xs); color: var(--bt-stat-tone, var(--bt-color-action)); background-color: var(--bt-stat-tone-soft, var(--bt-color-action-soft)); }
+.bt-stat__icon > svg { width: 14px; height: 14px; }
+
+/* container-type só aqui: o valor encolhe pela largura do card, sem quebrar; o selo fica na mesma linha e desce para a de baixo quando não cabe. */
+.bt-stat__box { container-type: inline-size; display: flex; flex-wrap: wrap; align-content: start; align-items: center; justify-content: space-between; gap: var(--bt-space-1) var(--bt-space-1-5); min-width: 0; }
+.bt-stat__value { display: block; flex: 0 0 auto; max-width: 100%; overflow: hidden; text-overflow: ellipsis; font-size: clamp(var(--bt-font-size-17), 11.5cqi, var(--bt-font-size-26)); font-weight: var(--bt-font-weight-extrabold); line-height: 1.1; color: var(--bt-color-brand); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.bt-stat__value--empty { color: var(--bt-color-text-secondary); }
+.bt-stat__extras { align-self: start; display: grid; gap: var(--bt-space-1-5); min-width: 0; }
+.bt-stat__hint { font-size: var(--bt-font-size-12); line-height: var(--bt-typography-body-small-line-height); color: var(--bt-color-text-secondary); }
+/* A sparkline sangra até as bordas do card. */
+.bt-spark.bt-stat__spark { align-self: end; width: calc(100% + 2 * var(--bt-space-3)); margin: auto calc(-1 * var(--bt-space-3)) calc(-1 * var(--bt-space-3)); }
+/* Com drill-down, o que for interativo nos extras fica acima da área de clique do card. */
+.bt-stat--open .bt-stat__extras :is(a, button) { position: relative; z-index: 1; }
+@media (hover: hover) { .bt-stat--open:hover { border-color: var(--bt-color-action); } }
+
+/* Selo de variação: verde/vermelho pelo que é favorável; proporção em neutro. */
+.bt-delta { flex: 0 0 auto; display: inline-flex; align-items: center; gap: var(--bt-space-0-5); height: 22px; padding: 0 var(--bt-space-1-5); border-radius: var(--bt-radius-full); font-family: var(--bt-font-family-sans); font-size: var(--bt-font-size-11); font-weight: var(--bt-font-weight-extrabold); line-height: 1; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.bt-delta--positive { color: var(--bt-color-success); background-color: var(--bt-color-success-soft); }
+.bt-delta--negative { color: var(--bt-color-danger); background-color: var(--bt-color-danger-soft); }
+.bt-delta--neutral { color: var(--bt-color-text-secondary); background-color: var(--bt-color-surface-soft); box-shadow: inset 0 0 0 var(--bt-border-width-default) var(--bt-color-border); }
+
+/* Sparkline: linha no tom, área no tom suave; info usa navy sobre a cor da borda. */
+.bt-spark { display: block; width: 100%; height: 28px; pointer-events: none; }
+.bt-spark__line { fill: none; stroke: var(--bt-stat-tone, var(--bt-color-brand)); stroke-width: 1.5; stroke-linejoin: round; stroke-linecap: round; }
+.bt-spark__area { fill: var(--bt-stat-tone-soft, var(--bt-color-border)); stroke: none; }
