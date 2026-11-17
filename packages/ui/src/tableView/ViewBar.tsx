@@ -19,7 +19,7 @@ import type { TableDensity } from '../components/Table'
 import { VIEW_DISCARD_DELAY_MS, type TableViewState } from './useTableView'
 
 /** Explica o selo "Alterada" (§10.9.1): o que difere e onde resolver, sem abrir o menu para descobrir. */
-const DIRTY_HINT = 'Colunas, ordem ou filtros diferentes da visão salva. No menu: Salvar, Salvar como ou Restaurar padrão.'
+const DIRTY_HINT = 'Colunas, ordem ou filtros diferentes da visão salva. No menu: Salvar, Nova visão ou Restaurar padrão.'
 
 export const VIEW_NAME_MAX = 100
 
@@ -195,8 +195,8 @@ export function ViewBar({ view, columns, catalog, pinnable, children, onError, f
       setBusy(false)
     }
   }
-  const open = (next: Exclude<Mode, null>) => {
-    setName(next === 'rename' ? active.name : '')
+  const open = (next: Exclude<Mode, null>, suggested = '') => {
+    setName(next === 'rename' ? active.name : suggested)
     setMode(next)
   }
   const close = () => { if (!busy) setMode(null) }
@@ -225,8 +225,9 @@ export function ViewBar({ view, columns, catalog, pinnable, children, onError, f
     ...viewItems('padrao', 'Padrão'),
     ...viewItems('publica', 'Públicas'),
     ...viewItems('pessoal', 'Minhas'),
-    ...(active.canEdit && dirty ? [{ id: 'salvar', label: 'Salvar', icon: icons.save, group: '', onSelect: () => { void run(view.save, 'Não foi possível salvar a visão.', 'Visão salva.') } }] : []),
-    { id: 'salvar-como', label: 'Salvar como…', icon: icons.saveAs, group: '', onSelect: () => open('create') },
+    // Visão que o usuário não altera (padrão ou pública): "Salvar" vira uma cópia pessoal com o nome sugerido; a original fica igual.
+    ...(dirty ? [{ id: 'salvar', label: active.canEdit ? 'Salvar' : 'Salvar como minha…', icon: icons.save, group: '', onSelect: active.canEdit ? () => { void run(view.save, 'Não foi possível salvar a visão.', 'Visão salva.') } : () => open('create', `${active.name} (minha)`) }] : []),
+    { id: 'salvar-como', label: 'Nova visão…', icon: icons.saveAs, group: '', onSelect: () => open('create') },
     ...(active.canEdit ? [{ id: 'renomear', label: 'Renomear…', icon: icons.pencil, group: '', onSelect: () => open('rename') }] : []),
     ...(canPublish && active.scope === 'pessoal' ? [{ id: 'publicar', label: 'Tornar pública…', icon: icons.share, group: '', onSelect: () => open('publish') }] : []),
     ...(active.scope !== 'padrao' || dirty ? [{ id: 'restaurar', label: 'Restaurar padrão', icon: icons.reset, group: '', onSelect: view.restore }] : []),
@@ -385,7 +386,7 @@ export function ViewBar({ view, columns, catalog, pinnable, children, onError, f
       <Dialog
         open={mode === 'create' || mode === 'rename'}
         onClose={close}
-        title={mode === 'rename' ? 'Renomear visão' : 'Salvar como visão'}
+        title={mode === 'rename' ? 'Renomear visão' : 'Nova visão'}
         actions={<>
           <Button variant="secondary" disabled={busy} onClick={close}>Cancelar</Button>
           <Button loading={busy} disabled={!trimmed} onClick={submitName}>{mode === 'rename' ? 'Renomear' : 'Salvar visão'}</Button>
