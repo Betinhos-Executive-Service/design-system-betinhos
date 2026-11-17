@@ -1,8 +1,8 @@
 import { useMemo, useState, type FormEvent, type ReactNode } from 'react'
 import { useQueryBandeira, useQueryTexto } from './nav/queryState'
-import { Check, ChevronRight, CircleCheck, Clock, Copy, EllipsisVertical, Home, Inbox, LayoutDashboard, Pencil, Plus, PlugZap, RefreshCw, SearchX, Trash2, TriangleAlert, Truck, X } from 'lucide-react'
+import { Check, ChevronRight, CircleCheck, Clock, Copy, EllipsisVertical, Eye, Home, Inbox, LayoutDashboard, Pencil, Plus, PlugZap, RefreshCw, SearchX, Signature, Trash2, TriangleAlert, Truck, Users, X } from 'lucide-react'
 import {
-  Alert, Avatar, BottomNav, Breadcrumb, Button, Checkbox, ChoiceGroup, Cluster, DateTile, Dialog, Drawer, EmptyState, Field, Grid, Input, Menu, MetricCard, PageHeader, PageToolbar, Pagination, Progress, Radio, SearchBox, SegmentedControl, Select, Sheet, Skeleton, Spinner, Stack, StatusBadge, Surface, Switch, Table, TableTitle, Tabs, Textarea, ToastProvider, Tooltip, Upload, ViewBar,
+  Alert, AlertCard, Avatar, BottomNav, Breadcrumb, Button, DeltaBadge, Checkbox, ChoiceGroup, Cluster, DateTile, Dialog, Drawer, EmptyState, Field, Grid, Input, Menu, MetricCard, PageHeader, PageToolbar, Pagination, Progress, Radio, SearchBox, SegmentedControl, Select, Sheet, Skeleton, Spinner, Stack, StatCard, StatusBadge, Surface, Switch, Table, TableTitle, Tabs, Textarea, ToastProvider, Tooltip, Upload, ViewBar,
   TableGroups, groupRows, createMemoryViewStore, defaultConfig, type ColumnCatalog, type ColumnCatalogEntry, filterOptions, matchesFilters, useTableFilters, type FilterField, type FilterOption, serializeConfig, selectionMenuActions, type SelectionAction, tableViewColumns, toggleColumn, useShellHeader, useTableView, useToast, type TableColumn, type TableCellStatus, type ViewConfig, type AlertTone, type ButtonSize, type ButtonVariant, type ControlSize, type SelectOption, type StatusTone, type UploadFile,
 } from '@betinhos/ui'
 import { PageLayout } from './PageLayout'
@@ -472,10 +472,55 @@ function PageHeaderShowcase() {
   )
 }
 
+function StatCardShowcase() {
+  const [loading, setLoading] = useState(false)
+  const [aberto, setAberto] = useState('nenhum')
+  const abrir = (rotulo: string) => () => setAberto(rotulo)
+  return (
+    <Section name="StatCard" summary="Card de KPI: rótulo, valor com selo de variação na mesma linha, frase de apoio ou barra de meta e sparkline na base. Com onOpen, o card inteiro abre o detalhe.">
+      <p className="showcase__label">Dashboard: selo +/−/neutro, meta, s/dado, com e sem sparkline e drill-down</p>
+      <Grid gap="3" min={150}>
+        <StatCard label="Faturamento" value="R$ 2,00M" delta={<DeltaBadge trend="up">+78,1%</DeltaBadge>} hint="vs R$ 1,12M no ano anterior" trend={[3, 4, 3.6, 5, 4.8, 6, 7.2, 6.8, 8]} onOpen={abrir('Faturamento')} loading={loading} />
+        <StatCard label="Serviços" value="1.284" delta={<DeltaBadge trend="down">−3,1%</DeltaBadge>} hint="vs 1.325 no mês anterior" trend={[8, 7.5, 8.2, 7, 7.4, 6.8, 7.1, 6.6, 6.9]} onOpen={abrir('Serviços')} loading={loading} />
+        <StatCard label="Meta do mês" value="R$ 2,00M" delta={<DeltaBadge>62%</DeltaBadge>} progress={{ value: 62, label: 'Meta', valueLabel: 'R$ 3,20M' }} onOpen={abrir('Meta do mês')} loading={loading} />
+        <StatCard label="Ticket médio" value="R$ 1.557" delta={<DeltaBadge trend="up">+4,2%</DeltaBadge>} hint="vs R$ 1.494 no mês anterior" loading={loading} />
+        <StatCard label="CP pendente" tone="warning" value="R$ 48,3k" delta={<DeltaBadge trend="down" tone="positive">−12,0%</DeltaBadge>} hint="vs R$ 54,9k no mês anterior" trend={[9, 8.4, 8.8, 7.6, 7, 7.3, 6.2, 6, 5.4]} onOpen={abrir('CP pendente')} loading={loading} />
+        <StatCard label="Inadimplência" value={null} hint="Contas a receber não respondeu" loading={loading} />
+      </Grid>
+      <p className="showcase__label">Com ícone (Treinamentos, Frota, Documentos)</p>
+      <Grid gap="3" min={180}>
+        <StatCard icon={<Users />} label="Participantes" value="20" hint="Motoristas ativos" loading={loading} />
+        <StatCard icon={<Eye />} label="Abriram" value="12 de 20" hint="60% abriram no app" loading={loading} />
+        <StatCard icon={<Signature />} label="Assinaram" value="9 de 20" hint="11 sem assinar" loading={loading} />
+        <StatCard icon={<CircleCheck />} tone="success" label="Concluíram" value="8 de 20" progress={{ value: 8, max: 20, label: 'Concluídos' }} loading={loading} />
+      </Grid>
+      <Cluster gap="3">
+        <Toggle label="loading" value={loading} onChange={setLoading} />
+        <span className="showcase__summary" aria-live="polite">Último detalhe aberto: {aberto}</span>
+      </Cluster>
+    </Section>
+  )
+}
+
+function AlertCardShowcase() {
+  const [aberto, setAberto] = useState('nenhum')
+  return (
+    <Section name="AlertCard" summary="Alerta numa fileira: número no tom, rótulo e selo de status com ícone. O chevron só aparece com detalhe.">
+      <Grid gap="3" min={220}>
+        <AlertCard value="12" label="Serviços sem motorista" status="Resolver hoje" tone="danger" onOpen={() => setAberto('Serviços sem motorista')} />
+        <AlertCard value="4" label="Vouchers sem telefone" status="Atenção" tone="warning" onOpen={() => setAberto('Vouchers sem telefone')} />
+        <AlertCard value="0" label="Preventivas vencidas" status="Em dia" tone="success" />
+        <AlertCard value="s/dado" label="Multas a indicar" status="s/dado" tone="neutral" />
+      </Grid>
+      <span className="showcase__summary" aria-live="polite">Último detalhe aberto: {aberto}</span>
+    </Section>
+  )
+}
+
 function MetricCardShowcase() {
   const [loading, setLoading] = useState(false)
   return (
-    <Section name="MetricCard" summary="Card de KPI: ícone em fundo suave do tom, rótulo, valor em navy e linha de apoio.">
+    <Section name="MetricCard" summary="Obsoleto desde a 3.1.0: use StatCard com icon e tone. Continua funcionando até uma major futura.">
       <Grid gap="3" min={200}>
         <MetricCard tone="info" icon={<Inbox />} label="Ocorrências abertas" value="128" hint="Últimos 30 dias" loading={loading} />
         <MetricCard tone="danger" icon={<TriangleAlert />} label="Ações atrasadas" value="7" hint="3 críticas" loading={loading} />
@@ -983,6 +1028,8 @@ export function ComponentsPage() {
         <SegmentedShowcase />
         <SurfaceShowcase />
         <PageHeaderShowcase />
+        <StatCardShowcase />
+        <AlertCardShowcase />
         <MetricCardShowcase />
         <DateTileShowcase />
         <TableShowcase />

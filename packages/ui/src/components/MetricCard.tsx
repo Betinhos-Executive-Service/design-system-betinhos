@@ -1,6 +1,7 @@
 import type { HTMLAttributes, ReactNode } from 'react'
+import type { StatTone } from './StatCard'
 
-export type MetricTone = 'info' | 'success' | 'warning' | 'danger'
+export type MetricTone = StatTone
 
 export type MetricCardProps = Omit<HTMLAttributes<HTMLElement>, 'title'> & {
   /** Ícone Lucide de 20px, sobre fundo suave do tom. */
@@ -17,7 +18,10 @@ export type MetricCardProps = Omit<HTMLAttributes<HTMLElement>, 'title'> & {
   loading?: boolean
 }
 
-/** Card de KPI: ícone em fundo suave, rótulo, valor em navy e uma linha de apoio. */
+/**
+ * Card de KPI: ícone em fundo suave, rótulo, valor em navy e uma linha de apoio.
+ * @deprecated Desde a 3.1.0: use `StatCard` (com `icon` e `tone`), que também tem selo, barra, sparkline e drill-down. Sai numa major futura.
+ */
 export function MetricCard({ icon, tone = 'info', label, value, hint, loading = false, className, ...rest }: MetricCardProps) {
   return (
     <article className={['bt-metric', `bt-metric--${tone}`, loading && 'bt-metric--loading', className].filter(Boolean).join(' ')} aria-busy={loading || undefined} {...rest}>
