@@ -1,5 +1,5 @@
 import { useCallback, useContext, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type HTMLAttributes, type KeyboardEvent, type PointerEvent, type ReactNode, type Ref } from 'react'
-import { isExtraColumn, moveVisibleColumn, pinColumn, resizeColumn, setGroup, unpinColumn, sortBy, toggleColumn, visibleColumns, type ViewColumnDef, type ViewConfig } from '../tableView/config'
+import { MAX_COLUMN_WIDTH, MIN_COLUMN_WIDTH, isExtraColumn, moveVisibleColumn, pinColumn, resizeColumn, setGroup, unpinColumn, sortBy, toggleColumn, visibleColumns, type ViewColumnDef, type ViewConfig } from '../tableView/config'
 import { ColumnFilter } from '../tableView/ColumnFilter'
 import { ColumnMenu, type ColumnGroupBy } from '../tableView/ColumnMenu'
 import type { LookupSearch } from '../tableView/FilterEditors'
@@ -393,7 +393,7 @@ export function Table<Row>({ columns: own, rows, rowKey, onRowClick, severity, e
 
   const body = (
     <>
-      {view && layout ? <ViewHead placed={placed} defs={layout.defs} view={view} chevron={chevron} cellClass={cellClass} quick={quickFilters} lead={headCheck} pinRoom={maxPinned === undefined ? Infinity : maxPinned - layout.pinnedWidth} /> : (
+      {view && layout ? <ViewHead placed={placed} defs={layout.defs} view={view} chevron={chevron} cellClass={cellClass} quick={quickFilters} lead={headCheck} pinRoom={maxPinned === undefined ? Infinity : maxPinned - layout.pinnedWidth} layoutFor={(config) => viewLayout(columns, config, chevron, { lead, maxPinned, fluid: view.fluid })} /> : (
         <div className="bt-table__head" role="row">
           {headCheck}
           {placed.map(({ column }, index) => <span key={column.key} role="columnheader" className={cellClass(column, index)}>{column.header}</span>)}
@@ -493,10 +493,10 @@ export function Table<Row>({ columns: own, rows, rowKey, onRowClick, severity, e
 }
 
 type Drag = { key: string; pointerId: number; startX: number; grab: number; started: boolean; x: number }
-type Resize = { key: string; pointerId: number; startX: number; startWidth: number }
+type Resize = { key: string; pointerId: number; startX: number; startWidth: number; width: number; frame: number; handle: HTMLElement; done: () => void }
 
 /** Cabeçalho com visão: o título abre o menu (ordenar, filtrar, ocultar), arrastar reordena, alça de largura e atalhos de teclado, com anúncio em `aria-live`. */
-function ViewHead<Row>({ placed, defs, view, chevron, cellClass, quick, pinRoom, lead }: { placed: Placed<Row>[]; defs: ViewColumnDef[]; view: TableView; chevron: boolean; cellClass: (column: TableColumn<Row>, index: number) => string; quick?: TableQuickFilters; pinRoom: number; lead?: ReactNode }) {
+function ViewHead<Row>({ placed, defs, view, chevron, cellClass, quick, pinRoom, lead, layoutFor }: { placed: Placed<Row>[]; defs: ViewColumnDef[]; view: TableView; chevron: boolean; cellClass: (column: TableColumn<Row>, index: number) => string; quick?: TableQuickFilters; pinRoom: number; lead?: ReactNode; layoutFor: (config: ViewConfig) => { template: string; minWidth: string | null } }) {
   const headRef = useRef<HTMLDivElement>(null)
   const drag = useRef<Drag | null>(null)
   const resize = useRef<Resize | null>(null)
@@ -543,6 +543,7 @@ function ViewHead<Row>({ placed, defs, view, chevron, cellClass, quick, pinRoom,
   }, [order])
 
   const update = (fn: (config: ViewConfig) => ViewConfig) => view.onChange(fn)
+  useEffect(() => () => { const state = resize.current; if (state) { cancelAnimationFrame(state.frame); state.done() } }, [])
   const moveBy = (key: string, step: -1 | 1) => {
     const index = placed.findIndex((p) => p.column.key === key)
     const next = moveVisibleColumn(view.config, defs, key, index + step)
@@ -609,24 +610,62 @@ function ViewHead<Row>({ placed, defs, view, chevron, cellClass, quick, pinRoom,
     const value = parseFloat(getComputedStyle(head).gridTemplateColumns.split(' ')[index + (lead ? 1 : 0)] ?? '')
     return Number.isFinite(value) && value > 0 ? Math.round(value) : width
   }
+  // Arraste de largura: a trilha muda direto no estilo da tabela, um quadro por vez, sem renderizar cabeçalho nem
+  // linhas; a visão (e quem a grava) só muda ao soltar. Esc devolve a largura de antes.
+  const paint = (config: ViewConfig) => {
+    const table = headRef.current?.closest<HTMLElement>('.bt-table')
+    if (!table) return
+    const { template, minWidth } = layoutFor(config)
+    table.style.setProperty('--bt-table-columns', template)
+    table.style.setProperty('--bt-table-columns-compact', template)
+    if (minWidth) table.style.setProperty('--bt-table-min-width', minWidth)
+  }
   function onResizePointerDown(event: PointerEvent<HTMLElement>, key: string, width: number) {
     if (event.button !== 0) return
+    event.preventDefault()
     event.stopPropagation()
-    event.currentTarget.setPointerCapture(event.pointerId)
-    resize.current = { key, pointerId: event.pointerId, startX: event.clientX, startWidth: drawnWidth(key, width) }
+    const handle = event.currentTarget
+    const pointerId = event.pointerId
+    handle.setPointerCapture?.(pointerId)
+    const esc = (e: globalThis.KeyboardEvent) => {
+      if (e.key !== 'Escape') return
+      e.preventDefault()
+      e.stopPropagation()
+      finishResize(pointerId, false)
+    }
+    window.addEventListener('keydown', esc, true)
+    document.documentElement.classList.add('bt-resizing')
+    handle.dataset.active = ''
+    const done = () => { window.removeEventListener('keydown', esc, true); document.documentElement.classList.remove('bt-resizing'); delete handle.dataset.active }
+    const startWidth = drawnWidth(key, width)
+    resize.current = { key, pointerId, startX: event.clientX, startWidth, width: startWidth, frame: 0, handle, done }
   }
   function onResizePointerMove(event: PointerEvent<HTMLElement>) {
     const state = resize.current
     if (!state || state.pointerId !== event.pointerId) return
-    const width = state.startWidth + event.clientX - state.startX
-    update((config) => resizeColumn(config, state.key, width))
+    state.width = Math.round(Math.min(Math.max(state.startWidth + event.clientX - state.startX, MIN_COLUMN_WIDTH), MAX_COLUMN_WIDTH))
+    if (state.frame) return
+    state.frame = requestAnimationFrame(() => {
+      state.frame = 0
+      paint(resizeColumn(latest.current.view.config, state.key, state.width))
+    })
   }
-  function onResizePointerUp(event: PointerEvent<HTMLElement>) {
-    if (resize.current?.pointerId !== event.pointerId) return
+  function finishResize(pointerId: number, commit: boolean) {
+    const state = resize.current
+    if (!state || state.pointerId !== pointerId) return
     resize.current = null
+    cancelAnimationFrame(state.frame)
+    state.done()
+    if (state.handle.hasPointerCapture?.(pointerId)) state.handle.releasePointerCapture(pointerId)
     suppressClick.current = true
     window.setTimeout(() => { suppressClick.current = false }, 0)
+    const config = latest.current.view.config
+    const changed = commit && state.width !== state.startWidth
+    // O estilo fica igual ao que o React vai renderizar: o da largura nova ou, sem mudança, o da visão atual.
+    paint(changed ? resizeColumn(config, state.key, state.width) : config)
+    if (changed) update((current) => resizeColumn(current, state.key, state.width))
   }
+  const onResizePointerUp = (event: PointerEvent<HTMLElement>) => finishResize(event.pointerId, true)
   function onResizeKeyDown(event: KeyboardEvent<HTMLElement>, key: string, width: number) {
     if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return
     event.preventDefault()
@@ -699,6 +738,7 @@ function ViewHead<Row>({ placed, defs, view, chevron, cellClass, quick, pinRoom,
               onPointerMove={onResizePointerMove}
               onPointerUp={onResizePointerUp}
               onPointerCancel={onResizePointerUp}
+              onLostPointerCapture={onResizePointerUp}
               onDoubleClick={() => update((config) => resizeColumn(config, column.key, null))}
               onKeyDown={(event) => onResizeKeyDown(event, column.key, width)}
             />
