@@ -1,9 +1,9 @@
-import { useMemo, useState, type FormEvent, type ReactNode } from 'react'
+import { useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react'
 import { useQueryBandeira, useQueryTexto } from './nav/queryState'
 import { Check, ChevronRight, CircleCheck, Clock, Copy, EllipsisVertical, Eye, Home, Inbox, LayoutDashboard, Pencil, Plus, PlugZap, RefreshCw, SearchX, Signature, Trash2, TriangleAlert, Truck, Users, X } from 'lucide-react'
 import {
   Alert, AlertCard, Avatar, BottomNav, Breadcrumb, Button, DeltaBadge, Checkbox, ChoiceGroup, Cluster, DateTile, Dialog, Drawer, EmptyState, Field, Grid, Input, Menu, MetricCard, PageHeader, PageToolbar, Pagination, Progress, ProgressRing, Radio, SearchBox, SegmentedControl, Select, Sheet, Skeleton, Spinner, Stack, StatCard, StatusBadge, Surface, Switch, Table, TableTitle, Tabs, Textarea, ToastProvider, Tooltip, Upload, ViewBar,
-  TableGroups, groupRows, createMemoryViewStore, defaultConfig, type ColumnCatalog, type ColumnCatalogEntry, filterOptions, matchesFilters, useTableFilters, type FilterField, type FilterOption, serializeConfig, selectionMenuActions, type SelectionAction, tableViewColumns, toggleColumn, useShellHeader, useTableView, useToast, type TableColumn, type TableCellStatus, type ViewConfig, type AlertTone, type ButtonSize, type ButtonVariant, type ControlSize, type SelectOption, type StatusTone, type UploadFile,
+  TableGroups, groupRows, createMemoryViewStore, defaultConfig, type ColumnCatalog, type ColumnCatalogEntry, filterOptions, matchesFilters, useTableFilters, type FilterField, type FilterOption, serializeConfig, selectionMenuActions, type SelectionAction, tableViewColumns, toggleColumn, useShellHeader, useTableView, useToast, type TableColumn, type TableCellStatus, type ViewConfig, type RowGroup, type AlertTone, type ButtonSize, type ButtonVariant, type ControlSize, type SelectOption, type StatusTone, type UploadFile,
 } from '@betinhos/ui'
 import { PageLayout } from './PageLayout'
 
@@ -862,6 +862,64 @@ function ListaLongaShowcase() {
   )
 }
 
+// Agrupar no servidor (§10.9.1, 3.8): a contagem vem pronta e cada grupo carrega sob demanda, 20 por vez, com atraso.
+// "Em andamento" falha na segunda página uma vez, para mostrar o "Tentar novamente".
+type CargaGrupo = { ids: string[]; more: boolean; loading: boolean; error: string | null }
+const PAGINA_GRUPO = 20
+
+function AgruparServidorShowcase() {
+  const contagem = useMemo(() => SERVICO_STATUS.map((o) => ({ id: o.value, label: o.label, count: SERVICOS.filter((s) => s.status === o.value).length })), [])
+  const [cargas, setCargasState] = useState<Record<string, CargaGrupo>>({})
+  const [abertos, setAbertos] = useState<ReadonlySet<string>>(new Set())
+  const [selected, setSelected] = useState<Set<string>>(new Set())
+  const [config, setConfig] = useState<ViewConfig>(() => defaultConfig(tableViewColumns(LISTA_LONGA_COLUNAS)))
+  // Estado atual num ref: o pedido ao "servidor" sai fora do setState (o modo estrito roda a atualização duas vezes).
+  const atual = useRef<Record<string, CargaGrupo>>({})
+  const falhou = useRef(false)
+  const setCargas = (id: string, carga: CargaGrupo) => { atual.current = { ...atual.current, [id]: carga }; setCargasState(atual.current) }
+  const carregar = (id: string) => {
+    const antes = atual.current[id] ?? { ids: [], more: true, loading: false, error: null }
+    if (antes.loading || !antes.more) return
+    const pagina = antes.ids.length / PAGINA_GRUPO
+    setCargas(id, { ...antes, loading: true, error: null })
+    window.setTimeout(() => {
+      if (id === 'andamento' && pagina === 1 && !falhou.current) { falhou.current = true; setCargas(id, { ...antes, loading: false, error: 'O servidor não respondeu a tempo.' }); return }
+      const todos = SERVICOS.filter((s) => s.status === id).map((s) => s.id)
+      const ids = todos.slice(0, antes.ids.length + PAGINA_GRUPO)
+      setCargas(id, { ids, more: ids.length < todos.length, loading: false, error: null })
+    }, 600)
+  }
+  const porId = useMemo(() => new Map(SERVICOS.map((s) => [s.id, s])), [])
+  const grupos: RowGroup<Servico>[] = contagem.map((g) => {
+    const carga = cargas[g.id]
+    return { ...g, rows: (carga?.ids ?? []).map((id) => porId.get(id)!), more: carga?.more ?? true, loading: carga?.loading ?? false, error: carga?.error ?? null }
+  })
+  return (
+    <Section name="Agrupar no servidor" summary="§10.9.1 (3.8): contagem real no cabeçalho do grupo (`count`) e linhas carregadas sob demanda, 20 por vez (`more`, `loading`, `onLoadMore`), com `TableGroups` controlado (`open`, `onToggle`). Rolar até o fim de um grupo aberto pede a próxima página; “Em andamento” falha na segunda página uma vez (`error`, `onRetry`).">
+      <TableGroups
+        groups={grupos}
+        resetKey="status"
+        open={abertos}
+        onToggle={(id, abrir) => { setAbertos((a) => { const n = new Set(a); if (abrir) n.add(id); else n.delete(id); return n }); if (abrir && !atual.current[id]) carregar(id) }}
+        onLoadMore={carregar}
+        onRetry={carregar}
+        emptyGroup="Nenhum serviço neste grupo"
+      >
+        {(linhas) => (
+          <Table<Servico>
+            rows={linhas}
+            rowKey={(r) => r.id}
+            columns={LISTA_LONGA_COLUNAS}
+            view={{ config, onChange: (fn) => setConfig(fn), fit: true }}
+            density="dense"
+            selection={{ selected, onChange: setSelected, label: (r) => `Selecionar ${r.id}` }}
+          />
+        )}
+      </TableGroups>
+    </Section>
+  )
+}
+
 function DrawerShowcase() {
   const toast = useToast()
   const [open, setOpen] = useQueryBandeira('drawer')
@@ -1109,6 +1167,7 @@ export function ComponentsPage() {
         <TableViewShowcase />
         <GradeEditavelShowcase />
         <ListaLongaShowcase />
+        <AgruparServidorShowcase />
         <DrawerShowcase />
         <SheetShowcase />
         <UploadShowcase />

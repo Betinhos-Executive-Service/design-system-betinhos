@@ -1,6 +1,6 @@
 # Betinhos Design System
 
-**Versão:** 3.7.0
+**Versão:** 3.8.0
 
 **Status:** fonte oficial inicial
 
@@ -758,6 +758,12 @@ Seletor de visão:
 - Ações do menu: Salvar, Nova visão, Renomear, Excluir, Tornar pública e Restaurar padrão. Renomear só aparece para visões que o usuário pode alterar; em visão alterada que ele não pode alterar (padrão ou pública), Salvar vira "Salvar como minha…" e abre Nova visão com o nome sugerido "<visão> (minha)", sem tocar na original; "Excluir visão…" (com diálogo) só para a visão pública ativa, e só para gestor.
 - **Lixeira das visões pessoais** (1.29; confirmação desde 3.0): cada item de "Minhas" tem um ícone de lixeira na própria linha (Delete no item faz o mesmo), que aparece ao passar o mouse, sem precisar abrir a visão. O clique abre o diálogo "Excluir esta visão?" com o nome da visão, "Manter visão" e "Excluir visão"; só a confirmação exclui no store (`view.removeView(id)`), e o toast "Visão excluída." confirma. Sem toast de "Desfazer": exclusão de visão é rara e o diálogo evita o clique acidental. Se era a visão ativa, a lista volta à padrão. Falha do store mantém a visão e avisa. Visões públicas e prontas não têm lixeira.
 - **Agrupar por** (1.30): um nível, escolhido no painel Colunas ("Agrupar por", antes de "Fixas") ou, desde a 1.34 e com `view.groupable`, no menu do título da coluna ("Agrupar por esta coluna"; data: "Agrupar por mês"/"Agrupar por ano"; na agrupada, "Desagrupar"), e salvo na visão (`config.group = { key, by? }`). Só campos `choice`, `lookup`, `bool` e `date` (por mês ou por ano, no fuso de São Paulo) agrupam; texto e número não. A tela monta os grupos em memória sobre a lista já filtrada com `groupRows(rows, view.config.group, fields, read, labelOf?)` e desenha `<TableGroups groups resetKey={JSON.stringify(view.config.group)}>{(linhas) => <Table rows={linhas} selection={{ selected, onChange }} …/>}</TableGroups>`: uma tabela (ou cards no celular) por grupo aberto. Desde a 1.33, o `Table` dentro do grupo recebe sozinho `selection.all` (a lista agrupada) e `selection.scope` (as linhas do grupo); passá-los à mão só troca o padrão. `selection.all` faz o lote do clique direito valer para a seleção da lista inteira (o Shift fica dentro do grupo, porque a âncora é de cada tabela), e `selection.scope` (1.31) faz o checkbox do cabeçalho de cada grupo marcar e desmarcar só as linhas daquele grupo, preservando a seleção dos outros. Lista vazia (`groupRows` devolve `[]`) desenha a tabela única, com o estado vazio. Grupos começam fechados e fecham de novo quando o agrupamento muda; o cabeçalho mostra rótulo e contagem (`counting` mostra "…" enquanto a lista ainda carrega). Ordem: opções do choice na ordem do campo; Sim antes de Não; datas da mais recente; lookup do maior grupo para o menor, com até 50 grupos (`GROUP_LIMIT`) e o resto em "Outros". Sem valor vai para "Vazio", no fim. Sem `maxHeight` nas tabelas agrupadas (a rolagem é da página).
+- **Agrupar no servidor** (3.8): para listas que não carregam tudo no cliente, a tela monta os grupos com a contagem real (FetchXML agregado ou equivalente) e carrega as linhas de cada grupo sob demanda. `RowGroup` aceita `count` (vence `rows.length` no cabeçalho), `more`, `loading` e `error`, e o `TableGroups` fica controlado com `open` (os IDs abertos) e `onToggle(id, aberto)`: a tela abre o grupo e pede a primeira página. No fim do grupo aberto entra um rodapé:
+  - `more` sem `loading` nem `error`: sentinela que chama `onLoadMore(id)` uma vez por página (raiz `scrollRoot`, padrão a janela). Ao abrir com `more` e sem `loading`, o sentinela pode pedir a primeira página também; a tela ignora o pedido enquanto uma página do grupo está chegando.
+  - `loading`: "Carregando…" com `Spinner`; na primeira página ele ocupa o lugar da tabela.
+  - `error`: `Alert` de perigo com "Tentar novamente" (`onRetry(id)`).
+  - Sem linhas e sem mais: `emptyGroup` (padrão "Nenhum registro neste grupo").
+  A seleção vale para as linhas carregadas: `all` são as carregadas de todos os grupos e `scope`, as do grupo. A ordem, os rótulos, o limite de 50 e "Outros" seguem os do `groupRows`, que a tela reproduz no servidor. Uma tabela por grupo aberto, como no agrupamento em memória: cabeçalho de colunas em cada grupo, com as mesmas larguras (vêm da visão).
 - Visão pessoal é visível só para o dono; qualquer usuário cria. Visão pública é visível para todos; só o perfil de gestor cria, altera, exclui ou publica.
 - A visão padrão é definida no código da tela, não pode ser editada nem excluída e é o destino de "Restaurar padrão". Como o seletor é o título, a visão padrão leva o nome da tela ("Todas as OPs", "Pessoas", "Funcionários ativos"), nunca o genérico "Visão padrão": o usuário precisa saber onde está sem olhar o menu lateral.
 - A última visão usada em cada tela é lembrada no navegador; é conveniência, não dado.
@@ -1305,7 +1311,7 @@ Este bloco permite implementação mesmo quando os arquivos auxiliares não acom
 
 <!-- GENERATED:TOKENS_CSS:START -->
 ```css
-/* Betinhos Design System 3.7.0.
+/* Betinhos Design System 3.8.0.
  * GENERATED from design-tokens.json. Do not edit this file manually.
  */
 :root {
@@ -1683,6 +1689,10 @@ O padrão de mercado não é apenas um PDF de marca. É um produto versionado: t
 ---
 
 ## 20. Changelog
+
+### 3.8.0 — 18/11/2026
+
+- §10.9.1 **Agrupar no servidor**: `RowGroup` com `count`, `more`, `loading` e `error`; `TableGroups` controlado (`open`, `onToggle`) e com carga por grupo (`onLoadMore`, `onRetry`, `scrollRoot`, `emptyGroup`). Sem as props novas, o agrupamento em memória continua igual. Vitrine: grupos com "servidor" falso (páginas de 20, atraso e uma falha simulada).
 
 ### 3.7.0 — 18/11/2026
 

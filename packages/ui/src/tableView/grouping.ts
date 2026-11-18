@@ -13,7 +13,20 @@ const GROUPABLE: ReadonlySet<FilterKind> = new Set(['choice', 'lookup', 'bool', 
 /** Campos que entram em "Agrupar por": escolha, relação, Sim/Não e datas. */
 export const groupableFields = (fields: FilterField[]) => fields.filter((f) => GROUPABLE.has(f.kind))
 
-export type RowGroup<Row> = { id: string; label: string; rows: Row[] }
+export type RowGroup<Row> = {
+  id: string
+  label: string
+  /** Linhas já carregadas do grupo (todas, quando o agrupamento é no cliente). */
+  rows: Row[]
+  /** Contagem real (agrupamento no servidor). Sem ela, vale `rows.length`. */
+  count?: number
+  /** Há mais linhas do grupo a carregar (`TableGroups` com `onLoadMore`). */
+  more?: boolean
+  /** Uma página do grupo está chegando. */
+  loading?: boolean
+  /** A última página do grupo falhou: a mensagem aparece com "Tentar novamente" (`onRetry`). */
+  error?: string | null
+}
 
 const MONTHS = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro']
 const spDay = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Sao_Paulo', year: 'numeric', month: '2-digit', day: '2-digit' })
