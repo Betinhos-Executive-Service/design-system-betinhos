@@ -253,6 +253,12 @@ body.bt-columns-grabbing, body.bt-columns-grabbing * { cursor: grabbing !importa
 .bt-groups__count { min-width: 24px; padding: 0 8px; border-radius: 999px; background: var(--bt-color-surface-neutral); color: var(--bt-color-text-primary); font-size: 12px; font-variant-numeric: tabular-nums; line-height: 20px; text-align: center; }
 .bt-groups__body { border-top: 1px solid var(--bt-color-border); }
 .bt-groups__body > * { margin: 0; border: 0; border-radius: 0; }
+/* Fim do grupo aberto (agrupamento no servidor): sentinela da próxima página, "Carregando…", erro ou grupo vazio. */
+.bt-groups__foot { display: grid; gap: var(--bt-space-2); padding: var(--bt-space-2) var(--bt-space-3); }
+.bt-groups__body > :not(.bt-groups__foot) + .bt-groups__foot { border-top: 1px solid var(--bt-color-border); }
+.bt-groups__foot:has(> .bt-groups__sentinel:only-child) { padding: 0; border-top: 0; }
+.bt-groups__sentinel { height: 1px; }
+.bt-groups__status { display: inline-flex; align-items: center; gap: var(--bt-space-2); min-height: 32px; color: var(--bt-color-text-secondary); font-size: var(--bt-font-size-12); }
 @media (prefers-reduced-motion: reduce) { .bt-groups__chevron { transition: none; } }
 .bt-columns__group { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--bt-space-2); padding: 0 var(--bt-space-1); }
 

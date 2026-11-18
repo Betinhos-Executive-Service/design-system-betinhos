@@ -5,8 +5,8 @@ description: "Verifica o Agrupar por das listas (§10.9.1, 1.30): ViewConfig.gro
 # Verificar Agrupar por
 
 ## Cobre
-- `packages/ui/src/tableView/config.ts` (`ViewGroup`, `setGroup`, `normalizeConfig`), `grouping.ts`, `TableGroups.tsx`, `ColumnsPanel.tsx` (seção "Agrupar por"), `ViewBar.tsx` (`groupFields`), `table-view.css`, `grouping.test.tsx`.
-- Exemplo vivo: vitrine, seção "Visões, colunas e filtros" (ocorrências).
+- `packages/ui/src/tableView/config.ts` (`ViewGroup`, `setGroup`, `normalizeConfig`), `grouping.ts`, `TableGroups.tsx`, `ColumnsPanel.tsx` (seção "Agrupar por"), `ViewBar.tsx` (`groupFields`), `table-view.css`, `grouping.test.tsx`, `TableGroupsServer.test.tsx`.
+- Exemplo vivo: vitrine, seção "Visões, colunas e filtros" (ocorrências) e, para o agrupamento no servidor, seção "Agrupar no servidor".
 
 ## Preparar ambiente
 - `pnpm install --frozen-lockfile` na raiz; `pnpm --filter ./packages/ui build`; vitrine com `npx vite --port 36491 --strictPort` em `apps/vitrine` (encerre no fim).
@@ -21,6 +21,14 @@ description: "Verifica o Agrupar por das listas (§10.9.1, 1.30): ViewConfig.gro
 5c. Menu do título (1.34, `view.groupable`): clique no título "Status" → "Agrupar por esta coluna" agrupa (mesmo resultado do painel); abra um grupo e clique de novo no título "Status" → só "Desagrupar", que volta à tabela única. Título "Prazo" → "Agrupar por mês" e "Agrupar por ano"; agrupado por mês, o menu mostra "Agrupar por ano" e "Desagrupar". Título de texto ("Ocorrência") não mostra agrupar. Teste: `TableGroupMenu.test.tsx`.
 6. Salvar como visão e reabrir: o agrupamento volta junto.
 7. Celular (390 px): grupos com cards dentro, sem rolagem lateral da página.
+8. Agrupar no servidor (3.8), seção "Agrupar no servidor" da vitrine (300 serviços, páginas de 20 com 600 ms). `TableGroupsServer.test.tsx` verde. No navegador:
+   - os 3 grupos mostram 100 com 0 linhas carregadas;
+   - abrir "Em andamento" mostra "Carregando…" no lugar da tabela, depois 20 linhas;
+   - levar o fim do grupo à tela pede a página 2, que falha uma vez: `Alert` "O servidor não respondeu a tempo." com "Tentar novamente";
+   - tentar de novo traz 40 linhas;
+   - levar o fim à tela algumas vezes chega a 100, e o rodapé some;
+   - o checkbox do cabeçalho do grupo seleciona as 100 carregadas;
+   - fechar e reabrir não carrega de novo.
 
 ## Casos de borda
 - Lookup com mais de 50 valores: 50 maiores + "Outros (N)" no fim, linhas na ordem original.
