@@ -1,0 +1,12 @@
+/* Célula de lookup (§10.9.7): texto comum; o link só ganha cor e sublinhado quando há com o que interagir. */
+.bt-lookup { display: block; min-width: 0; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bt-lookup--empty { color: var(--bt-color-text-tertiary); }
+.bt-lookup--link { padding: 0; border: 0; border-radius: var(--bt-radius-xs); background: transparent; color: inherit; font: inherit; text-align: left; cursor: pointer; text-decoration: underline; text-decoration-color: transparent; text-underline-offset: 3px; transition: color var(--bt-duration-fast) var(--bt-ease-out), text-decoration-color var(--bt-duration-fast) var(--bt-ease-out); }
+.bt-lookup--link:focus-visible { outline: 0; color: var(--bt-color-brand); text-decoration-color: currentColor; box-shadow: 0 0 0 2px var(--bt-focus-border); }
+@media (hover: hover) and (pointer: fine) {
+  .bt-lookup--link:hover { color: var(--bt-color-brand); text-decoration-color: currentColor; }
+}
+.bt-lookup--link:active { transform: scale(.97); }
+/* Toque: sem hover, o link fica na cor da marca para dar para ver onde tocar. */
+@media (hover: none) { .bt-lookup--link { color: var(--bt-color-brand); } }
+@media (prefers-reduced-motion: reduce) { .bt-lookup--link { transition: none; } .bt-lookup--link:active { transform: none; } }
