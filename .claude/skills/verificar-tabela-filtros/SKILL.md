@@ -35,6 +35,13 @@ A seção usa `view.pinnable`, `pinnable` no `ViewBar`, `selection` e `rowAction
 16. Com viewport de 900 px, quando as fixas já somam metade da tabela, o "Fixar coluna" do menu fica desabilitado com o title "As colunas fixas já ocupam metade da tabela". O painel não bloqueia, só avisa.
 17. Com viewport de 800 px não há colunas fixas (`position: static`) e a visão salva continua com `pinned`.
 
+### Encolher para caber, barra no pé e conteúdo de carga (§10.9)
+A seção "Lista que rola com a página" usa `view.fit`, `stickyScrollbar` e `loadingContent`. `TableFit.test.tsx` cobre o modelo de colunas, a barra e a carga.
+18. Com viewport de 1440 px, a tabela ganha `bt-table--fit` e as colunas encolhem na proporção, sem rolagem horizontal (`scrollWidth === clientWidth`). A coluna Urg. (56 px) não encolhe.
+19. Com viewport de 1000 px, as colunas param no mínimo (65% da largura, piso de 72 px). O texto corta com reticências (`.bt-table__text`, `text-overflow: ellipsis`) e a `.bt-table__xbar` aparece presa ao pé da janela. Rolar a barra move o `.bt-table__scroll`, e o contrário também.
+20. Com viewport de 800 px, a barra fica `display: none`.
+21. "Simular primeira carga": `.bt-table__loading` com o texto, sem `.bt-table__skeleton` e `aria-busy="true"`. "Simular recarga": as 40 linhas continuam na tela e `aria-busy="true"`.
+
 ## Casos de borda
 - Coluna `x:` removida (✕) leva junto a ordenação por ela; campo já visível não pode ser adicionado de novo; relações só até 3 níveis.
 - Coluna sem campo em `quickFilters.fields` (ou `advancedOnly`) não mostra "Filtrar por…".
