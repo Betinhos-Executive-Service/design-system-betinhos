@@ -26,6 +26,7 @@ export {
   DeltaBadge, Sparkline, StatCard,
   type DeltaBadgeProps, type DeltaTone, type DeltaTrend, type SparklineProps, type StatCardProgress, type StatCardProps, type StatTone,
 } from './components/StatCard'
+export { ProgressRing, type ProgressRingProps, type ProgressRingTone } from './components/ProgressRing'
 export { PageHeader, type PageHeaderProps } from './components/PageHeader'
 export { PageToolbar, pageToolbarClassName, type PageToolbarProps, type PageToolbarVariant } from './components/PageToolbar'
 export { createShellHeaderStore, useShellHeader, type ShellHeaderEntry, type ShellHeaderStore } from './components/ShellHeader'

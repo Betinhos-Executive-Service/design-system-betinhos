@@ -11,3 +11,11 @@ it('CSS: área de clique cobre o card e o toque não encolhe o card', async () =
   expect(css).toMatch(/grid-template-rows:\s*subgrid/)
   expect(css).not.toMatch(/#[0-9a-f]{3,8}\b/i)
 })
+
+it('CSS: anel e gradiente da sparkline só com tokens', async () => {
+  const { readFileSync } = await import('node:fs')
+  const css = ['./progress-ring.css', './stat-card.css'].map((f) => readFileSync(new URL(f, import.meta.url), 'utf8')).join('\n')
+  expect(css).not.toMatch(/#[0-9a-f]{3,8}\b/i)
+  expect(css).toMatch(/\.bt-ring__arc\s*\{[^}]*stroke-linecap:\s*round/)
+  expect(css).toMatch(/\.bt-spark__stop--top\s*\{[^}]*stop-opacity:\s*\.35/)
+})

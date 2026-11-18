@@ -14,6 +14,7 @@
 @import './components/page-toolbar.css';
 @import './components/metric-card.css';
 @import './components/stat-card.css';
+@import './components/progress-ring.css';
 @import './components/alert-card.css';
 @import './components/card-open.css';
 @import './components/date-tile.css';
