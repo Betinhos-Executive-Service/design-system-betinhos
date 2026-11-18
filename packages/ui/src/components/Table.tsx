@@ -357,7 +357,7 @@ export function Table<Row>({ columns: own, rows, rowKey, onRowClick, severity, e
   const showRows = !skeleton && !loader
   const scrollArea = Boolean(view || outerScrollRef || sticky)
   const xbar = stickyScrollbar && scrollArea && !sticky
-  const win = useTableVirtual({ rows, rowKey, enabled: virtual && showRows, root: rootRef, own: scrollRef, estimate: density === 'minimal' ? 33 : density === 'dense' ? 45 : 57 })
+  const win = useTableVirtual({ rows, rowKey, enabled: virtual && showRows, root: rootRef, own: scrollRef, ownScrolls: sticky, estimate: density === 'minimal' ? 33 : density === 'dense' ? 45 : 57 })
   // Âncora do Shift: a última linha clicada sem Shift.
   const anchor = useRef<string | null>(null)
   const listed = selection?.all ?? rows

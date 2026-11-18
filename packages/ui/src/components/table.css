@@ -129,10 +129,12 @@ button.bt-table__row:focus-visible { outline: 0; box-shadow: inset 0 0 0 2px var
   .bt-table--fit .bt-table__row > .bt-table__cell { white-space: nowrap; }
   .bt-table--fit .bt-table__row > .bt-table__cell:not(.bt-table__cell--select, .bt-table__cell--editing) > * { min-width: 0; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 }
-/* Barra horizontal presa ao pé (`stickyScrollbar`): `clip` não cria área de rolagem, então a barra gruda no ancestral que rola;
-   a barra da própria tabela some. */
-.bt-table--xbar { overflow: clip; }
-.bt-table__xbar { position: sticky; bottom: 0; z-index: 5; overflow-x: auto; overflow-y: hidden; background-color: var(--bt-color-surface); }
+/* Barra horizontal presa ao pé (`stickyScrollbar`): `clip` não cria área de rolagem, então a barra gruda no ancestral que rola
+   (`min-width: 0` porque, sem área de rolagem, a tabela num grid ou flex cresceria até a largura do conteúdo);
+   a barra da própria tabela some. A barra não conta na largura de conteúdo (`contain: inline-size`): o preenchimento dela
+   segue a largura da tabela, e contar faria a tabela crescer num pai que se ajusta ao conteúdo, em laço. */
+.bt-table--xbar { overflow: clip; min-width: 0; }
+.bt-table__xbar { position: sticky; bottom: 0; z-index: 5; overflow-x: auto; overflow-y: hidden; contain: inline-size; background-color: var(--bt-color-surface); }
 .bt-table__xbar[hidden] { display: none; }
 .bt-table__xbar-fill { height: 1px; }
 @media (min-width: 821px) {

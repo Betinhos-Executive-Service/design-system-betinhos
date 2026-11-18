@@ -1690,6 +1690,7 @@ O padrão de mercado não é apenas um PDF de marca. É um produto versionado: t
 - §10.9 `stickyScrollbar` no `Table`: barra de rolagem horizontal presa ao pé da tela, sincronizada com a da tabela.
 - §10.9 `loadingContent` no `Table`: nó no lugar das linhas-esqueleto na primeira carga; na recarga as linhas ficam na tela.
 - `virtual`: trocar a densidade remede as linhas (as alturas guardadas recomeçam da estimativa nova).
+- Correção do `virtual` com `view` e sem `stickyHeader`/`fill`: a janela usava a área de rolagem horizontal da própria tabela (o `overflow-x: auto` faz o `overflow-y` calculado virar `auto`) e desenhava a lista inteira. Agora a área própria só vale com `stickyHeader`/`fill` acima de 820 px; senão rola no primeiro ancestral que rola.
 
 ### 3.6.0 — 18/11/2026
 

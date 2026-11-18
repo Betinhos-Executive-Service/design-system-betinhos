@@ -151,3 +151,62 @@ it('fit: texto solto da célula vai num span (para cortar com reticências); sem
   rerender(<Fit fit={false} />)
   expect(container.querySelector('.bt-table__text')).toBeNull()
 })
+
+// ---------- virtual: qual área rola ----------
+
+function rolagens(run: () => void) {
+  const alvos: Element[] = []
+  const original = HTMLElement.prototype.addEventListener
+  const spy = vi.spyOn(HTMLElement.prototype, 'addEventListener').mockImplementation(function (this: HTMLElement, type: string, ...rest: unknown[]) {
+    // Só o ouvinte passivo do virtualizador; o `onScroll` do React também ouve a área da tabela.
+    if (type === 'scroll' && (rest[1] as { passive?: boolean } | undefined)?.passive) alvos.push(this)
+    return (original as (...a: unknown[]) => void).call(this, type, ...rest)
+  })
+  vi.spyOn(HTMLElement.prototype, 'clientHeight', 'get').mockReturnValue(600)
+  // O jsdom não carrega o table.css: reproduz o que o navegador calcula para a área da tabela (overflow-x auto puxa o y).
+  const style = document.head.appendChild(document.createElement('style'))
+  style.textContent = '.bt-table__scroll { overflow-x: auto; overflow-y: auto; }'
+  run()
+  style.remove()
+  spy.mockRestore()
+  return alvos
+}
+
+it('virtual com visão e sem stickyHeader rola no ancestral, não na área horizontal da tabela', () => {
+  vi.stubGlobal('matchMedia', (query: string) => ({ matches: true, media: query, addEventListener() {}, removeEventListener() {} }))
+  const many = Array.from({ length: 150 }, (_, i) => ({ id: String(i) }))
+  const columns = [col('nome')]
+  const config = defaultConfig(tableViewColumns(columns))
+  let container!: HTMLElement
+  const alvos = rolagens(() => {
+    container = render(
+      <div data-testid="main" style={{ overflowY: 'auto' }}>
+        <Table columns={columns} rows={many} rowKey={(r) => r.id} view={{ config, onChange: () => undefined }} virtual />
+      </div>,
+    ).container
+  })
+  const main = screen.getByTestId('main')
+  const own = container.querySelector('.bt-table__scroll')
+  expect(alvos).toContain(main)
+  expect(alvos).not.toContain(own)
+})
+
+it('virtual com stickyHeader rola na própria área da tabela', () => {
+  vi.stubGlobal('matchMedia', (query: string) => ({ matches: true, media: query, addEventListener() {}, removeEventListener() {} }))
+  const many = Array.from({ length: 150 }, (_, i) => ({ id: String(i) }))
+  let container!: HTMLElement
+  const alvos = rolagens(() => {
+    container = render(<div style={{ overflowY: 'auto' }}><Table columns={[col('nome')]} rows={many} rowKey={(r) => r.id} virtual stickyHeader /></div>).container
+  })
+  expect(alvos).toContain(container.querySelector('.bt-table__scroll'))
+})
+
+it('virtual com stickyHeader no celular (até 820 px) rola no ancestral', () => {
+  const many = Array.from({ length: 150 }, (_, i) => ({ id: String(i) }))
+  let container!: HTMLElement
+  const alvos = rolagens(() => {
+    container = render(<div data-testid="main" style={{ overflowY: 'auto' }}><Table columns={[col('nome')]} rows={many} rowKey={(r) => r.id} virtual stickyHeader /></div>).container
+  })
+  expect(alvos).toContain(screen.getByTestId('main'))
+  expect(alvos).not.toContain(container.querySelector('.bt-table__scroll'))
+})
