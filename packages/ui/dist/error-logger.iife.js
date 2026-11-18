@@ -1,4 +1,4 @@
-/* @betinhos-executive-service/ui 3.3.0 · error-logger. Gerado por scripts/build-error-logger.mjs; não edite. */
+/* @betinhos-executive-service/ui 3.4.0 · error-logger. Gerado por scripts/build-error-logger.mjs; não edite. */
 "use strict";
 var BetinhosErrorLogger = (() => {
   var __defProp = Object.defineProperty;
