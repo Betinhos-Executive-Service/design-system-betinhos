@@ -79,6 +79,8 @@ export function useTableVirtual<Row>({ rows, rowKey, enabled, root, own, estimat
     scrollMargin,
     enabled: active,
   })
+  // Densidade trocada: as alturas guardadas das linhas fora da tela ficaram velhas; recomeça da estimativa nova.
+  useLayoutEffect(() => { virtualizer.measure() }, [virtualizer, estimate])
   const items = virtualizer.getVirtualItems()
   if (!active || !items.length) return { visible: rows, start: 0, before: 0, after: 0 }
   const first = items[0]

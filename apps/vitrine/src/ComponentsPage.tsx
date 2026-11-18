@@ -823,6 +823,45 @@ function GradeEditavelShowcase() {
   )
 }
 
+// Lista que rola com a página (§10.9): colunas que encolhem para caber (`view.fit`), barra horizontal presa ao pé
+// (`stickyScrollbar`) e conteúdo de carga no lugar das linhas-esqueleto (`loadingContent`).
+const LISTA_LONGA_COLUNAS: TableColumn<Servico>[] = [
+  { key: 'id', header: 'OS', defaultWidth: 110, cell: (r) => <TableTitle title={r.id} /> },
+  { key: 'passageiro', header: 'Passageiro', defaultWidth: 220, cell: (r) => r.passageiro },
+  { key: 'status', header: 'Status', defaultWidth: 150, cell: (r) => SERVICO_STATUS.find((o) => o.value === r.status)?.label },
+  { key: 'cidade', header: 'Cidade', defaultWidth: 200, cell: (r) => r.cidade },
+  { key: 'origem', header: 'Origem', defaultWidth: 240, cell: (r) => `Av. Independência, ${100 + Number(r.id.slice(3)) % 900} – ${r.cidade}` },
+  { key: 'destino', header: 'Destino', defaultWidth: 240, cell: () => 'Aeroporto de Guarulhos – Terminal 2' },
+  { key: 'motorista', header: 'Motorista', defaultWidth: 180, cell: (r) => ['João Pereira', 'Marcos Alves', 'Paulo Costa'][Number(r.id.slice(3)) % 3] },
+  { key: 'valor', header: 'Valor', defaultWidth: 130, align: 'end', cell: (r) => reais(r.valor) },
+  { key: 'urgente', header: 'Urg.', defaultWidth: 56, cell: (r) => (r.urgente ? 'Sim' : 'Não') },
+]
+
+function ListaLongaShowcase() {
+  const [config, setConfig] = useState<ViewConfig>(() => defaultConfig(tableViewColumns(LISTA_LONGA_COLUNAS)))
+  const [carga, setCarga] = useState<'nada' | 'primeira' | 'recarga'>('nada')
+  const simular = (tipo: 'primeira' | 'recarga') => { setCarga(tipo); window.setTimeout(() => setCarga('nada'), 1500) }
+  return (
+    <Section name="Lista que rola com a página" summary="§10.9: colunas que encolhem para caber (`view.fit`: largura da visão como teto, mínimo de 65%, texto com reticências; fixas não encolhem), barra horizontal presa ao pé da tela (`stickyScrollbar`) e conteúdo de carga no lugar das linhas-esqueleto (`loadingContent`). Estreite a janela para ver as colunas encolherem e, sem espaço, a barra aparecer no pé.">
+      <Cluster gap="2">
+        <Button variant="secondary" onClick={() => simular('primeira')}>Simular primeira carga</Button>
+        <Button variant="secondary" icon={<RefreshCw size={16} />} onClick={() => simular('recarga')}>Simular recarga</Button>
+      </Cluster>
+      <Table<Servico>
+        rows={carga === 'primeira' ? [] : SERVICOS.slice(0, 40)}
+        rowKey={(r) => r.id}
+        columns={LISTA_LONGA_COLUNAS}
+        view={{ config, onChange: (fn) => setConfig(fn), fit: true, pinnable: true }}
+        density="dense"
+        stickyScrollbar
+        loading={carga !== 'nada'}
+        loadingContent={<Cluster gap="2" className="showcase__loading"><Spinner size={16} label="Carregando a lista" /><span>Carregando a lista…</span></Cluster>}
+        footer={<span>Linhas: 40</span>}
+      />
+    </Section>
+  )
+}
+
 function DrawerShowcase() {
   const toast = useToast()
   const [open, setOpen] = useQueryBandeira('drawer')
@@ -1069,6 +1108,7 @@ export function ComponentsPage() {
         <TableShowcase />
         <TableViewShowcase />
         <GradeEditavelShowcase />
+        <ListaLongaShowcase />
         <DrawerShowcase />
         <SheetShowcase />
         <UploadShowcase />

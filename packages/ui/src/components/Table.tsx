@@ -1,4 +1,4 @@
-import { useCallback, useContext, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type DragEvent, type HTMLAttributes, type KeyboardEvent, type PointerEvent, type ReactNode, type Ref } from 'react'
+import { useCallback, useContext, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type DragEvent, type HTMLAttributes, type KeyboardEvent, type PointerEvent, type ReactNode, type Ref, type RefObject } from 'react'
 import { MAX_COLUMN_WIDTH, MIN_COLUMN_WIDTH, isExtraColumn, moveVisibleColumn, pinColumn, resizeColumn, setGroup, unpinColumn, sortBy, toggleColumn, visibleColumns, type ViewColumnDef, type ViewConfig } from '../tableView/config'
 import { ColumnFilter } from '../tableView/ColumnFilter'
 import { ColumnMenu, type ColumnGroupBy } from '../tableView/ColumnMenu'
@@ -69,6 +69,12 @@ export type TableView = {
    * (`minmax(Npx, Nfr)`), e a largura vira o mínimo. Redimensionada ou fixa, fica em px. Padrão: todas em px.
    */
   fluid?: boolean
+  /**
+   * Encolher para caber: a largura de cada coluna é o teto e, sem espaço, as colunas de 64 px ou mais encolhem na
+   * proporção da largura até 65% dela (nunca abaixo de 72 px), com o texto cortado por reticências; se nem os mínimos
+   * cabem, a linha passa da borda e a tabela rola na horizontal. Fixas não encolhem. Com `fluid`, vale `fluid`. Padrão: desligado.
+   */
+  fit?: boolean
   /** Densidade escolhida na `ViewBar` (`view.density` de `useTableView`); vence a prop `density`. */
   density?: TableDensity
 }
@@ -160,6 +166,17 @@ export type TableProps<Row> = Omit<HTMLAttributes<HTMLDivElement>, 'children'> &
   virtual?: boolean
   /** Andamento da gravação de cada célula editável (`edit`): gravando, salvo ou erro. */
   cellStatus?: (row: Row, columnKey: string) => TableCellStatus | null | undefined
+  /**
+   * Barra de rolagem horizontal presa ao pé da tela (do primeiro ancestral que rola na vertical), sincronizada com a da
+   * tabela nos dois sentidos; a da tabela fica escondida. Só aparece quando as colunas passam da largura. Exige a área de
+   * rolagem (`view` ou `scrollRef`); sem efeito com `stickyHeader`/`fill` (a tabela já rola por dentro) e até 820 px.
+   */
+  stickyScrollbar?: boolean
+  /**
+   * Mostrado no corpo, no lugar das linhas-esqueleto, enquanto `loading` e sem linhas (ex.: o loader da marca). Com linhas,
+   * elas continuam na tela durante a recarga. `aria-busy` segue `loading` nos dois casos.
+   */
+  loadingContent?: ReactNode
 }
 
 /** Largura da coluna de seleção (checkbox), sempre fixa e fora do limite das fixas. */
@@ -184,7 +201,16 @@ export type TablePin = { left: number; gaps: number; last: boolean }
 type Placed<Row> = { column: TableColumn<Row>; width: number; label: string; pinned: boolean; pin?: TablePin; custom?: boolean }
 
 /** `lead`: coluna antes dos dados (seleção), sempre fixa e fora do limite. `maxPinned`: largura máxima em px das fixas. */
-export type ViewLayoutOptions = { lead?: number; maxPinned?: number; chevronWidth?: number; fluid?: boolean }
+export type ViewLayoutOptions = { lead?: number; maxPinned?: number; chevronWidth?: number; fluid?: boolean; fit?: boolean }
+
+/** `fit`: colunas a partir desta largura (px) encolhem; as menores (ícones, Sim/Não) ficam como estão. */
+export const FIT_FROM = 64
+/** `fit`: quanto a coluna pode encolher, como fração da largura dela na visão, nunca abaixo de `FIT_MIN_PX`. */
+export const FIT_MIN_RATIO = 0.65
+export const FIT_MIN_PX = 72
+
+/** Largura mínima da coluna com `fit`, tirada da largura dela na visão. */
+export const fitMinimum = (width: number) => Math.min(width, Math.max(FIT_MIN_PX, Math.round(width * FIT_MIN_RATIO)))
 
 /** Colunas do código mais as adicionadas pelo usuário na visão (`x:`), com o rótulo guardado na visão. */
 export function withExtraColumns<Row>(columns: TableColumn<Row>[], config: ViewConfig, cell: (row: Row, key: string) => ReactNode): TableColumn<Row>[] {
@@ -200,7 +226,7 @@ export function withExtraColumns<Row>(columns: TableColumn<Row>[], config: ViewC
  * As fixas recebem `pin` com o deslocamento acumulado; a que passaria de `maxPinned` deixa de grudar, e as seguintes também.
  * `pinnedWidth` soma as larguras de todas as fixas pedidas na visão (grudando ou não).
  */
-export function viewLayout<Row>(columns: TableColumn<Row>[], config: ViewConfig, chevron: boolean, { lead = 0, maxPinned, fluid = false }: ViewLayoutOptions = {}) {
+export function viewLayout<Row>(columns: TableColumn<Row>[], config: ViewConfig, chevron: boolean, { lead = 0, maxPinned, fluid = false, fit = false }: ViewLayoutOptions = {}) {
   const defs = tableViewColumns(columns)
   const byKey = new Map(columns.map((c, i) => [c.key, { column: c, index: i }]))
   const placed: Placed<Row>[] = visibleColumns(config).flatMap((state) => {
@@ -221,11 +247,20 @@ export function viewLayout<Row>(columns: TableColumn<Row>[], config: ViewConfig,
   const grows = (p: Placed<Row>) => fluid && !p.custom && !p.pin
   const flexible = placed.some(grows)
   const tail = flexible ? (chevron ? '24px' : null) : chevron ? 'minmax(24px, 1fr)' : 'minmax(0, 1fr)'
-  const template = [lead ? `${lead}px` : null, ...placed.map((p) => (grows(p) ? `minmax(${p.width}px, ${p.width}fr)` : `${p.width}px`)), tail].filter(Boolean).join(' ')
-  // Largura mínima da linha com trilhas proporcionais: soma dos mínimos, dos espaços entre colunas e do recuo dos dois lados.
   const tracks = (lead ? 1 : 0) + placed.length + (tail ? 1 : 0)
+  // Encolher para caber: a fatia de cada coluna é proporcional à largura dela no espaço que sobra da largura visível do
+  // rolador (`100cqw` do `.bt-table__scroll`) depois do recuo, dos espaços entre colunas e das trilhas que não encolhem.
+  const shrinks = (p: Placed<Row>) => fit && !fluid && !p.pin && p.width >= FIT_FROM
+  const shrinkTotal = placed.reduce((sum, p) => sum + (shrinks(p) ? p.width : 0), 0)
+  const steady = lead + (chevron ? 24 : 0) + placed.reduce((sum, p) => sum + (shrinks(p) ? 0 : p.width), 0)
+  const free = `(100cqw - ${Math.max(0, tracks - 1)} * var(--bt-table-gap) - 2 * var(--bt-table-pad) - ${steady}px)`
+  const track = (p: Placed<Row>) => grows(p) ? `minmax(${p.width}px, ${p.width}fr)`
+    : shrinks(p) ? `max(${fitMinimum(p.width)}px, min(${p.width}px, calc(${free} * ${+(p.width / shrinkTotal).toFixed(6)})))`
+      : `${p.width}px`
+  const template = [lead ? `${lead}px` : null, ...placed.map(track), tail].filter(Boolean).join(' ')
+  // Largura mínima da linha com trilhas proporcionais: soma dos mínimos, dos espaços entre colunas e do recuo dos dois lados.
   const minWidth = flexible ? `calc(${lead + placed.reduce((sum, p) => sum + p.width, 0) + (chevron ? 24 : 0)}px + ${Math.max(0, tracks - 1)} * var(--bt-table-gap) + 2 * var(--bt-table-pad))` : null
-  return { defs, placed, template, pinnedWidth, minWidth }
+  return { defs, placed, template, pinnedWidth, minWidth, fitting: shrinkTotal > 0 }
 }
 
 /** Estilo da célula fixa: `left` em px mais os espaços entre colunas e o recuo da linha. */
@@ -282,7 +317,7 @@ const chevronIcon = <svg className="bt-table__chevron" width="16" height="16" vi
 const RESIZE_STEP = 16
 
 /** Lista operacional em linhas: cabeçalho off-white, barra de gravidade, linha clicável e cabeçalho que some no mobile. */
-export function Table<Row>({ columns: own, rows, rowKey, onRowClick, severity, empty, footer, loading = false, view, quickFilters, rowActions, selection: ownSelection, scrollRef: outerScrollRef, afterRows, columnLines = false, density: densityProp = 'default', stickyHeader = false, maxHeight, fill = false, virtual = false, cellStatus, className, style, onKeyDown, ...rest }: TableProps<Row>) {
+export function Table<Row>({ columns: own, rows, rowKey, onRowClick, severity, empty, footer, loading = false, view, quickFilters, rowActions, selection: ownSelection, scrollRef: outerScrollRef, afterRows, columnLines = false, density: densityProp = 'default', stickyHeader = false, maxHeight, fill = false, virtual = false, cellStatus, stickyScrollbar = false, loadingContent, className, style, onKeyDown, ...rest }: TableProps<Row>) {
   const inherited = useContext(TableGroupContext) as { all: Row[]; scope: Row[] } | null
   // Só herda a tabela com as linhas do grupo: outra tabela ali dentro (numa célula, num painel, com linhas transformadas) não.
   const group = inherited && rows.length > 0 && inherited.scope.includes(rows[0]) ? inherited : null
@@ -309,14 +344,20 @@ export function Table<Row>({ columns: own, rows, rowKey, onRowClick, severity, e
   // Sem `pinnable`, nenhuma coluna gruda: o usuário não teria como soltá-la.
   const maxPinned = !view?.pinnable ? 0 : viewport > 0 ? viewport * PINNED_MAX_RATIO : undefined
   const lead = selection ? SELECT_COLUMN_WIDTH : 0
-  const layout = view ? viewLayout(columns, view.config, chevron, { lead, maxPinned, fluid: view.fluid }) : null
+  const layout = view ? viewLayout(columns, view.config, chevron, { lead, maxPinned, fluid: view.fluid, fit: view.fit }) : null
   const placed: Placed<Row>[] = layout ? layout.placed : columns.map((column, index) => ({ column, width: 0, label: tableViewColumns(columns)[index].label, pinned: false }))
   const template = layout ? { full: layout.template, compact: layout.template } : tableTemplates(columns, chevron, Boolean(selection))
   // Grade editável: precisa de linha que não seja botão (com `selection`, ou sem `onRowClick`).
   const editable = placed.some((p) => p.column.edit || p.column.readOnly) && (Boolean(selection) || !onRowClick)
   const grid = Boolean(selection) || editable
   const rootRef = useRef<HTMLDivElement>(null)
-  const win = useTableVirtual({ rows, rowKey, enabled: virtual && !loading, root: rootRef, own: scrollRef, estimate: density === 'minimal' ? 33 : density === 'dense' ? 45 : 57 })
+  // Com `loadingContent`, a carga só esconde as linhas na primeira vez (sem linhas); sem ele, as linhas-esqueleto tomam o lugar.
+  const skeleton = loading && loadingContent === undefined
+  const loader = loading && loadingContent !== undefined && rows.length === 0
+  const showRows = !skeleton && !loader
+  const scrollArea = Boolean(view || outerScrollRef || sticky)
+  const xbar = stickyScrollbar && scrollArea && !sticky
+  const win = useTableVirtual({ rows, rowKey, enabled: virtual && showRows, root: rootRef, own: scrollRef, estimate: density === 'minimal' ? 33 : density === 'dense' ? 45 : 57 })
   // Âncora do Shift: a última linha clicada sem Shift.
   const anchor = useRef<string | null>(null)
   const listed = selection?.all ?? rows
@@ -370,9 +411,12 @@ export function Table<Row>({ columns: own, rows, rowKey, onRowClick, severity, e
     const key = rowKey(row)
     return placed.map(({ column, pin, label }, index) => {
       const severityMark = index === 0 && mark ? <i className={`bt-table__severity bt-table__severity--${mark.tone}`} role="img" aria-label={mark.label} /> : null
+      const raw = column.cell(row)
+      // Com `fit`, texto solto vai num span para cortar com reticências (texto direto num item flex não corta).
+      const value = layout?.fitting && (typeof raw === 'string' || typeof raw === 'number') ? <span className="bt-table__text">{raw}</span> : raw
       const content = column.opens && selection && onRowClick
-        ? <button type="button" className="bt-table__link" onClick={() => onRowClick(row)}>{column.cell(row)}</button>
-        : column.cell(row)
+        ? <button type="button" className="bt-table__link" onClick={() => onRowClick(row)}>{value}</button>
+        : value
       if (editable) {
         return (
           <TableGridCell key={column.key} row={row} label={label} edit={column.edit} readOnly={column.readOnly} status={column.edit ? cellStatus?.(row, column.key) : null}
@@ -391,22 +435,23 @@ export function Table<Row>({ columns: own, rows, rowKey, onRowClick, severity, e
 
   const body = (
     <>
-      {view && layout ? <ViewHead placed={placed} defs={layout.defs} view={view} chevron={chevron} cellClass={cellClass} quick={quickFilters} lead={headCheck} pinRoom={maxPinned === undefined ? Infinity : maxPinned - layout.pinnedWidth} layoutFor={(config) => viewLayout(columns, config, chevron, { lead, maxPinned, fluid: view.fluid })} /> : (
+      {view && layout ? <ViewHead placed={placed} defs={layout.defs} view={view} chevron={chevron} cellClass={cellClass} quick={quickFilters} lead={headCheck} pinRoom={maxPinned === undefined ? Infinity : maxPinned - layout.pinnedWidth} layoutFor={(config) => viewLayout(columns, config, chevron, { lead, maxPinned, fluid: view.fluid, fit: view.fit })} /> : (
         <div className="bt-table__head" role="row">
           {headCheck}
           {placed.map(({ column }, index) => <span key={column.key} role="columnheader" className={cellClass(column, index)}>{column.header}</span>)}
           {chevron ? <span aria-hidden="true" /> : null}
         </div>
       )}
-      {loading ? [0, 1, 2].map((index) => (
+      {skeleton ? [0, 1, 2].map((index) => (
         <div key={index} className="bt-table__row bt-table__row--loading" role="row" aria-hidden="true">
           {selection ? leadCell(null, 'gridcell') : null}
           {placed.map(({ column, pin }, i) => <span key={column.key} className={cellClass(column, i)} style={pinStyle(pin)}><span className="bt-table__skeleton" /></span>)}
         </div>
       )) : null}
-      {!loading && rows.length === 0 ? <div className="bt-table__empty">{empty}</div> : null}
-      {!loading && win.before ? <div className="bt-table__spacer" aria-hidden="true" style={{ height: win.before }} /> : null}
-      {!loading ? win.visible.map((row, offset) => {
+      {loader ? <div className="bt-table__loading">{loadingContent}</div> : null}
+      {showRows && rows.length === 0 ? <div className="bt-table__empty">{empty}</div> : null}
+      {showRows && win.before ? <div className="bt-table__spacer" aria-hidden="true" style={{ height: win.before }} /> : null}
+      {showRows ? win.visible.map((row, offset) => {
         const index = win.start + offset
         const virtualAttrs = win.measure ? { ref: win.measure, 'data-index': index, 'aria-rowindex': index + 2 } : {}
         if (selection) {
@@ -459,7 +504,7 @@ export function Table<Row>({ columns: own, rows, rowKey, onRowClick, severity, e
           </RowTag>
         )
       }) : null}
-      {!loading && win.after ? <div className="bt-table__spacer" aria-hidden="true" style={{ height: win.after }} /> : null}
+      {showRows && win.after ? <div className="bt-table__spacer" aria-hidden="true" style={{ height: win.after }} /> : null}
       {afterRows}
     </>
   )
@@ -467,7 +512,7 @@ export function Table<Row>({ columns: own, rows, rowKey, onRowClick, severity, e
   return (
     <div
       ref={rootRef}
-      className={['bt-table', view && 'bt-table--view', layout?.minWidth && 'bt-table--fluid', editable && 'bt-table--grid', selection && 'bt-table--selectable', columnLines && 'bt-table--lines', density !== 'default' && 'bt-table--dense', density === 'minimal' && 'bt-table--minimal', sticky && 'bt-table--sticky', fill && 'bt-table--fill', fill && !loading && rows.length === 0 && 'is-empty', scrolled && 'is-scrolled', className].filter(Boolean).join(' ')}
+      className={['bt-table', view && 'bt-table--view', layout?.minWidth && 'bt-table--fluid', layout?.fitting && 'bt-table--fit', xbar && 'bt-table--xbar', editable && 'bt-table--grid', selection && 'bt-table--selectable', columnLines && 'bt-table--lines', density !== 'default' && 'bt-table--dense', density === 'minimal' && 'bt-table--minimal', sticky && 'bt-table--sticky', fill && 'bt-table--fill', fill && !skeleton && rows.length === 0 && 'is-empty', scrolled && 'is-scrolled', className].filter(Boolean).join(' ')}
       style={{ ...style, ['--bt-table-columns' as string]: template.full, ['--bt-table-columns-compact' as string]: template.compact, ...(sticky && maxHeight ? { ['--bt-table-max-height' as string]: maxHeight } : {}), ...(layout?.minWidth ? { ['--bt-table-min-width' as string]: layout.minWidth } : {}) }}
       role={grid ? 'grid' : 'table'}
       aria-rowcount={win.measure ? rows.length + 1 : undefined}
@@ -483,9 +528,53 @@ export function Table<Row>({ columns: own, rows, rowKey, onRowClick, severity, e
       }}
       {...rest}
     >
-      {view || outerScrollRef || sticky ? <div ref={setScrollNode} className="bt-table__scroll" onScroll={(event) => { const next = event.currentTarget.scrollLeft > 0; if (next !== scrolled) setScrolled(next) }}>{body}</div> : body}
+      {scrollArea ? <div ref={setScrollNode} className="bt-table__scroll" onScroll={(event) => { const next = event.currentTarget.scrollLeft > 0; if (next !== scrolled) setScrolled(next) }}>{body}</div> : body}
+      {xbar ? <StickyScrollbar scroll={scrollRef} /> : null}
       {footer != null ? <div className="bt-table__footer">{footer}</div> : null}
       {context.menu}
+    </div>
+  )
+}
+
+/**
+ * Barra horizontal presa ao pé (`stickyScrollbar`): a da tabela fica no fim da lista, e quem não chega lá não vê as colunas
+ * da direita. Acompanha a rolagem da tabela nos dois sentidos e some quando as colunas cabem.
+ */
+function StickyScrollbar({ scroll }: { scroll: RefObject<HTMLDivElement | null> }) {
+  const bar = useRef<HTMLDivElement>(null)
+  const fill = useRef<HTMLDivElement>(null)
+  useLayoutEffect(() => {
+    const node = scroll.current
+    const track = bar.current
+    const inner = fill.current
+    if (!node || !track || !inner) return
+    const update = () => {
+      const extra = node.scrollWidth - node.clientWidth
+      track.hidden = extra <= 1
+      if (track.hidden) return
+      inner.style.width = `${track.clientWidth + extra}px`
+      track.scrollLeft = node.scrollLeft
+    }
+    // Diferença de até 1 px não sincroniza: evita o vaivém entre as duas.
+    const fromTable = () => { if (Math.abs(track.scrollLeft - node.scrollLeft) > 1) track.scrollLeft = node.scrollLeft }
+    const fromBar = () => { if (Math.abs(node.scrollLeft - track.scrollLeft) > 1) node.scrollLeft = track.scrollLeft }
+    update()
+    const observer = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(update)
+    observer?.observe(node)
+    // O cabeçalho tem a largura das colunas (max-content): muda ao mostrar, ocultar ou alargar coluna.
+    const head = node.querySelector<HTMLElement>('.bt-table__head')
+    if (head) observer?.observe(head)
+    node.addEventListener('scroll', fromTable, { passive: true })
+    track.addEventListener('scroll', fromBar, { passive: true })
+    return () => {
+      observer?.disconnect()
+      node.removeEventListener('scroll', fromTable)
+      track.removeEventListener('scroll', fromBar)
+    }
+  })
+  return (
+    <div ref={bar} className="bt-table__xbar" aria-hidden="true" hidden>
+      <div ref={fill} className="bt-table__xbar-fill" />
     </div>
   )
 }
