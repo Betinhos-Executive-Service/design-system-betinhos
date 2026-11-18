@@ -192,7 +192,7 @@ body.bt-columns-grabbing, body.bt-columns-grabbing * { cursor: grabbing !importa
 }
 
 /* Filtros (§10.9.2): contador no botão e painel com grupos E/OU. */
-.bt-viewbar__count { display: inline-grid; place-items: center; min-width: 18px; height: 18px; margin-left: var(--bt-space-1-5); padding: 0 5px; border-radius: var(--bt-radius-full); background-color: var(--bt-color-action); color: var(--bt-color-white); font-size: var(--bt-font-size-11); font-weight: var(--bt-font-weight-extrabold); }
+.bt-viewbar__count { display: inline-grid; place-items: center; min-width: 18px; height: 18px; margin-left: var(--bt-space-1-5); padding: 0 5px; border-radius: var(--bt-radius-full); background-color: var(--bt-color-action); color: var(--bt-color-on-solid); font-size: var(--bt-font-size-11); font-weight: var(--bt-font-weight-extrabold); }
 
 .bt-filters__footer { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--bt-space-2); width: 100%; }
 .bt-filters__footer-end { display: inline-flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: var(--bt-space-2); margin-left: auto; }

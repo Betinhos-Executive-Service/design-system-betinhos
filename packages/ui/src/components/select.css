@@ -83,7 +83,7 @@
 .bt-select-option__text { display: grid; gap: 0; min-width: 0; }
 .bt-select-option__label, .bt-select-option__subtitle { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .bt-select-option__subtitle { color: var(--bt-color-text-secondary); font-size: var(--bt-font-size-11); font-weight: var(--bt-font-weight-medium); line-height: 1.2; }
-.bt-select-option__check { flex: 0 0 auto; display: grid; place-items: center; width: 16px; height: 16px; border: var(--bt-border-width-emphasis) solid var(--bt-color-text-secondary); border-radius: var(--bt-radius-xs); color: var(--bt-color-surface); }
+.bt-select-option__check { flex: 0 0 auto; display: grid; place-items: center; width: 16px; height: 16px; border: var(--bt-border-width-emphasis) solid var(--bt-color-text-secondary); border-radius: var(--bt-radius-xs); color: var(--bt-color-on-solid); }
 .bt-select-option[aria-selected='true'] .bt-select-option__check { border-color: var(--bt-color-action); background-color: var(--bt-color-action); }
 
 @media (hover: hover) and (pointer: fine) {
