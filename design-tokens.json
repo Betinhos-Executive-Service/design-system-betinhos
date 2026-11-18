@@ -1,9 +1,9 @@
 {
   "$schema": "https://www.designtokens.org/schemas/2025.10/format.json",
-  "$description": "Betinhos Design System 3.2.0. Identidade operacional premium extraída do Módulo Qualidade.",
+  "$description": "Betinhos Design System 3.3.0. Identidade operacional premium extraída do Módulo Qualidade.",
   "$extensions": {
     "com.betinhos.design-system": {
-      "version": "3.2.0",
+      "version": "3.3.0",
       "updated": "2026-11-18",
       "source": "Módulo Qualidade",
       "theme": "light-dark",
@@ -38,6 +38,7 @@
           "component.focus.ring-color": { "colorSpace": "srgb", "components": [0.494118, 0.65098, 0.964706], "alpha": 0.28, "hex": "#7ea6f6" },
           "component.focus.ring": { "color": { "colorSpace": "srgb", "components": [0.494118, 0.65098, 0.964706], "alpha": 0.28, "hex": "#7ea6f6" }, "offsetX": { "value": 0, "unit": "px" }, "offsetY": { "value": 0, "unit": "px" }, "blur": { "value": 0, "unit": "px" }, "spread": { "value": 3, "unit": "px" } },
           "shadow.surface": { "color": { "colorSpace": "srgb", "components": [0, 0, 0], "alpha": 0.32, "hex": "#000000" }, "offsetX": { "value": 0, "unit": "px" }, "offsetY": { "value": 8, "unit": "px" }, "blur": { "value": 24, "unit": "px" }, "spread": { "value": 0, "unit": "px" } },
+          "shadow.card": [{ "color": { "colorSpace": "srgb", "components": [0, 0, 0], "alpha": 0.4, "hex": "#000000" }, "offsetX": { "value": 0, "unit": "px" }, "offsetY": { "value": 1, "unit": "px" }, "blur": { "value": 2, "unit": "px" }, "spread": { "value": 0, "unit": "px" } }, { "color": { "colorSpace": "srgb", "components": [0, 0, 0], "alpha": 0.32, "hex": "#000000" }, "offsetX": { "value": 0, "unit": "px" }, "offsetY": { "value": 4, "unit": "px" }, "blur": { "value": 14, "unit": "px" }, "spread": { "value": 0, "unit": "px" } }],
           "shadow.panel": { "color": { "colorSpace": "srgb", "components": [0, 0, 0], "alpha": 0.32, "hex": "#000000" }, "offsetX": { "value": 0, "unit": "px" }, "offsetY": { "value": 10, "unit": "px" }, "blur": { "value": 28, "unit": "px" }, "spread": { "value": 0, "unit": "px" } },
           "shadow.popover": [{ "color": { "colorSpace": "srgb", "components": [0, 0, 0], "alpha": 0.5, "hex": "#000000" }, "offsetX": { "value": 0, "unit": "px" }, "offsetY": { "value": 18, "unit": "px" }, "blur": { "value": 42, "unit": "px" }, "spread": { "value": 0, "unit": "px" } }, { "color": { "colorSpace": "srgb", "components": [0, 0, 0], "alpha": 0.3, "hex": "#000000" }, "offsetX": { "value": 0, "unit": "px" }, "offsetY": { "value": 2, "unit": "px" }, "blur": { "value": 7, "unit": "px" }, "spread": { "value": 0, "unit": "px" } }],
           "shadow.drawer": { "color": { "colorSpace": "srgb", "components": [0, 0, 0], "alpha": 0.55, "hex": "#000000" }, "offsetX": { "value": -24, "unit": "px" }, "offsetY": { "value": 0, "unit": "px" }, "blur": { "value": 70, "unit": "px" }, "spread": { "value": 0, "unit": "px" } },
@@ -361,6 +362,13 @@
           "blur": { "value": 7, "unit": "px" },
           "spread": { "value": 0, "unit": "px" }
         }
+      ]
+    },
+    "card": {
+      "$type": "shadow",
+      "$value": [
+        { "color": { "colorSpace": "srgb", "components": [0, 0.101961, 0.239216], "alpha": 0.08, "hex": "#001a3d" }, "offsetX": { "value": 0, "unit": "px" }, "offsetY": { "value": 1, "unit": "px" }, "blur": { "value": 2, "unit": "px" }, "spread": { "value": 0, "unit": "px" } },
+        { "color": { "colorSpace": "srgb", "components": [0, 0.101961, 0.239216], "alpha": 0.1, "hex": "#001a3d" }, "offsetX": { "value": 0, "unit": "px" }, "offsetY": { "value": 4, "unit": "px" }, "blur": { "value": 14, "unit": "px" }, "spread": { "value": 0, "unit": "px" } }
       ]
     },
     "surface": {
