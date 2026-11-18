@@ -1,9 +1,9 @@
 {
   "$schema": "https://www.designtokens.org/schemas/2025.10/format.json",
-  "$description": "Betinhos Design System 3.3.0. Identidade operacional premium extraída do Módulo Qualidade.",
+  "$description": "Betinhos Design System 3.4.0. Identidade operacional premium extraída do Módulo Qualidade.",
   "$extensions": {
     "com.betinhos.design-system": {
-      "version": "3.3.0",
+      "version": "3.4.0",
       "updated": "2026-11-18",
       "source": "Módulo Qualidade",
       "theme": "light-dark",
@@ -16,6 +16,7 @@
           "color.semantic.surface-soft": "#1a2438",
           "color.semantic.surface-neutral": "#162033",
           "color.semantic.border": "#2a3650",
+          "color.semantic.border-strong": "#434f68",
           "color.semantic.text-primary": "#e6ebf3",
           "color.semantic.text-control": "#e6ebf3",
           "color.semantic.text-secondary": "#9aa8bd",
@@ -106,6 +107,7 @@
       "neutral-050": { "$value": { "colorSpace": "srgb", "components": [0.988235, 0.988235, 0.984314], "alpha": 1, "hex": "#fcfcfb" } },
       "white": { "$value": { "colorSpace": "srgb", "components": [1, 1, 1], "alpha": 1, "hex": "#ffffff" } },
       "line-200": { "$value": { "colorSpace": "srgb", "components": [0.886275, 0.909804, 0.941176], "alpha": 1, "hex": "#e2e8f0" } },
+      "line-300": { "$value": { "colorSpace": "srgb", "components": [0.796078, 0.835294, 0.882353], "alpha": 1, "hex": "#cbd5e1" } },
       "green-600": { "$value": { "colorSpace": "srgb", "components": [0.086275, 0.560784, 0.341176], "alpha": 1, "hex": "#168f57" } },
       "green-700": { "$value": { "colorSpace": "srgb", "components": [0.078431, 0.478431, 0.294118], "alpha": 1, "hex": "#147a4b" } },
       "green-100": { "$value": { "colorSpace": "srgb", "components": [0.917647, 0.972549, 0.945098], "alpha": 1, "hex": "#eaf8f1" } },
@@ -135,6 +137,7 @@
       "text-tertiary": { "$value": "{color.primitive.slate-400}" },
       "on-solid": { "$value": "{color.primitive.white}" },
       "border": { "$value": "{color.primitive.line-200}" },
+      "border-strong": { "$value": "{color.primitive.line-300}" },
       "success": { "$value": "{color.primitive.green-700}" },
       "success-soft": { "$value": "{color.primitive.green-100}" },
       "warning": { "$value": "{color.primitive.amber-800}" },

@@ -1,9 +1,9 @@
 /* StatCard (KPI), DeltaBadge e Sparkline. O número é navy; a cor fica no ícone, no selo e na sparkline. */
 
-/* Contorno e texto secundário mais firmes que o card comum: o KPI precisa se destacar do canvas cinza (claro e escuro). */
+/* Texto secundário mais firme que o do card comum: o KPI precisa se ler de longe (claro e escuro). */
 .bt-stat { --bt-stat-muted: color-mix(in srgb, var(--bt-color-text-secondary) 65%, var(--bt-color-text-primary)); }
 /* Subgrid de 4 trilhas: rótulo, valor, extras e sparkline alinham entre os cards da fileira. */
-.bt-stat { position: relative; display: grid; grid-row: span 4; grid-template-rows: subgrid; row-gap: var(--bt-space-1-5); min-width: 0; padding: var(--bt-space-3); overflow: hidden; border: var(--bt-border-width-default) solid color-mix(in srgb, var(--bt-color-border) 70%, var(--bt-color-text-tertiary)); border-radius: var(--bt-radius-lg); background-color: var(--bt-color-surface); box-shadow: var(--bt-shadow-card); font-family: var(--bt-font-family-sans); }
+.bt-stat { position: relative; display: grid; grid-row: span 4; grid-template-rows: subgrid; row-gap: var(--bt-space-1-5); min-width: 0; padding: var(--bt-space-3); overflow: hidden; border: var(--bt-border-width-default) solid var(--bt-color-border-strong); border-radius: var(--bt-radius-lg); background-color: var(--bt-color-surface); box-shadow: var(--bt-shadow-card); font-family: var(--bt-font-family-sans); }
 /* Tom: ícone e sparkline leem estas variáveis; sem tom (info), cada um usa o próprio padrão. */
 .bt-spark--info { --bt-stat-tone: var(--bt-color-brand); --bt-stat-tone-soft: var(--bt-color-border); }
 .bt-stat--success, .bt-spark--success { --bt-stat-tone: var(--bt-color-success); --bt-stat-tone-soft: var(--bt-color-success-soft); }
