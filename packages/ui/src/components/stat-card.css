@@ -11,6 +11,7 @@
 .bt-stat--danger, .bt-spark--danger { --bt-stat-tone: var(--bt-color-danger); --bt-stat-tone-soft: var(--bt-color-danger-soft); }
 .bt-stat__top { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--bt-space-1); min-height: 20px; }
 .bt-stat__label { display: flex; align-items: center; gap: var(--bt-space-1-5); min-width: 0; padding-top: var(--bt-space-0-5); font-size: var(--bt-font-size-11); font-weight: var(--bt-font-weight-extrabold); line-height: var(--bt-typography-label-micro-line-height); letter-spacing: .08em; text-transform: uppercase; color: var(--bt-stat-muted); }
+.bt-stat__delta-top { margin-left: auto; display: inline-flex; }
 .bt-stat__icon { flex: 0 0 auto; display: grid; place-items: center; width: 22px; height: 22px; border-radius: var(--bt-radius-xs); color: var(--bt-stat-tone, var(--bt-color-action)); background-color: var(--bt-stat-tone-soft, var(--bt-color-action-soft)); }
 .bt-stat__icon > svg { width: 14px; height: 14px; }
 
@@ -32,7 +33,11 @@
 .bt-delta--negative { color: var(--bt-color-danger); background-color: var(--bt-color-danger-soft); }
 .bt-delta--neutral { color: var(--bt-color-text-secondary); background-color: var(--bt-color-surface-soft); box-shadow: inset 0 0 0 var(--bt-border-width-default) var(--bt-color-border); }
 
-/* Sparkline: linha no tom, área no tom suave; info usa navy sobre a cor da borda. */
+/* Sparkline: linha no tom; área em gradiente do tom (35% no topo, 0 na base); ponto no último valor. Info usa navy. */
 .bt-spark { display: block; width: 100%; height: 28px; pointer-events: none; }
 .bt-spark__line { fill: none; stroke: var(--bt-stat-tone, var(--bt-color-brand)); stroke-width: 1.5; stroke-linejoin: round; stroke-linecap: round; }
-.bt-spark__area { fill: var(--bt-stat-tone-soft, var(--bt-color-border)); stroke: none; }
+.bt-spark__area { stroke: none; }
+.bt-spark__stop { stop-color: var(--bt-stat-tone, var(--bt-color-brand)); }
+.bt-spark__stop--top { stop-opacity: .35; }
+.bt-spark__stop--bottom { stop-opacity: 0; }
+.bt-spark__dot { fill: none; stroke: var(--bt-stat-tone, var(--bt-color-brand)); stroke-width: 6; stroke-linecap: round; }

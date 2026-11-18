@@ -2,7 +2,7 @@
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, expect, it, vi } from 'vitest'
 import { AlertCard } from './AlertCard'
-import { DeltaBadge, StatCard, sparklinePaths } from './StatCard'
+import { DeltaBadge, Sparkline, StatCard, sparklinePaths } from './StatCard'
 
 afterEach(cleanup)
 
@@ -31,7 +31,7 @@ it('sparkline: precisa de dois pontos; série constante fica no meio', () => {
   expect(sparklinePaths([1, Number.NaN])).toBeNull()
   expect(sparklinePaths([3, 3])?.line).toBe('M0 14 L100 14')
   // Ponto sem dado no meio não desloca os outros no eixo do tempo.
-  expect(sparklinePaths([0, Number.NaN, 10])).toEqual({ line: 'M0 26 L100 2', area: 'M0 26 L100 2 L100 28 L0 28 Z' })
+  expect(sparklinePaths([0, Number.NaN, 10])).toEqual({ line: 'M0 26 L100 2', area: 'M0 26 L100 2 L100 28 L0 28 Z', end: { x: 100, y: 2 } })
   expect(sparklinePaths([Number.NaN, 0, 10])?.area).toBe('M50 26 L100 2 L100 28 L50 28 Z')
   const p = sparklinePaths([0, 10])!
   expect(p.line).toBe('M0 26 L100 2')
@@ -98,4 +98,34 @@ it('alerta: sem repetir o prefixo; drill-down só com onOpen', () => {
   fireEvent.click(screen.getByRole('button', { name: 'Pendências: Ver detalhes' }))
   expect(onOpen).toHaveBeenCalledTimes(1)
   expect(document.querySelector('.bt-alert-card--open')).not.toBeNull()
+})
+
+it('sparkline: área em gradiente com id único por instância, ponto final e opção de desligar a área', () => {
+  const { container } = render(<><Sparkline data={[1, 2, 3]} /><Sparkline data={[1, 2, 3]} tone="danger" /><Sparkline data={[1, 2, 3]} area={false} /></>)
+  const [a, b, sem] = Array.from(container.querySelectorAll('svg'))
+  const idA = a.querySelector('linearGradient')?.id
+  const idB = b.querySelector('linearGradient')?.id
+  expect(idA).toBeTruthy()
+  expect(idB).toBeTruthy()
+  expect(idA).not.toBe(idB)
+  expect(a.querySelector('.bt-spark__area')?.getAttribute('fill')).toBe(`url(#${idA})`)
+  expect(a.querySelector('.bt-spark__dot')?.getAttribute('d')).toBe('M100 2h0')
+  expect(b.getAttribute('class')).toContain('bt-spark--danger')
+  expect(sem.querySelector('.bt-spark__area')).toBeNull()
+  expect(sem.querySelector('linearGradient')).toBeNull()
+  expect(sem.querySelector('.bt-spark__dot')).not.toBeNull()
+})
+
+it('StatCard: selo no topo fica na linha do rótulo; no padrão fica ao lado do valor; sem valor não aparece', () => {
+  const selo = <DeltaBadge trend="up">+77,7%</DeltaBadge>
+  const { container, rerender } = render(<StatCard label="Faturamento" value="R$ 2,00M" delta={selo} deltaPlacement="top" hint="vs R$ 1,13M no ano anterior" trend={[1, 2, 3]} />)
+  expect(container.querySelector('.bt-stat__top .bt-delta')).not.toBeNull()
+  expect(container.querySelector('.bt-stat__box .bt-delta')).toBeNull()
+  expect(container.querySelector('.bt-spark__area')).not.toBeNull()
+  rerender(<StatCard label="Faturamento" value="R$ 2,00M" delta={selo} trend={[1, 2, 3]} trendArea={false} />)
+  expect(container.querySelector('.bt-stat__box .bt-delta')).not.toBeNull()
+  expect(container.querySelector('.bt-stat__top .bt-delta')).toBeNull()
+  expect(container.querySelector('.bt-spark__area')).toBeNull()
+  rerender(<StatCard label="Faturamento" value={null} delta={selo} deltaPlacement="top" />)
+  expect(container.querySelector('.bt-delta')).toBeNull()
 })

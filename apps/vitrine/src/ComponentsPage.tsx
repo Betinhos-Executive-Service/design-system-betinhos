@@ -2,7 +2,7 @@ import { useMemo, useState, type FormEvent, type ReactNode } from 'react'
 import { useQueryBandeira, useQueryTexto } from './nav/queryState'
 import { Check, ChevronRight, CircleCheck, Clock, Copy, EllipsisVertical, Eye, Home, Inbox, LayoutDashboard, Pencil, Plus, PlugZap, RefreshCw, SearchX, Signature, Trash2, TriangleAlert, Truck, Users, X } from 'lucide-react'
 import {
-  Alert, AlertCard, Avatar, BottomNav, Breadcrumb, Button, DeltaBadge, Checkbox, ChoiceGroup, Cluster, DateTile, Dialog, Drawer, EmptyState, Field, Grid, Input, Menu, MetricCard, PageHeader, PageToolbar, Pagination, Progress, Radio, SearchBox, SegmentedControl, Select, Sheet, Skeleton, Spinner, Stack, StatCard, StatusBadge, Surface, Switch, Table, TableTitle, Tabs, Textarea, ToastProvider, Tooltip, Upload, ViewBar,
+  Alert, AlertCard, Avatar, BottomNav, Breadcrumb, Button, DeltaBadge, Checkbox, ChoiceGroup, Cluster, DateTile, Dialog, Drawer, EmptyState, Field, Grid, Input, Menu, MetricCard, PageHeader, PageToolbar, Pagination, Progress, ProgressRing, Radio, SearchBox, SegmentedControl, Select, Sheet, Skeleton, Spinner, Stack, StatCard, StatusBadge, Surface, Switch, Table, TableTitle, Tabs, Textarea, ToastProvider, Tooltip, Upload, ViewBar,
   TableGroups, groupRows, createMemoryViewStore, defaultConfig, type ColumnCatalog, type ColumnCatalogEntry, filterOptions, matchesFilters, useTableFilters, type FilterField, type FilterOption, serializeConfig, selectionMenuActions, type SelectionAction, tableViewColumns, toggleColumn, useShellHeader, useTableView, useToast, type TableColumn, type TableCellStatus, type ViewConfig, type AlertTone, type ButtonSize, type ButtonVariant, type ControlSize, type SelectOption, type StatusTone, type UploadFile,
 } from '@betinhos/ui'
 import { PageLayout } from './PageLayout'
@@ -487,6 +487,23 @@ function StatCardShowcase() {
         <StatCard label="CP pendente" tone="warning" value="R$ 48,3k" delta={<DeltaBadge trend="down" tone="positive">−12,0%</DeltaBadge>} hint="vs R$ 54,9k no mês anterior" trend={[9, 8.4, 8.8, 7.6, 7, 7.3, 6.2, 6, 5.4]} onOpen={abrir('CP pendente')} loading={loading} />
         <StatCard label="Inadimplência" value={null} hint="Contas a receber não respondeu" loading={loading} />
       </Grid>
+      <p className="showcase__label">Dashboard moderno: selo no canto (deltaPlacement="top"), sparkline com área em gradiente e anel de progresso</p>
+      <Grid gap="3" min={200}>
+        <StatCard label="Faturamento" value="R$ 2,00M" delta={<DeltaBadge trend="up">+77,7%</DeltaBadge>} deltaPlacement="top" hint="vs R$ 1,13M no ano anterior" trend={[3, 4, 3.6, 5, 4.8, 6, 7.2, 6.8, 8]} loading={loading} />
+        <StatCard label="Serviços" tone="success" value="2.668" delta={<DeltaBadge trend="up">+177,6%</DeltaBadge>} deltaPlacement="top" hint="vs 961 no ano anterior" trend={[3, 3.4, 3.2, 4.4, 4, 5, 4.6, 5.4, 5.2]} loading={loading} />
+        <StatCard label="Ticket médio" tone="danger" value="R$ 1.397" delta={<DeltaBadge trend="down">−3,2%</DeltaBadge>} deltaPlacement="top" hint="vs R$ 1,4k no ano anterior" trend={[7, 5.6, 7.4, 6, 6.6, 5.4, 6, 5, 5.4]} loading={loading} />
+        <StatCard label="Sem área" value="R$ 1,00M" delta={<DeltaBadge trend="up">+4,2%</DeltaBadge>} deltaPlacement="top" hint="trendArea={false}" trend={[3, 4, 3.6, 5, 4.8, 6]} trendArea={false} loading={loading} />
+      </Grid>
+      <Cluster gap="4">
+        <Surface>
+          <Cluster gap="3">
+            <ProgressRing value={0.12} tone="warn" label="12%" caption="recebido" />
+            <ProgressRing value={0.86} tone="ok" size={96} label="86%" />
+            <ProgressRing value={0.4} size={96} label="40%" />
+            <ProgressRing value={0.2} tone="danger" size={96} label="20%" />
+          </Cluster>
+        </Surface>
+      </Cluster>
       <p className="showcase__label">Com ícone (Treinamentos, Frota, Documentos)</p>
       <Grid gap="3" min={180}>
         <StatCard icon={<Users />} label="Participantes" value="20" hint="Motoristas ativos" loading={loading} />
