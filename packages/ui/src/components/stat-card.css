@@ -12,9 +12,9 @@
 .bt-stat__icon { flex: 0 0 auto; display: grid; place-items: center; width: 22px; height: 22px; border-radius: var(--bt-radius-xs); color: var(--bt-stat-tone, var(--bt-color-action)); background-color: var(--bt-stat-tone-soft, var(--bt-color-action-soft)); }
 .bt-stat__icon > svg { width: 14px; height: 14px; }
 
-/* container-type só aqui: o valor encolhe pela largura do card, sem quebrar; o selo fica na mesma linha e desce para a de baixo quando não cabe. */
+/* container-type só aqui: o valor ocupa a largura do card (26 px no card de 1/6 a 1440 px) e só encolhe quando não cabe; o selo desce para a linha de baixo quando não cabe ao lado. */
 .bt-stat__box { container-type: inline-size; display: flex; flex-wrap: wrap; align-content: start; align-items: center; justify-content: space-between; gap: var(--bt-space-1) var(--bt-space-1-5); min-width: 0; }
-.bt-stat__value { display: block; flex: 0 0 auto; max-width: 100%; overflow: hidden; text-overflow: ellipsis; font-size: clamp(var(--bt-font-size-17), 11.5cqi, var(--bt-font-size-26)); font-weight: var(--bt-font-weight-extrabold); line-height: 1.1; color: var(--bt-color-brand); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.bt-stat__value { display: block; flex: 0 0 auto; max-width: 100%; overflow: hidden; text-overflow: ellipsis; font-size: clamp(var(--bt-font-size-17), 17cqi, var(--bt-font-size-26)); font-weight: var(--bt-font-weight-extrabold); line-height: 1.1; color: var(--bt-color-brand); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .bt-stat__value--empty { color: var(--bt-color-text-secondary); }
 .bt-stat__extras { align-self: start; display: grid; gap: var(--bt-space-1-5); min-width: 0; }
 .bt-stat__hint { font-size: var(--bt-font-size-12); line-height: var(--bt-typography-body-small-line-height); color: var(--bt-color-text-secondary); }

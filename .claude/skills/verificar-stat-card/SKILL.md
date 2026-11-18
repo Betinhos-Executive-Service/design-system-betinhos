@@ -15,7 +15,7 @@ description: "Verifica StatCard, DeltaBadge, Sparkline, AlertCard e o drill-down
 
 ## Roteiro
 1. `PLAYWRIGHT=<pacote playwright ou playwright-core> CHROME_EXE=<chromium headless> node .claude/skills/verificar-stat-card/medir.cjs http://localhost:36490/ <pasta>`. Nesta máquina (Linux): `PLAYWRIGHT=$HOME/.local/share/ctf-importar/node_modules/playwright-core` e `CHROME_EXE=$(ls ~/.cache/ms-playwright/chromium_headless_shell-*/chrome-headless-shell-linux64/chrome-headless-shell | tail -1)`.
-2. Esperado em 1440, 840 e 390 px: "detalhe: Serviços" (clique do mouse e toque no corpo do card, fora do chevron, chamam `onOpen`), rolagem lateral 0, valor cortado nenhum, anel de foco sim, `OK` em todas e "Erros de console: nenhum". Alturas de referência da vitrine: StatCard ~134 px (até ~160 a 390 px, quando o selo desce de linha) e AlertCard 60 px (74 com rótulo em duas linhas).
+2. Esperado em 1440, 840 e 390 px: "detalhe: Serviços" (clique do mouse e toque no corpo do card, fora do chevron, chamam `onOpen`), rolagem lateral 0, valor cortado nenhum, anel de foco sim, `OK` em todas e "Erros de console: nenhum". Alturas de referência da vitrine (valor de 26 px desde a 3.1.1): StatCard ~139 px (até ~170 px a 840 e 390 px, quando o selo desce de linha) e AlertCard 60 px (74 com rótulo em duas linhas).
 3. Prints `statcard-<largura>.png` e `alertcard-<largura>.png`: selo verde em +78,1% e −12,0% (CP pendente), vermelho em −3,1%, neutro com borda em 62%; "s/dado" em cinza sem selo; sparkline sangrando até as bordas; barra "Meta / R$ 3,20M"; ícones de 22 px nos cards de Treinamentos (Concluíram em verde). No AlertCard, chevron só nos dois primeiros.
 4. Toggle "loading" da vitrine: barras no lugar do valor e do apoio, sem selo nem sparkline.
 
