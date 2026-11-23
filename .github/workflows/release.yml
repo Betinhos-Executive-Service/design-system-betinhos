@@ -4,6 +4,8 @@ name: Release
 on:
   push:
     tags: ['v*.*.*']
+  # Chamado pelo workflow "Tag de versão" (tag criada com GITHUB_TOKEN não dispara o push acima).
+  workflow_dispatch:
 
 jobs:
   ci:
