@@ -1,0 +1,32 @@
+name: Tag de versão
+
+# Quando a main recebe uma versão nova do Design System (design-tokens.json), cria a tag vX.Y.Z e dispara o Release.
+# Tag criada com GITHUB_TOKEN não dispara outros workflows, por isso o Release é chamado por workflow_dispatch.
+on:
+  push:
+    branches: [main]
+    paths: [design-tokens.json]
+
+jobs:
+  tag:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      actions: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Criar a tag se ainda não existe e disparar o Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          version=$(jq -r '.["$extensions"]["com.betinhos.design-system"].version' design-tokens.json)
+          tag="v$version"
+          if git ls-remote --exit-code --tags origin "refs/tags/$tag" >/dev/null 2>&1; then
+            echo "A tag $tag já existe; nada a fazer."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -a "$tag" -m "Design System $tag"
+          git push origin "$tag"
+          gh workflow run release.yml --ref "$tag"
