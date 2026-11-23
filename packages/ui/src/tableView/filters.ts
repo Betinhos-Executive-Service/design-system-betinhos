@@ -472,10 +472,18 @@ export function keywordToFetchXml(text: string, attributes: string[]): string {
 // ---------- Filtragem em memória ----------
 
 const normalize = (text: string) => text.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
+/**
+ * Dia (`AAAA-MM-DD`) de um valor de data. Instante (`Date` ou ISO com `Z`/`±hh:mm`) vira o dia em America/Sao_Paulo,
+ * o mesmo fuso do "hoje". Só dia e hora sem fuso (já é hora local) mantêm o dia escrito.
+ */
 const dayOf = (value: unknown): string | null => {
   if (isDay(value)) return value
-  if (value instanceof Date && !Number.isNaN(value.getTime())) return value.toISOString().slice(0, 10)
-  if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}T/.test(value)) return value.slice(0, 10)
+  if (value instanceof Date) return Number.isNaN(value.getTime()) ? null : todaySaoPaulo(value)
+  if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}T/.test(value)) {
+    if (!/(Z|[+-]\d{2}(:?\d{2})?)$/i.test(value)) return value.slice(0, 10)
+    const instant = new Date(value)
+    return Number.isNaN(instant.getTime()) ? value.slice(0, 10) : todaySaoPaulo(instant)
+  }
   return null
 }
 
@@ -531,8 +539,10 @@ function conditionMatches(c: FilterCondition, field: FilterField, raw: unknown, 
     case 'date': return dateMatches(c.op, dayOf(raw), c, today)
     case 'number': {
       if (c.op === 'empty') return empty
+      // Negativo inclui os vazios, como em texto e escolha; comparações e positivos os excluem.
+      if (empty) return c.op === 'ne'
       const n = typeof raw === 'number' ? raw : Number(raw)
-      if (empty || !Number.isFinite(n)) return false
+      if (!Number.isFinite(n)) return c.op === 'ne'
       const v = Number(c.value)
       switch (c.op) {
         case 'eq': return n === v
@@ -560,7 +570,8 @@ function groupMatches(group: FilterGroup, fields: Map<string, FilterField>, read
 }
 
 /** Dia de hoje em America/Sao_Paulo (`AAAA-MM-DD`). */
-export const todaySaoPaulo = (now = new Date()) => new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Sao_Paulo', year: 'numeric', month: '2-digit', day: '2-digit' }).format(now)
+const SAO_PAULO_DAY = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Sao_Paulo', year: 'numeric', month: '2-digit', day: '2-digit' })
+export const todaySaoPaulo = (now = new Date()) => SAO_PAULO_DAY.format(now)
 
 /**
  * Filtra uma linha em memória. Use só quando o conjunto inteiro está carregado (vitrine, listas pequenas locais):

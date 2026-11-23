@@ -134,6 +134,39 @@ describe('matchesFilters', () => {
     expect(run(withQuick({ data: c('data', 'next-7') }))).toEqual(['João', 'Maria'])
     expect(run(withQuick({ data: c('data', 'last-month') }))).toEqual(['Ana'])
   })
+  describe('data e hora em America/Sao_Paulo', () => {
+    const ids = (values: unknown[], filter: FilterCondition, today: string) =>
+      values.map((data, i) => ({ data, i })).filter((r) => matchesFilters(r, withQuick({ data: filter }), fields, (row) => row.data, today)).map((r) => r.i)
+    it('Date 01:30Z de 11/11 conta como 10/11', () => {
+      expect(ids([new Date('2026-11-11T01:30:00Z')], c('data', 'today'), '2026-11-10')).toEqual([0])
+      expect(ids([new Date('2026-11-11T01:30:00Z')], c('data', 'today'), '2026-11-11')).toEqual([])
+    })
+    it('string ISO com Z ou ±hh:mm vira o dia de São Paulo', () => {
+      expect(ids(['2026-11-11T01:30:00Z', '2026-11-11T01:30:00.000+00:00', '2026-11-10T22:30:00-03:00'], c('data', 'today'), '2026-11-10')).toEqual([0, 1, 2])
+      expect(ids(['2026-11-11T01:30:00Z'], c('data', 'on', { value: '2026-11-10' }), '2026-11-10')).toEqual([0])
+      expect(ids(['2026-11-11T01:30:00Z'], c('data', 'before', { value: '2026-11-11' }), '2026-11-10')).toEqual([0])
+      expect(ids(['2026-11-11T01:30:00Z'], c('data', 'between', { value: '2026-11-10', to: '2026-11-10' }), '2026-11-10')).toEqual([0])
+    })
+    it('só dia e hora sem fuso mantêm o dia escrito', () => {
+      expect(ids(['2026-11-11'], c('data', 'today'), '2026-11-11')).toEqual([0])
+      expect(ids(['2026-11-11'], c('data', 'today'), '2026-11-10')).toEqual([])
+      expect(ids(['2026-11-10T22:30:00', '2026-11-11T01:30:00'], c('data', 'today'), '2026-11-10')).toEqual([0])
+    })
+    it('este mês na virada: 31/10 23:00 BRT (01/11 02:00Z) conta em outubro', () => {
+      const virada = ['2026-11-01T02:00:00Z', new Date('2026-11-01T02:00:00Z')]
+      expect(ids(virada, c('data', 'this-month'), '2026-10-31')).toEqual([0, 1])
+      expect(ids(virada, c('data', 'this-month'), '2026-11-01')).toEqual([])
+      expect(ids(virada, c('data', 'last-month'), '2026-11-01')).toEqual([0, 1])
+    })
+  })
+  it('número: diferente de inclui os vazios; igual e maior que os excluem', () => {
+    const vals: unknown[] = [100, 50, null, undefined, '']
+    const run = (filter: FilterCondition) => vals.map((valor, i) => ({ valor, i })).filter((r) => matchesFilters(r, withQuick({ valor: filter }), fields, (row) => row.valor, '2026-10-15')).map((r) => r.i)
+    expect(run(c('valor', 'ne', { value: 100 }))).toEqual([1, 2, 3, 4])
+    expect(run(c('valor', 'eq', { value: 100 }))).toEqual([0])
+    expect(run(c('valor', 'gt', { value: 10 }))).toEqual([0, 1])
+    expect(run(c('valor', 'empty'))).toEqual([2, 3, 4])
+  })
   it('todaySaoPaulo usa o fuso de São Paulo', () => {
     expect(todaySaoPaulo(new Date('2026-10-16T01:30:00Z'))).toBe('2026-10-15')
   })
