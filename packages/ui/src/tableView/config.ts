@@ -171,12 +171,24 @@ export function toggleColumn(config: ViewConfig, defs: ViewColumnDef[], key: str
 /** Colunas fixas visíveis, na ordem da visão. */
 export const pinnedColumns = (config: ViewConfig) => config.columns.filter((c) => c.visible && c.pinned)
 
-/** Leva a coluna para o fim do bloco fixo (`pinned`) ou para logo depois dele; o título abre o bloco em que estiver. */
+/**
+ * Fixar leva a coluna para o fim do bloco fixo. Soltar a devolve à posição de origem: antes da primeira coluna solta que vem
+ * depois dela na ordem padrão (`defs`), ou no fim se não houver; com a ordem padrão intacta, é o lugar em que ela estava.
+ * Depende só do que a visão guarda hoje (ordem e `pinned`), então visões salvas antes continuam valendo. O título abre o bloco.
+ */
 function placePin(config: ViewConfig, defs: ViewColumnDef[], target: ViewColumnState, pinned: boolean): ViewConfig {
   const rest = config.columns.filter((c) => c.key !== target.key)
-  const at = rest.filter((c) => c.pinned).length
-  const moved = pinned ? { ...target, pinned: true as const } : unpinned(target)
-  return { ...config, columns: blocks([...rest.slice(0, at), moved, ...rest.slice(at)], defs[0]?.key) }
+  const first = defs[0]?.key
+  if (pinned) {
+    const at = rest.filter((c) => c.pinned).length
+    return { ...config, columns: blocks([...rest.slice(0, at), { ...target, pinned: true as const }, ...rest.slice(at)], first) }
+  }
+  const order = new Map(defs.map((d, i) => [d.key, i]))
+  const home = order.get(target.key) ?? Infinity
+  const loose = rest.filter((c) => !c.pinned)
+  const next = loose.find((c) => (order.get(c.key) ?? -1) > home)
+  const at = next ? rest.indexOf(next) : rest.length
+  return { ...config, columns: blocks([...rest.slice(0, at), unpinned(target), ...rest.slice(at)], first) }
 }
 
 /** Fixa a coluna visível e a leva para o fim do bloco fixo. */
@@ -185,7 +197,7 @@ export function pinColumn(config: ViewConfig, defs: ViewColumnDef[], key: string
   return target?.visible && !target.pinned ? placePin(config, defs, target, true) : config
 }
 
-/** Solta a coluna e a leva para logo depois do bloco fixo (depois do título, se ele rola). */
+/** Solta a coluna e a devolve à posição da ordem padrão entre as que rolam (ver `placePin`). */
 export function unpinColumn(config: ViewConfig, defs: ViewColumnDef[], key: string): ViewConfig {
   const target = config.columns.find((c) => c.key === key)
   return target?.pinned ? placePin(config, defs, target, false) : config

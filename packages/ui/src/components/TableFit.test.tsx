@@ -27,8 +27,10 @@ it('fit: colunas ≥ 64 px encolhem na proporção da largura; menores, seleçã
   const config = defaultConfig(tableViewColumns(columns))
   const layout = viewLayout(columns, config, true, { lead: 40, fit: true })
   // 5 trilhas (seleção, 3 colunas, seta); fixas: 40 + 48 + 24 (mínimo da seta, que estica) = 112 px.
-  const free = '(100cqw - 4 * var(--bt-table-gap) - 2 * var(--bt-table-pad) - 112px)'
-  expect(layout.template).toBe(`40px max(195px, min(300px, calc(${free} * 0.75))) 48px max(72px, min(100px, calc(${free} * 0.25))) minmax(24px, 1fr)`)
+  // Fator: tudo encolhe (sobra / 400) ou só a de menor mínimo/largura (nome) enquanto a outra fica no mínimo de 72 px.
+  const spare = '100cqw - 4 * var(--bt-table-gap) - 2 * var(--bt-table-pad)'
+  const f = `min((${spare} - 184px) / 300, (${spare} - 112px) / 400)`
+  expect(layout.template).toBe(`40px max(195px, min(300px, calc(300 * ${f}))) 48px max(72px, min(100px, calc(100 * ${f}))) minmax(24px, 1fr)`)
   expect(layout.fitting).toBe(true)
   expect(layout.minWidth).toBeNull()
 })
@@ -38,8 +40,9 @@ it('fit: sem seta a última trilha continua esticando; a largura salva vira o te
   const defs = tableViewColumns(columns)
   const config = resizeColumn(defaultConfig(defs), 'status', 120)
   const { template } = viewLayout(columns, config, false, { fit: true })
-  const free = '(100cqw - 2 * var(--bt-table-gap) - 2 * var(--bt-table-pad) - 0px)'
-  expect(template).toBe(`max(156px, min(240px, calc(${free} * 0.666667))) max(78px, min(120px, calc(${free} * 0.333333))) minmax(0, 1fr)`)
+  const spare = '100cqw - 2 * var(--bt-table-gap) - 2 * var(--bt-table-pad)'
+  const f = `min((${spare} - 78px) / 240, (${spare} - 0px) / 360)`
+  expect(template).toBe(`max(156px, min(240px, calc(240 * ${f}))) max(78px, min(120px, calc(120 * ${f}))) minmax(0, 1fr)`)
 })
 
 it('fit: coluna fixa não encolhe (o left das seguintes é somado em px)', () => {
@@ -209,4 +212,43 @@ it('virtual com stickyHeader no celular (até 820 px) rola no ancestral', () => 
   })
   expect(alvos).toContain(screen.getByTestId('main'))
   expect(alvos).not.toContain(container.querySelector('.bt-table__scroll'))
+})
+
+// Avalia o modelo de trilhas como o navegador: as colunas que encolhem têm de fechar na largura visível sempre que
+// os mínimos couberem (sem sobrar uns px que acenderiam a barra horizontal presa ao pé).
+const splitTracks = (template: string) => {
+  const out: string[] = []
+  let depth = 0
+  let from = 0
+  ;[...template].forEach((ch, i) => {
+    if (ch === '(') depth++
+    if (ch === ')') depth--
+    if (ch === ' ' && depth === 0) { out.push(template.slice(from, i)); from = i + 1 }
+  })
+  return [...out, template.slice(from)]
+}
+const trackWidths = (template: string, visible: number) => splitTracks(template).map((track) => {
+  if (track.startsWith('minmax(')) return 0
+  const expr = track.replace(/calc\(/g, '(').replace(/\bmin\(/g, 'Math.min(').replace(/\bmax\(/g, 'Math.max(').replace(/(\d)px/g, '$1')
+    .replace(/var\(--bt-table-gap\)/g, '12').replace(/var\(--bt-table-pad\)/g, '14').replace(/100cqw/g, String(visible))
+  return Number(new Function(`return ${expr}`)())
+})
+
+it('fit: coluna que bate no mínimo não deixa sobra; as outras cedem e a linha fecha na largura visível', () => {
+  // Nomes e larguras como numa lista real: as estreitas (80 e 90 px) têm mínimo de 72 px, 80-90% da largura, e travam antes das largas.
+  const columns = [col('a', { defaultWidth: 240 }), col('b', { defaultWidth: 160 }), col('c', { defaultWidth: 80 }), col('d', { defaultWidth: 90 }), col('e', { defaultWidth: 200 })]
+  const config = defaultConfig(tableViewColumns(columns))
+  const { template } = viewLayout(columns, config, false, { fit: true })
+  const gaps = 5 * 12 // cinco trilhas, a última (cauda) com 0 px
+  const pad = 2 * 14
+  for (const visible of [1000, 900, 800, 700, 640]) {
+    const sum = trackWidths(template, visible).reduce((a, b) => a + b, 0)
+    // 770 px de colunas na largura salva; mínimos somam 156 + 104 + 72 + 72 + 130 = 534 px (622 com espaços e recuo).
+    expect(Math.abs(sum + gaps + pad - Math.min(visible, 770 + gaps + pad))).toBeLessThan(0.01)
+  }
+  // A 700 px a razão geral (0,795) levaria as estreitas a 64 e 71 px, abaixo do mínimo de 72: elas travam e as largas
+  // cedem o que falta (sem isso, a linha passaria uns 9 px da largura visível e a barra horizontal apareceria à toa).
+  const tight = trackWidths(template, 700)
+  expect(tight[2]).toBe(72)
+  expect(tight[3]).toBe(72)
 })
