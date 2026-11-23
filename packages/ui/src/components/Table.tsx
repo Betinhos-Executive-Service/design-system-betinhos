@@ -248,14 +248,30 @@ export function viewLayout<Row>(columns: TableColumn<Row>[], config: ViewConfig,
   const flexible = placed.some(grows)
   const tail = flexible ? (chevron ? '24px' : null) : chevron ? 'minmax(24px, 1fr)' : 'minmax(0, 1fr)'
   const tracks = (lead ? 1 : 0) + placed.length + (tail ? 1 : 0)
-  // Encolher para caber: a fatia de cada coluna é proporcional à largura dela no espaço que sobra da largura visível do
-  // rolador (`100cqw` do `.bt-table__scroll`) depois do recuo, dos espaços entre colunas e das trilhas que não encolhem.
+  // Encolher para caber: o espaço que sobra da largura visível do rolador (`100cqw` do `.bt-table__scroll`), depois do recuo,
+  // dos espaços entre colunas e das trilhas que não encolhem, é dividido na proporção da largura de cada coluna, com
+  // fator `f` (px por unidade de largura). Coluna que bate no mínimo (`fitMinimum`) não cede mais: o que ela deixa de
+  // encolher tem de sair das outras, senão sobram uns px de excesso e a barra horizontal aparece à toa. Como `f` depende de
+  // `100cqw`, só o navegador sabe; em CSS, `f` é o menor dos fatores de cada "conjunto que encolhe" (as k colunas de menor
+  // mínimo/largura encolhem, as demais ficam no mínimo): é o fator em que a soma das trilhas fecha exatamente.
   const shrinks = (p: Placed<Row>) => fit && !fluid && !p.pin && p.width >= FIT_FROM
-  const shrinkTotal = placed.reduce((sum, p) => sum + (shrinks(p) ? p.width : 0), 0)
+  const shrinking = placed.filter(shrinks)
+  const shrinkTotal = shrinking.reduce((sum, p) => sum + p.width, 0)
   const steady = lead + (chevron ? 24 : 0) + placed.reduce((sum, p) => sum + (shrinks(p) ? 0 : p.width), 0)
-  const free = `(100cqw - ${Math.max(0, tracks - 1)} * var(--bt-table-gap) - 2 * var(--bt-table-pad) - ${steady}px)`
+  const spare = `100cqw - ${Math.max(0, tracks - 1)} * var(--bt-table-gap) - 2 * var(--bt-table-pad)`
+  const byRatio = [...shrinking].sort((x, y) => fitMinimum(x.width) / x.width - fitMinimum(y.width) / y.width)
+  const factor = (() => {
+    let flexWidth = 0
+    let floor = byRatio.reduce((sum, p) => sum + fitMinimum(p.width), 0)
+    const options = byRatio.map((p) => {
+      flexWidth += p.width
+      floor -= fitMinimum(p.width)
+      return `(${spare} - ${steady + floor}px) / ${flexWidth}`
+    })
+    return options.length > 1 ? `min(${options.join(', ')})` : options[0]
+  })()
   const track = (p: Placed<Row>) => grows(p) ? `minmax(${p.width}px, ${p.width}fr)`
-    : shrinks(p) ? `max(${fitMinimum(p.width)}px, min(${p.width}px, calc(${free} * ${+(p.width / shrinkTotal).toFixed(6)})))`
+    : shrinks(p) ? `max(${fitMinimum(p.width)}px, min(${p.width}px, calc(${p.width} * ${factor})))`
       : `${p.width}px`
   const template = [lead ? `${lead}px` : null, ...placed.map(track), tail].filter(Boolean).join(' ')
   // Largura mínima da linha com trilhas proporcionais: soma dos mínimos, dos espaços entre colunas e do recuo dos dois lados.

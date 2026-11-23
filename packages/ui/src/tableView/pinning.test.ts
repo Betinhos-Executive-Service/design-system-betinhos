@@ -29,15 +29,36 @@ describe('colunas fixas', () => {
     expect(pins(config)).toEqual(['nome', 'status'])
   })
 
-  it('desafixar leva para logo depois do bloco (depois do título, se ele rola)', () => {
+  it('desafixar devolve a coluna à posição da ordem padrão entre as que rolam', () => {
     let config = pinColumn(pinColumn(defaultConfig(defs), defs, 'status'), defs, 'valor')
     config = unpinColumn(config, defs, 'status')
-    expect(keys(config)).toEqual(['valor', 'nome', 'status', 'cliente', 'obs'])
+    expect(keys(config)).toEqual(['valor', 'nome', 'cliente', 'status', 'obs'])
     expect(pins(config)).toEqual(['valor'])
     // Título fixo: ao desafixar, ele abre o bloco das que rolam.
     config = unpinColumn(pinColumn(config, defs, 'nome'), defs, 'nome')
     expect(keys(config)[1]).toBe('nome')
     expect(pins(config)).toEqual(['valor'])
+  })
+
+  it('desafixar vai antes da próxima solta da ordem padrão, ou ao fim; segue a ordem manual das demais', () => {
+    // Padrão: nome, cliente, status, valor. Fixa a última e solta: volta ao fim.
+    let config = unpinColumn(pinColumn(defaultConfig(defs), defs, 'valor'), defs, 'valor')
+    expect(keys(config)).toEqual(['nome', 'cliente', 'status', 'valor', 'obs'])
+    // Fixar e soltar cada uma devolve a visão padrão.
+    for (const key of ['cliente', 'status', 'valor']) {
+      config = unpinColumn(pinColumn(config, defs, key), defs, key)
+      expect(keys(config)).toEqual(['nome', 'cliente', 'status', 'valor', 'obs'])
+    }
+    // Ordem manual: valor antes de cliente; soltar status (que vem antes de valor no padrão) o põe antes do valor.
+    const manual: ViewConfig = { ...defaultConfig(defs), columns: ['nome', 'valor', 'cliente', 'status', 'obs'].map((key) => ({ key, visible: key !== 'obs' })) }
+    expect(keys(unpinColumn(pinColumn(manual, defs, 'status'), defs, 'status'))).toEqual(['nome', 'status', 'valor', 'cliente', 'obs'])
+  })
+
+  it('visão salva com fixas em outra ordem: soltar não mexe nas demais', () => {
+    const saved = normalizeConfig({ ...defaultConfig(defs), columns: ['valor', 'status', 'nome', 'cliente', 'obs'].map((key) => ({ key, visible: key !== 'obs', ...(key === 'valor' || key === 'status' ? { pinned: true as const } : {}) })) }, defs)
+    const config = unpinColumn(saved, defs, 'valor')
+    expect(keys(config)).toEqual(['status', 'nome', 'cliente', 'valor', 'obs'])
+    expect(pins(config)).toEqual(['status'])
   })
 
   it('não fixa coluna oculta nem repete a que já está fixa', () => {
