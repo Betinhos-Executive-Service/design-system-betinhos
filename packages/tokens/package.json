@@ -1,6 +1,6 @@
 {
   "name": "@betinhos-executive-service/tokens",
-  "version": "3.8.1",
+  "version": "3.8.2",
   "description": "Tokens, fontes e marca do Design System Betinhos.",
   "type": "module",
   "files": [

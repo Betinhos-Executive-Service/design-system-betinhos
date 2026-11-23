@@ -42,6 +42,11 @@ A seção "Lista que rola com a página" usa `view.fit`, `stickyScrollbar` e `lo
 20. Com viewport de 800 px, a barra fica `display: none`.
 21. "Simular primeira carga": `.bt-table__loading` com o texto, sem `.bt-table__skeleton` e `aria-busy="true"`. "Simular recarga": as 40 linhas continuam na tela e `aria-busy="true"`.
 
+### Filtro em memória: fuso e vazios (§10.9, 3.8.1)
+`filters.test.ts` ("data e hora em America/Sao_Paulo" e "número: diferente de…") cobre as regras; não há tela nova.
+22. `Date` e ISO com `Z`/`±hh:mm` viram o dia em America/Sao_Paulo (01:30Z de 11/11 é 10/11; 01/11 02:00Z é 31/10 e conta em "este mês" de outubro). Só dia e hora sem fuso mantêm o dia escrito.
+23. Número: "diferente de" inclui vazios e valores não numéricos; "igual a", "maior que" e "entre" os excluem.
+
 ## Casos de borda
 - Coluna `x:` removida (✕) leva junto a ordenação por ela; campo já visível não pode ser adicionado de novo; relações só até 3 níveis.
 - Coluna sem campo em `quickFilters.fields` (ou `advancedOnly`) não mostra "Filtrar por…".
