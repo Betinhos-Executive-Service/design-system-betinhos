@@ -301,7 +301,8 @@ export const Select = forwardRef<HTMLButtonElement, SelectProps>(function Select
                   className={index === active ? 'bt-select-option is-active' : 'bt-select-option'}
                   onMouseDown={(event) => event.preventDefault()}
                   onMouseEnter={() => setActive(index)}
-                  onClick={() => pick(option)}
+                  // Dentro de um <label> o clique reativaria o gatilho e reabriria o painel.
+                  onClick={(event) => { event.preventDefault(); pick(option) }}
                 >
                   {props.multiple ? <span className="bt-select-option__check">{isSelected ? icon(<path d="M20 6 9 17l-5-5" />, 12) : null}</span> : null}
                   {option.icon != null ? <span className="bt-select-option__icon">{option.icon}</span> : null}
@@ -332,7 +333,7 @@ export const Select = forwardRef<HTMLButtonElement, SelectProps>(function Select
                 className={active === visible.length ? 'bt-select-option bt-select-option--create is-active' : 'bt-select-option bt-select-option--create'}
                 onMouseDown={(event) => event.preventDefault()}
                 onMouseEnter={() => setActive(visible.length)}
-                onClick={create}
+                onClick={(event) => { event.preventDefault(); create() }}
               >
                 <span className="bt-select-option__icon">{icon(<><path d="M5 12h14" /><path d="M12 5v14" /></>)}</span>
                 <span className="bt-select-option__label">Adicionar “{newLabel}”</span>
