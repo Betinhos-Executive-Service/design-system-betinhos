@@ -15,6 +15,7 @@ export {
   Avatar, BottomNav, Breadcrumb, Pagination, Progress, Skeleton, Spinner, Tooltip, initials,
   type AvatarProps, type BottomNavItem, type Crumb, type PaginationProps, type ProgressProps, type SkeletonProps, type TooltipProps,
 } from './components/Misc'
+export { ModuleNav, fitModuleNav, type ModuleNavItem, type ModuleNavProps } from './components/ModuleNav'
 export { Tabs, tabId, type TabItem, type TabsProps } from './components/Tabs'
 export { Drawer, type DrawerProps } from './components/Drawer'
 export { Sheet, type SheetProps } from './components/Sheet'

@@ -27,6 +27,7 @@
 @import './components/app-shell.css';
 @import './components/choice.css';
 @import './components/tabs.css';
+@import './components/module-nav.css';
 @import './components/dialog.css';
 @import './components/menu.css';
 @import './components/misc.css';
