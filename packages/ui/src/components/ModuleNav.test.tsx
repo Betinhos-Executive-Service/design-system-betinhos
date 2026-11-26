@@ -147,7 +147,11 @@ it('no AppShell, leva o título da seção e as ações para o cabeçalho do cel
   expect(within(header as HTMLElement).getByRole('button', { name: 'Atualizar' })).toBeTruthy()
 })
 
-it('no celular, o título do cabeçalho abre o menu com todas as seções e navega', () => {
+const mobile = () => vi.stubGlobal('matchMedia', (query: string) => ({ matches: query === '(max-width: 820px)', media: query, addEventListener() {}, removeEventListener() {} }))
+const dock = () => document.querySelector('.bt-module-nav__dock') as HTMLElement
+
+it('no celular, a barra flutuante mostra 4 seções e o "Mais" abre a segunda linha', () => {
+  mobile()
   function Harness() {
     const [value, setValue] = useState('cotacoes')
     return (
@@ -157,15 +161,43 @@ it('no celular, o título do cabeçalho abre o menu com todas as seções e nave
     )
   }
   render(<Harness />)
-  const header = document.querySelector('.bt-shell__header') as HTMLElement
-  const title = within(header).getByRole('button', { name: 'Seções: Cotações, com novidades em outras seções' })
-  fireEvent.click(title)
-  const options = screen.getAllByRole('menuitemradio', { hidden: true })
-  expect(options.map((option) => option.textContent)).toEqual(['Tarefas12', 'Gestão3, em alerta', 'Boas ideias, com novidades', 'Cotações', 'Projetos', 'Configurações'])
-  expect(options.filter((option) => option.getAttribute('aria-checked') === 'true').map((option) => option.textContent)).toEqual(['Cotações'])
-  fireEvent.click(screen.getByRole('menuitemradio', { name: 'Projetos', hidden: true }))
-  expect(within(header).getByRole('button', { name: /^Seções: Projetos/ })).toBeTruthy()
-  expect(within(strip()).getByRole('button', { current: 'page' }).textContent).toBe('Projetos')
+  expect(dock().getAttribute('aria-label')).toBe('Seções')
+  const row = dock().querySelectorAll('.bt-module-nav__dock-row')[1] as HTMLElement
+  expect(within(row).getAllByRole('button').map((button) => button.textContent)).toEqual(['Tarefas12', 'Gestão3, em alerta', 'Boas ideias, com novidades', 'Cotações', 'Mais'])
+  expect(within(dock()).getByRole('button', { current: 'page' }).textContent).toBe('Cotações')
+
+  const more = within(dock()).getByRole('button', { name: 'Mais' })
+  expect(more.getAttribute('aria-expanded')).toBe('false')
+  fireEvent.click(more)
+  expect(more.getAttribute('aria-expanded')).toBe('true')
+  fireEvent.click(within(dock()).getByRole('button', { name: 'Configurações' }))
+
+  expect(document.querySelector('.bt-shell__header-title')?.textContent).toBe('Configurações')
+  expect(more.getAttribute('aria-expanded')).toBe('false')
+  expect(within(dock()).queryByRole('button', { name: 'Configurações' })).toBeNull()
+  expect(more.textContent).toBe('Mais, seção atual: Configurações')
+})
+
+it('no celular, Esc fecha o "Mais" e devolve o foco; com até 5 seções não há "Mais" e o rótulo curto mantém o nome', () => {
+  mobile()
+  const { unmount } = render(<ModuleNav aria-label="Seções" items={items} value="tarefas" onNavigate={() => {}} />)
+  const more = within(dock()).getByRole('button', { name: 'Mais' })
+  fireEvent.click(more)
+  fireEvent.keyDown(document, { key: 'Escape' })
+  expect(more.getAttribute('aria-expanded')).toBe('false')
+  expect(document.activeElement).toBe(more)
+  unmount()
+
+  const five = items.slice(0, 5).map((item) => (item.value === 'ideias' ? { ...item, shortLabel: 'Ideias' } : item))
+  render(<ModuleNav aria-label="Seções" items={five} value="tarefas" onNavigate={() => {}} />)
+  expect(within(dock()).queryByRole('button', { name: 'Mais' })).toBeNull()
+  const ideias = within(dock()).getByRole('button', { name: /^Boas ideias/ })
+  expect(ideias.querySelector('.bt-module-nav__tab-label')?.textContent).toBe('Ideias')
+})
+
+it('no desktop, a barra flutuante não é montada', () => {
+  render(<ModuleNav aria-label="Seções" items={items} value="tarefas" onNavigate={() => {}} />)
+  expect(dock()).toBeNull()
 })
 
 it('mobileActions substitui as ações no cabeçalho do celular', () => {

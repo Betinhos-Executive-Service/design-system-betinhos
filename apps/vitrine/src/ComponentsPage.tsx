@@ -1038,13 +1038,13 @@ function ModuleNavShowcase() {
   const [largura, setLargura] = useState(760)
   const [link, setLink] = useQueryTexto('secao-link', 'gestao')
   return (
-    <Section name="ModuleNav" summary="§10.1.1: faixa fixa no topo que navega entre as seções de um módulo (48 px; compacta 40 px). Itens com ícone, no máximo um indicador (contagem, contagem de alerta ou ponto) e ações à direita. O que não cabe vai para “Mais”, sem rolagem; o item ativo nunca fica escondido. Abaixo de 820 px a faixa some: o título do cabeçalho do AppShell vira o menu de seções e as ações sobem junto (useShellHeader).">
+    <Section name="ModuleNav" summary="§10.1.1: faixa fixa no topo que navega entre as seções de um módulo (48 px; compacta 40 px). Itens com ícone, no máximo um indicador (contagem, contagem de alerta ou ponto) e ações à direita. O que não cabe vai para “Mais”, sem rolagem; o item ativo nunca fica escondido. Abaixo de 820 px a faixa some: as seções vão para uma barra flutuante embaixo (4 + Mais, some ao rolar) e o título e as ações sobem para o cabeçalho do AppShell (useShellHeader).">
       <div className="showcase__mobile-only">
-        <p className="showcase__label">Celular: a faixa some; toque no título para trocar de seção</p>
+        <p className="showcase__label">Celular: a faixa some e as seções vão para a barra flutuante embaixo</p>
         <div className="showcase__stage showcase__stage--shell">
           <AppShell brand={{ name: 'Betinhos' }} groups={[{ id: 'central', label: 'Central de Trabalho', icon: <Home size={20} />, href: '#/componentes', items: [] }]} activeId="central" title="Central de Trabalho">
             <ModuleNav aria-label="Seções da Central de Trabalho" items={PLANNER_ITEMS} value={secao} onNavigate={setSecao} actions={<PlannerActions />} mobileActions={<PlannerActions chips={false} />} />
-            <p className="showcase__summary" style={{ padding: 'var(--bt-space-4)' }}>Conteúdo de {PLANNER_ITEMS.find((item) => item.value === secao)?.label}. Toque no título do cabeçalho para ver todas as seções.</p>
+            <p className="showcase__summary" style={{ padding: 'var(--bt-space-4)' }}>Conteúdo de {PLANNER_ITEMS.find((item) => item.value === secao)?.label}. Troque de seção pela barra embaixo; role para baixo e ela some.</p>
           </AppShell>
         </div>
       </div>
