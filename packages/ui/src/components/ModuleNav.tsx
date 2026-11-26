@@ -1,6 +1,6 @@
 import { useLayoutEffect, useRef, useState, type MouseEvent, type ReactNode } from 'react'
 import { Menu, type MenuAction } from './Menu'
-import { useShellHeader } from './ShellHeader'
+import { useShellHeader, type ShellHeaderEntry } from './ShellHeader'
 
 export type ModuleNavItem<T extends string = string> = {
   value: T
@@ -29,7 +29,7 @@ export type ModuleNavProps<T extends string = string> = {
   actions?: ReactNode
   /** Ações do cabeçalho do celular, no lugar de `actions` (que costumam não caber ao lado do título): em geral só ícones. `null` = nenhuma. */
   mobileActions?: ReactNode
-  /** No celular a faixa some e o título da seção e as `actions` vão para o cabeçalho do AppShell (`useShellHeader`). `false` desliga. */
+  /** No celular a faixa some: o título vira menu de seções e as `actions` vão para o cabeçalho do AppShell (`useShellHeader`). `false` desliga. */
   shellHeader?: boolean
 }
 
@@ -86,7 +86,7 @@ function Content({ item }: { item: ModuleNavItem }) {
 }
 
 /** Só registra no cabeçalho do AppShell quando `shellHeader` está ligado (hook não pode ser condicional). */
-function ShellHeaderBridge({ title, actions }: { title?: string; actions?: ReactNode }) {
+function ShellHeaderBridge({ title, actions }: ShellHeaderEntry) {
   useShellHeader({ title, actions })
   return null
 }
@@ -139,18 +139,32 @@ export function ModuleNav<T extends string>({ items, value, onNavigate, density 
     else if (item.href) window.location.assign(item.href)
   }
 
-  const moreActions: MenuAction[] = hidden.map((item) => ({
+  const toAction = (item: ModuleNavItem<T>): MenuAction => ({
     id: item.value,
     label: <span className="bt-module-nav__menu-label">{item.label}<Indicator item={item} /></span>,
     icon: item.icon,
     disabled: item.disabled,
     onSelect: () => go(item),
-  }))
-  const moreSignal = hidden.some((item) => item.dot || (item.tone === 'alert' && item.count))
+  })
+  const signals = (list: ModuleNavItem<T>[]) => list.some((item) => item.dot || (item.tone === 'alert' && item.count))
+  const moreSignal = signals(hidden)
+
+  // Celular: o título do cabeçalho do AppShell abre o menu com todas as seções.
+  const active = items[activeIndex]
+  const titleSignal = signals(items.filter((item) => item !== active))
+  const sectionMenu = active ? (
+    <Menu align="start" actions={items.map((item) => ({ ...toAction(item), selected: item.value === value }))} trigger={(props) => (
+      <button type="button" className="bt-module-nav__title" {...props} aria-label={`${ariaLabel}: ${active.label}${titleSignal ? ', com novidades em outras seções' : ''}`}>
+        <span className="bt-module-nav__title-label">{active.label}</span>
+        {titleSignal ? <span className="bt-module-nav__dot" aria-hidden="true" /> : null}
+        <Chevron />
+      </button>
+    )} />
+  ) : undefined
 
   return (
     <div className={`bt-module-nav bt-module-nav--${density}`}>
-      {shellHeader ? <ShellHeaderBridge title={items[activeIndex]?.label} actions={mobileActions !== undefined ? mobileActions : actions} /> : null}
+      {shellHeader ? <ShellHeaderBridge title={sectionMenu} actions={mobileActions !== undefined ? mobileActions : actions} /> : null}
       <nav aria-label={ariaLabel} className="bt-module-nav__nav">
         <ul ref={listRef} className="bt-module-nav__items">
           {shown.map((index) => {
@@ -167,7 +181,7 @@ export function ModuleNav<T extends string>({ items, value, onNavigate, density 
           })}
           {hidden.length ? (
             <li className="bt-module-nav__slot">
-              <Menu align="start" actions={moreActions} trigger={(props) => (
+              <Menu align="start" actions={hidden.map(toAction)} trigger={(props) => (
                 <button type="button" className="bt-module-nav__item bt-module-nav__more" {...props}>
                   <MoreContent signal={moreSignal} />
                 </button>

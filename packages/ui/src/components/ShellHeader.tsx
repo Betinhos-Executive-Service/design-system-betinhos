@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useState, useSyncExternalStore, type ReactNode } from 'react'
 
-/** O que uma tela pede ao cabeçalho do celular: título próprio e ações (em geral só atualizar). */
-export type ShellHeaderEntry = { title?: string; actions?: ReactNode }
+/** O que uma tela pede ao cabeçalho do celular: título próprio (texto ou um gatilho, ex.: menu de seções do `ModuleNav`) e ações (em geral só atualizar). */
+export type ShellHeaderEntry = { title?: ReactNode; actions?: ReactNode }
 
 export type ShellHeaderStore = {
   get: () => ShellHeaderEntry | null

@@ -597,7 +597,7 @@ Cada componente deve documentar anatomia, variantes, estados, conteúdo, acessib
 - Mobile troca sidebar por header sticky e bottom nav.
 - No desktop o shell não tem header: o topo é de cada página (§10.2). Telas embutidas por iframe também não ganham header do shell.
 - Header mobile: `layout.mobile-header-height` (62 px), com menu, título da tela e, à direita, as ações que a tela registrar; normalmente só atualizar, em botão de ícone com `aria-label`. A ação primária continua no cabeçalho de página.
-- Em React, a rota registra título e ações do header mobile com `useShellHeader({ title, actions })` de `@betinhos/ui`; o registro é limpo quando a tela sai. Sem registro, o header mostra o título do menu.
+- Em React, a rota registra título e ações do header mobile com `useShellHeader({ title, actions })` de `@betinhos/ui`; o registro é limpo quando a tela sai. `title` aceita texto ou um gatilho (desde a 3.9, o menu de seções do `ModuleNav`). Sem registro, o header mostra o título do menu.
 
 ### 10.1.1 Navegação do módulo (`ModuleNav`)
 
@@ -609,7 +609,7 @@ Cada componente deve documentar anatomia, variantes, estados, conteúdo, acessib
 - Indicador: no máximo um por item. `count` neutro (pílula `color.border`; no ativo, `color.action-soft`), `count` com `tone: 'alert'` em `color.danger-soft`/`color.danger` (e "em alerta" em texto para leitor de tela), ou `dot` (ponto `color.danger` de 8 px, com texto para leitor de tela). Acima de 99 vira "99+".
 - Excesso: sem barra de rolagem. Os itens que não cabem vão para o menu **"Mais"** (`Menu` do DS), medido com `ResizeObserver` a cada mudança de largura. O item ativo nunca fica no "Mais": troca de lugar com o último visível. Se um item escondido tiver `dot` ou alerta, o "Mais" mostra o ponto.
 - Ações (`actions`): chips de contexto (`StatusBadge`, ex.: "8 hoje", "2 atrasadas" em `danger`) e botões de ícone (`Button` `ghost` `compact` com `aria-label`). Nada de ação primária aqui: ela continua no `PageHeader` da seção.
-- Celular (< 820 px): a faixa some. Dentro do `AppShell`, o `ModuleNav` registra pelo `useShellHeader` o rótulo da seção atual como título e as ações no cabeçalho do celular; os chips costumam não caber ao lado do título, então passe `mobileActions` só com os ícones (ex.: notificações e atualizar). A troca de seção no celular fica com o menu do `AppShell` ou um `BottomNav` do módulo. Telas dentro do módulo não chamam `useShellHeader` de novo; `shellHeader={false}` desliga o registro (ex.: vitrine, mais de um `ModuleNav` na página).
+- Celular (< 820 px): a faixa some. Dentro do `AppShell`, o `ModuleNav` registra pelo `useShellHeader` o título e as ações do cabeçalho do celular. O título é um botão com o rótulo da seção atual e um chevron (toque de 44 px) que abre o menu com todas as seções: ícone, indicador e ✓ na atual (`menuitemradio`); um ponto no título avisa novidade ou alerta em outra seção; os chips costumam não caber ao lado do título, então passe `mobileActions` só com os ícones (ex.: notificações e atualizar). Telas dentro do módulo não chamam `useShellHeader` de novo; `shellHeader={false}` desliga o registro (ex.: vitrine, mais de um `ModuleNav` na página).
 - Proibido: border-left colorido no item ativo (§6.2), rolagem horizontal da faixa, item sem ícone, dois indicadores no mesmo item.
 
 ```tsx
@@ -1721,7 +1721,7 @@ O padrão de mercado não é apenas um PDF de marca. É um produto versionado: t
 
 ### 3.9.0 — 26/11/2026
 
-- §10.1.1 **Novo `ModuleNav`**: faixa fixa no topo (48 px; compacta 40 px) para navegar entre as seções de um módulo, com `<nav aria-label>` e `aria-current="page"`, itens `a href` ou botão (`onNavigate`), um indicador por item (contagem, contagem de alerta ou ponto) e ações à direita. O que não cabe vai para o menu "Mais" (medido com `ResizeObserver`, sem rolagem) e o item ativo nunca fica escondido. No celular a faixa some e o título da seção e as ações (`mobileActions`) vão para o cabeçalho do `AppShell` via `useShellHeader`. Origem: a faixa de abas do Planner (Central de Trabalho).
+- §10.1.1 **Novo `ModuleNav`**: faixa fixa no topo (48 px; compacta 40 px) para navegar entre as seções de um módulo, com `<nav aria-label>` e `aria-current="page"`, itens `a href` ou botão (`onNavigate`), um indicador por item (contagem, contagem de alerta ou ponto) e ações à direita. O que não cabe vai para o menu "Mais" (medido com `ResizeObserver`, sem rolagem) e o item ativo nunca fica escondido. No celular a faixa some: o título do cabeçalho do `AppShell` vira o menu de seções e as ações (`mobileActions`) vão para o cabeçalho, via `useShellHeader` (que passa a aceitar `title` como `ReactNode`). Origem: a faixa de abas do Planner (Central de Trabalho).
 
 ### 3.8.3 — 23/11/2026
 

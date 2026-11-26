@@ -147,6 +147,27 @@ it('no AppShell, leva o título da seção e as ações para o cabeçalho do cel
   expect(within(header as HTMLElement).getByRole('button', { name: 'Atualizar' })).toBeTruthy()
 })
 
+it('no celular, o título do cabeçalho abre o menu com todas as seções e navega', () => {
+  function Harness() {
+    const [value, setValue] = useState('cotacoes')
+    return (
+      <AppShell brand={{ name: 'Betinhos' }} groups={[]} activeId="" title="Central">
+        <ModuleNav aria-label="Seções" items={items} value={value} onNavigate={setValue} />
+      </AppShell>
+    )
+  }
+  render(<Harness />)
+  const header = document.querySelector('.bt-shell__header') as HTMLElement
+  const title = within(header).getByRole('button', { name: 'Seções: Cotações, com novidades em outras seções' })
+  fireEvent.click(title)
+  const options = screen.getAllByRole('menuitemradio', { hidden: true })
+  expect(options.map((option) => option.textContent)).toEqual(['Tarefas12', 'Gestão3, em alerta', 'Boas ideias, com novidades', 'Cotações', 'Projetos', 'Configurações'])
+  expect(options.filter((option) => option.getAttribute('aria-checked') === 'true').map((option) => option.textContent)).toEqual(['Cotações'])
+  fireEvent.click(screen.getByRole('menuitemradio', { name: 'Projetos', hidden: true }))
+  expect(within(header).getByRole('button', { name: /^Seções: Projetos/ })).toBeTruthy()
+  expect(within(strip()).getByRole('button', { current: 'page' }).textContent).toBe('Projetos')
+})
+
 it('mobileActions substitui as ações no cabeçalho do celular', () => {
   render(
     <AppShell brand={{ name: 'Betinhos' }} groups={[]} activeId="" title="Central">

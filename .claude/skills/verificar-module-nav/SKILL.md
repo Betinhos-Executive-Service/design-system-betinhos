@@ -13,7 +13,7 @@ description: "Verifica o ModuleNav do @betinhos-executive-service/ui (§10.1.1):
 - Chromium: playwright-core (`npx playwright-core`) com o chrome de `~/.cache/ms-playwright/chromium-*/chrome-linux/chrome`.
 
 ## Roteiro
-1. `pnpm --filter @betinhos-executive-service/ui exec vitest run src/components/ModuleNav` passa (12 testes) e `pnpm -r typecheck` sem erros.
+1. `pnpm --filter @betinhos-executive-service/ui exec vitest run src/components/ModuleNav` passa (13 testes) e `pnpm -r typecheck` sem erros.
 2. Vitrine em 1440 px:
    - altura da 1ª faixa 48 px e da `.bt-module-nav--compact` 40 px;
    - nenhuma `.bt-module-nav__items` com `scrollWidth > clientWidth`;
@@ -26,8 +26,9 @@ description: "Verifica o ModuleNav do @betinhos-executive-service/ui (§10.1.1):
 4. Abrir o "Mais": menu com os itens escondidos (ícone + indicador); escolher um navega e o item vira o ativo na faixa.
 5. Foco num item e Tab: vai para o próximo item (sem setas); anel de foco visível por dentro.
 6. Tema escuro (`document.documentElement.dataset.theme = 'dark'`): sublinhado e badges legíveis.
-7. Em 390 px: nenhuma faixa visível; no AppShell de exemplo o cabeçalho mostra o título da seção ativa e só os ícones (`mobileActions`); sem rolagem horizontal.
-8. Console: zero erros, exceto o 404 conhecido de `/favicon.ico` (a vitrine não declara ícone).
+7. Em 390 px: nenhuma faixa visível; no AppShell de exemplo o cabeçalho mostra só os ícones (`mobileActions`) e o título é um botão (`.bt-module-nav__title`, 44 px de altura) com o rótulo inteiro, sem reticências, e o ponto quando outra seção tem novidade ou alerta; sem rolagem horizontal.
+8. Tocar no título: menu com todas as seções (`menuitemradio`), ✓ e `aria-checked` só na atual; escolher outra troca o título e a seção, e o foco volta ao título.
+9. Console: zero erros, exceto o 404 conhecido de `/favicon.ico` (a vitrine não declara ícone).
 
 ## Casos de borda
 - `count: 0` não mostra badge; `count > 99` mostra `99+`.
