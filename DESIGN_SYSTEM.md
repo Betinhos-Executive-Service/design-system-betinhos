@@ -1,6 +1,6 @@
 # Betinhos Design System
 
-**Versão:** 3.8.3
+**Versão:** 3.10.0
 
 **Status:** fonte oficial inicial
 
@@ -597,7 +597,36 @@ Cada componente deve documentar anatomia, variantes, estados, conteúdo, acessib
 - Mobile troca sidebar por header sticky e bottom nav.
 - No desktop o shell não tem header: o topo é de cada página (§10.2). Telas embutidas por iframe também não ganham header do shell.
 - Header mobile: `layout.mobile-header-height` (62 px), com menu, título da tela e, à direita, as ações que a tela registrar; normalmente só atualizar, em botão de ícone com `aria-label`. A ação primária continua no cabeçalho de página.
-- Em React, a rota registra título e ações do header mobile com `useShellHeader({ title, actions })` de `@betinhos/ui`; o registro é limpo quando a tela sai. Sem registro, o header mostra o título do menu.
+- Em React, a rota registra título e ações do header mobile com `useShellHeader({ title, actions })` de `@betinhos/ui`; o registro é limpo quando a tela sai. `title` aceita texto ou um gatilho (desde a 3.9, o menu de seções do `ModuleNav`). Sem registro, o header mostra o título do menu.
+
+### 10.1.1 Navegação do módulo (`ModuleNav`)
+
+**Anatomia:** faixa fixa no topo da área principal + itens de seção (ícone, rótulo, indicador) + "Mais" + ações à direita.
+
+- Uso: módulo com várias seções no mesmo app (ex.: Central de Trabalho: Tarefas, Gestão, Boas ideias, Cotações, Projetos, Configurações). Não substitui o `Tabs`: o `Tabs` troca conteúdo **dentro** de uma tela (`role="tablist"`, setas); o `ModuleNav` troca de **seção** (`<nav aria-label>`, item atual com `aria-current="page"`, Tab entre os itens, sem setas).
+- Faixa: `position: sticky; top: 0`, `z-index.sticky-header`, fundo `color.surface`, borda inferior `color.border`. Altura 48 px (`control-height.prominent`); `density="compact"` 40 px (`control-height.default`), que vira 44 px em `pointer: coarse`.
+- Item: ícone Lucide de 16 px distinto em cada seção (mesma regra do §10.1), rótulo 13 px bold em `color.text-secondary`; ativo em `color.brand` com sublinhado de 2 px em `color.action`, o mesmo visual do `Tabs`. Pode ser `a href` (link real, Ctrl/⌘+clique abre nova aba) ou botão com `onNavigate`; com os dois, o clique simples chama `onNavigate` (roteador da SPA). No menu "Mais" o item vira ação de menu (sem nova aba). Contagem `0` não aparece.
+- Indicador: no máximo um por item. `count` neutro (pílula `color.border`; no ativo, `color.action-soft`), `count` com `tone: 'alert'` em `color.danger-soft`/`color.danger` (e "em alerta" em texto para leitor de tela), ou `dot` (ponto `color.danger` de 8 px, com texto para leitor de tela). Acima de 99 vira "99+".
+- Excesso: sem barra de rolagem. Os itens que não cabem vão para o menu **"Mais"** (`Menu` do DS), medido com `ResizeObserver` a cada mudança de largura. O item ativo nunca fica no "Mais": troca de lugar com o último visível. Se um item escondido tiver `dot` ou alerta, o "Mais" mostra o ponto.
+- Ações (`actions`): chips de contexto (`StatusBadge`, ex.: "8 hoje", "2 atrasadas" em `danger`) e botões de ícone (`Button` `ghost` `compact` com `aria-label`). Nada de ação primária aqui: ela continua no `PageHeader` da seção.
+- Celular (< 820 px): a faixa some e as seções vão para a **barra flutuante** na zona do polegar (montada só abaixo de 820 px): pílula de vidro (`color.surface` a 84% com desfoque, `shadow.popover`, raio 28 px) fixa a 16 px do fundo (mais a área segura), em `z-index.mobile-navigation`, com o mesmo `<nav aria-label>`. Até 5 seções ficam lado a lado; com mais, 4 + **"Mais"**, que abre uma segunda linha na própria barra (`aria-expanded`; fecha com Esc, toque fora ou ao escolher; o "Mais" fica ativo e diz "seção atual: …" quando a seção está lá). Cada botão tem 54 px de altura, ícone de 22 px com pílula `color.action-soft` no ativo, rótulo de 11 px (`shortLabel` quando `label` não cabe; o leitor de tela continua lendo `label`) e o indicador sobre o ícone, lido depois do nome. A barra some ao rolar o conteúdo para baixo e volta ao subir ou ao trocar de seção; dentro do `AppShell` o conteúdo ganha folga embaixo para a barra não cobrir o fim da página (fora dele, a tela reserva ~96 px). O `ModuleNav` também registra pelo `useShellHeader` o título (rótulo da seção atual) e as ações do cabeçalho do celular; os chips costumam não caber ao lado do título, então passe `mobileActions` só com os ícones (ex.: notificações e atualizar). Telas dentro do módulo não chamam `useShellHeader` de novo; `shellHeader={false}` desliga o registro (ex.: vitrine, mais de um `ModuleNav` na página).
+- Proibido: border-left colorido no item ativo (§6.2), rolagem horizontal da faixa, item sem ícone, dois indicadores no mesmo item.
+
+```tsx
+<ModuleNav
+  aria-label="Seções da Central de Trabalho"
+  value={secao}
+  onNavigate={setSecao}
+  items={[
+    { value: 'tarefas', label: 'Tarefas', icon: <ListChecks />, count: 14 },
+    { value: 'gestao', label: 'Gestão', icon: <BarChart3 />, count: 2, tone: 'alert' },
+    { value: 'ideias', label: 'Boas ideias', icon: <Lightbulb />, dot: true },
+    { value: 'config', label: 'Configurações', icon: <Settings /> },
+  ]}
+  actions={<><StatusBadge>8 hoje</StatusBadge><Button variant="ghost" size="compact" icon={<RotateCcw size={16} />} aria-label="Atualizar dados" /></>}
+  mobileActions={<Button variant="ghost" size="compact" icon={<RotateCcw size={16} />} aria-label="Atualizar dados" />}
+/>
+```
 
 ### 10.2 Cabeçalho de página
 
@@ -1311,7 +1340,7 @@ Este bloco permite implementação mesmo quando os arquivos auxiliares não acom
 
 <!-- GENERATED:TOKENS_CSS:START -->
 ```css
-/* Betinhos Design System 3.8.3.
+/* Betinhos Design System 3.10.0.
  * GENERATED from design-tokens.json. Do not edit this file manually.
  */
 :root {
@@ -1689,6 +1718,14 @@ O padrão de mercado não é apenas um PDF de marca. É um produto versionado: t
 ---
 
 ## 20. Changelog
+
+### 3.10.0 — 26/11/2026
+
+- §10.1.1 `ModuleNav` no celular: as seções passam para uma **barra flutuante** na zona do polegar (vidro, 4 seções + "Mais" que abre uma segunda linha, some ao rolar para baixo), no lugar do título com menu de seções da 3.9.0. O título do cabeçalho volta a ser o rótulo da seção atual. Novo `shortLabel` no item, para o rótulo da barra. Escolhida entre 3 protótipos (chips roláveis, barra segmentada e barra flutuante; branch `prototype/module-nav-celular`).
+
+### 3.9.0 — 26/11/2026
+
+- §10.1.1 **Novo `ModuleNav`**: faixa fixa no topo (48 px; compacta 40 px) para navegar entre as seções de um módulo, com `<nav aria-label>` e `aria-current="page"`, itens `a href` ou botão (`onNavigate`), um indicador por item (contagem, contagem de alerta ou ponto) e ações à direita. O que não cabe vai para o menu "Mais" (medido com `ResizeObserver`, sem rolagem) e o item ativo nunca fica escondido. No celular a faixa some: o título do cabeçalho do `AppShell` vira o menu de seções e as ações (`mobileActions`) vão para o cabeçalho, via `useShellHeader` (que passa a aceitar `title` como `ReactNode`). Origem: a faixa de abas do Planner (Central de Trabalho).
 
 ### 3.8.3 — 23/11/2026
 

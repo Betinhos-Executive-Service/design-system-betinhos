@@ -257,7 +257,7 @@ export function AppShell({ brand, groups, activeId, title, headerActions, status
     <div ref={rootRef} className={['bt-shell', rail && 'bt-shell--rail'].filter(Boolean).join(' ')} data-drawer={drawerOpen ? 'open' : 'closed'} onKeyDown={onKeyDown}>
       <header className="bt-shell__header">
         <button type="button" className="bt-shell__icon-button" aria-label="Abrir menu" aria-expanded={drawerOpen} aria-controls={navId} onClick={() => setDrawerOpen(true)}>{I.menu}</button>
-        <span className="bt-shell__header-title">{page?.title ?? title}</span>
+        <div className="bt-shell__header-title">{page?.title ?? title}</div>
         {mobileActions != null ? <div className="bt-shell__header-actions">{mobileActions}</div> : null}
       </header>
       <div className="bt-shell__backdrop" onClick={() => setDrawerOpen(false)} aria-hidden="true" />

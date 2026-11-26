@@ -1,8 +1,8 @@
 import { useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react'
 import { useQueryBandeira, useQueryTexto } from './nav/queryState'
-import { Check, ChevronRight, CircleCheck, Clock, Copy, EllipsisVertical, Eye, Home, Inbox, LayoutDashboard, Pencil, Plus, PlugZap, RefreshCw, SearchX, Signature, Trash2, TriangleAlert, Truck, Users, X } from 'lucide-react'
+import { BarChart3, BellRing, Check, ChevronRight, CircleCheck, ClipboardList, Clock, Copy, EllipsisVertical, Eye, FileText, FolderKanban, Home, Inbox, LayoutDashboard, Lightbulb, ListChecks, Pencil, Plus, PlugZap, Receipt, RefreshCw, RotateCcw, SearchX, Settings, Signature, Trash2, TriangleAlert, Truck, Users, X } from 'lucide-react'
 import {
-  Alert, AlertCard, Avatar, BottomNav, Breadcrumb, Button, DeltaBadge, Checkbox, ChoiceGroup, Cluster, DateTile, Dialog, Drawer, EmptyState, Field, Grid, Input, Menu, MetricCard, PageHeader, PageToolbar, Pagination, Progress, ProgressRing, Radio, SearchBox, SegmentedControl, Select, Sheet, Skeleton, Spinner, Stack, StatCard, StatusBadge, Surface, Switch, Table, TableTitle, Tabs, Textarea, ToastProvider, Tooltip, Upload, ViewBar,
+  Alert, AlertCard, AppShell, Avatar, BottomNav, Breadcrumb, Button, DeltaBadge, Checkbox, ChoiceGroup, Cluster, DateTile, Dialog, Drawer, EmptyState, Field, Grid, Input, Menu, MetricCard, ModuleNav, type ModuleNavItem, PageHeader, PageToolbar, Pagination, Progress, ProgressRing, Radio, SearchBox, SegmentedControl, Select, Sheet, Skeleton, Spinner, Stack, StatCard, StatusBadge, Surface, Switch, Table, TableTitle, Tabs, Textarea, ToastProvider, Tooltip, Upload, ViewBar,
   TableGroups, groupRows, createMemoryViewStore, defaultConfig, type ColumnCatalog, type ColumnCatalogEntry, filterOptions, matchesFilters, useTableFilters, type FilterField, type FilterOption, serializeConfig, selectionMenuActions, type SelectionAction, tableViewColumns, toggleColumn, useShellHeader, useTableView, useToast, type TableColumn, type TableCellStatus, type ViewConfig, type RowGroup, type AlertTone, type ButtonSize, type ButtonVariant, type ControlSize, type SelectOption, type StatusTone, type UploadFile,
 } from '@betinhos/ui'
 import { PageLayout } from './PageLayout'
@@ -1003,6 +1003,88 @@ function ChoiceShowcase() {
   )
 }
 
+const PLANNER_ITEMS: ModuleNavItem[] = [
+  { value: 'tarefas', label: 'Tarefas', icon: <ListChecks />, count: 14 },
+  { value: 'gestao', label: 'Gestão', icon: <BarChart3 />, count: 2, tone: 'alert' },
+  { value: 'ideias', label: 'Boas ideias', icon: <Lightbulb />, dot: true },
+  { value: 'cotacoes', label: 'Cotações', icon: <Receipt /> },
+  { value: 'projetos', label: 'Projetos', icon: <FolderKanban /> },
+  { value: 'config', label: 'Configurações', icon: <Settings /> },
+]
+const EXTRA_ITEMS: ModuleNavItem[] = [
+  ...PLANNER_ITEMS.slice(0, 5),
+  { value: 'contatos', label: 'Contatos', icon: <Users /> },
+  { value: 'qualidade', label: 'Qualidade', icon: <ClipboardList />, count: 128 },
+  { value: 'relatorios', label: 'Relatórios', icon: <FileText /> },
+  { value: 'frota', label: 'Frota', icon: <Truck />, disabled: true },
+  PLANNER_ITEMS[5],
+]
+
+function PlannerActions({ chips = true }: { chips?: boolean }) {
+  const toast = useToast()
+  return (
+    <>
+      {chips ? <><StatusBadge title="Hoje: 8 pendências">8 hoje</StatusBadge><StatusBadge tone="danger">2 atrasadas</StatusBadge></> : null}
+      <Button variant="ghost" size="compact" icon={<BellRing size={16} />} aria-label="Abrir notificações, 3 não lidas" title="Notificações" onClick={() => toast({ tone: 'info', message: '3 notificações não lidas.' })} />
+      <Button variant="ghost" size="compact" icon={<RotateCcw size={16} />} aria-label="Atualizar dados" title="Atualizar dados" onClick={() => toast({ tone: 'info', message: 'Dados atualizados.' })} />
+    </>
+  )
+}
+
+function ModuleNavShowcase() {
+  const [secao, setSecao] = useQueryTexto('secao', 'tarefas')
+  const [compacta, setCompacta] = useState('cotacoes')
+  const [extra, setExtra] = useState('config')
+  const [largura, setLargura] = useState(760)
+  const [link, setLink] = useQueryTexto('secao-link', 'gestao')
+  return (
+    <Section name="ModuleNav" summary="§10.1.1: faixa fixa no topo que navega entre as seções de um módulo (48 px; compacta 40 px). Itens com ícone, no máximo um indicador (contagem, contagem de alerta ou ponto) e ações à direita. O que não cabe vai para “Mais”, sem rolagem; o item ativo nunca fica escondido. Abaixo de 820 px a faixa some: as seções vão para uma barra flutuante embaixo (4 + Mais, some ao rolar) e o título e as ações sobem para o cabeçalho do AppShell (useShellHeader).">
+      <div className="showcase__mobile-only">
+        <p className="showcase__label">Celular: a faixa some e as seções vão para a barra flutuante embaixo</p>
+        <div className="showcase__stage showcase__stage--shell">
+          <AppShell brand={{ name: 'Betinhos' }} groups={[{ id: 'central', label: 'Central de Trabalho', icon: <Home size={20} />, href: '#/componentes', items: [] }]} activeId="central" title="Central de Trabalho">
+            <ModuleNav aria-label="Seções da Central de Trabalho" items={PLANNER_ITEMS} value={secao} onNavigate={setSecao} actions={<PlannerActions />} mobileActions={<PlannerActions chips={false} />} />
+            <p className="showcase__summary" style={{ padding: 'var(--bt-space-4)' }}>Conteúdo de {PLANNER_ITEMS.find((item) => item.value === secao)?.label}. Troque de seção pela barra embaixo; role para baixo e ela some.</p>
+          </AppShell>
+        </div>
+      </div>
+      <div className="showcase__desktop-only">
+        <p className="showcase__label">Central de Trabalho (caso do Planner)</p>
+        <div className="showcase__stage showcase__stage--nav">
+          <ModuleNav aria-label="Seções da Central de Trabalho" items={PLANNER_ITEMS} value={secao} onNavigate={setSecao} actions={<PlannerActions />} shellHeader={false} />
+        </div>
+        <p className="showcase__label">Densidade compacta (40 px)</p>
+        <div className="showcase__stage showcase__stage--nav">
+          <ModuleNav aria-label="Seções (compacta)" density="compact" items={PLANNER_ITEMS} value={compacta} onNavigate={setCompacta} actions={<Button variant="ghost" size="compact" icon={<RotateCcw size={16} />} aria-label="Atualizar dados" />} shellHeader={false} />
+        </div>
+        <p className="showcase__label">Excesso de itens: arraste a largura; o ativo (Configurações) troca de lugar com o último visível</p>
+        <label className="showcase__control">
+          <span>Largura: {largura} px</span>
+          <input type="range" min={320} max={1200} step={10} value={largura} onChange={(event) => setLargura(Number(event.target.value))} />
+        </label>
+        <div className="showcase__stage showcase__stage--nav" style={{ maxWidth: largura }}>
+          <ModuleNav aria-label="Seções (excesso)" items={EXTRA_ITEMS} value={extra} onNavigate={setExtra} shellHeader={false} />
+        </div>
+        <p className="showcase__label">Estados: links (href), contagem acima de 99, ponto, desabilitado</p>
+        <div className="showcase__stage showcase__stage--nav">
+          <ModuleNav
+            aria-label="Seções (links)"
+            items={[
+              { value: 'gestao', label: 'Gestão', icon: <LayoutDashboard />, href: '#/componentes?secao-link=gestao', count: 3, tone: 'alert' },
+              { value: 'qualidade', label: 'Qualidade', icon: <ClipboardList />, href: '#/componentes?secao-link=qualidade', count: 128 },
+              { value: 'ideias', label: 'Boas ideias', icon: <Lightbulb />, href: '#/componentes?secao-link=ideias', dot: true },
+              { value: 'frota', label: 'Frota', icon: <Truck />, href: '#/componentes?secao-link=frota', disabled: true },
+            ]}
+            value={link}
+            onNavigate={setLink}
+            shellHeader={false}
+          />
+        </div>
+      </div>
+    </Section>
+  )
+}
+
 function TabsShowcase() {
   const [tab, setTab] = useQueryTexto('aba', 'detalhes')
   return (
@@ -1172,6 +1254,7 @@ export function ComponentsPage() {
         <SheetShowcase />
         <UploadShowcase />
         <ChoiceShowcase />
+        <ModuleNavShowcase />
         <TabsShowcase />
         <DialogMenuShowcase />
         <MiscShowcase />

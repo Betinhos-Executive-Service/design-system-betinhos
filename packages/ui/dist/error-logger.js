@@ -1,4 +1,4 @@
-/* @betinhos-executive-service/ui 3.8.3 · error-logger. Gerado por scripts/build-error-logger.mjs; não edite. */
+/* @betinhos-executive-service/ui 3.10.0 · error-logger. Gerado por scripts/build-error-logger.mjs; não edite. */
 
 // src/errorLogger.ts
 var ERROR_LOG_TABLE = "new_appmotoristaslog";
